@@ -3,11 +3,7 @@
     import { ipcRenderer } from 'electron';
     import { useI18n } from 'vue-i18n';
 
-    import ImportCloudPass from "./blockchains/bitshares/ImportCloudPass";
-    import ImportBinFile from "./blockchains/bitshares/ImportBinFile";
-    import ImportMemo from "./blockchains/bitshares/ImportMemo";
     import ImportKeys from "./blockchains/ImportKeys";
-    import ImportAddressBased from "./blockchains/address/ImportAddressBased";
 
     import store from '../store/index';
     import router from '../router/index.js';
@@ -294,7 +290,7 @@
                         </span>
                     </option>
                 </select>
-                <div v-if="selectedImportOptions.length > 1">
+                <div v-if="selectedImportOptions.length > 0">
                     <p class="my-3 font-weight-bold">
                         {{ t('common.bts_importtype_cta') }}
                     </p>
@@ -338,7 +334,7 @@
                             </ui-button>
                         </router-link>
 
-                        <span v-if="selectedImportOptions.length > 1">
+                        <span v-if="selectedImportOptions.length > 0">
                             <span v-if="selectedImport != 0">
                                 <ui-button
                                     raised
@@ -387,33 +383,8 @@
                 v-else-if="step == 2"
                 id="step2"
             >
-                <ImportAddressBased
-                    v-if="selectedImportOption.type == 'address/ImportAddressBased'"
-                    v-model="importMethod"
-                    :chain="selectedChain"
-                />
-                <ImportAddressBased
-                    v-else-if="selectedImportOption.type == 'ImportAddressBased'"
-                    v-model="importMethod"
-                    :chain="selectedChain"
-                />
                 <ImportKeys
-                    v-else-if="selectedImportOption.type == 'ImportKeys'"
-                    v-model="importMethod"
-                    :chain="selectedChain"
-                />
-                <ImportCloudPass
-                    v-else-if="selectedImportOption.type == 'bitshares/ImportCloudPass'"
-                    v-model="importMethod"
-                    :chain="selectedChain"
-                />
-                <ImportBinFile
-                    v-else-if="selectedImportOption.type == 'bitshares/ImportBinFile'"
-                    v-model="importMethod"
-                    :chain="selectedChain"
-                />
-                <ImportMemo
-                    v-else-if="selectedImportOption.type == 'bitshares/ImportMemo'"
+                    v-if="selectedImportOption.type == 'ImportKeys'"
                     v-model="importMethod"
                     :chain="selectedChain"
                 />

@@ -1,5 +1,3 @@
-//import //readline from 'linebyline';
-
 function lpad(str, padString, length) {
     while (str.toString().length < length) {
         str = padString + '' + str;
@@ -41,45 +39,31 @@ class Logger {
         return [year, month, day].join('-') + ' ' + lpad(date.getHours(), '0', 2) + ':' + lpad(date.getMinutes(), '0', 2) + ':' + lpad(date.getSeconds(), '0', 2) + ' GMT' + offset;
     }
     log(msg) {
-        //readline.clearLine(process.stdout, 0);
-        //readline.cursorTo(process.stdout, 0, null);
         process.stdout.write(`${this.timestamp()} - [LOG] ${msg}\n`);
     }
     info(msg) {
         if (this.log_level > 0) {
-            //readline.clearLine(process.stdout, 0);
-            //readline.cursorTo(process.stdout, 0, null);
             process.stdout.write(`${this.timestamp()} - [INFO] ${msg}\n`);
         }
     }
     warning(msg) {
-        //readline.clearLine(process.stdout, 0);
-        //readline.cursorTo(process.stdout, 0, null);
         process.stdout.write(`${this.timestamp()} - [WARNING] ${msg}\n`);
     }
     error(msg) {
-        //readline.clearLine(process.stdout, 0);
-        //readline.cursorTo(process.stdout, 0, null);
         process.stdout.write(`${this.timestamp()} - [ERROR] ${msg}\n`);
     }
     verbose(msg) {
         if (this.log_level > 1) {
-            //readline.clearLine(process.stdout, 0);
-            //readline.cursorTo(process.stdout, 0, null);
             process.stdout.write(`${this.timestamp()} - [VERBOSE] ${msg}\n`);
         }
     }
     debug(msg) {
         if (this.log_level > 1) {
-            //readline.clearLine(process.stdout, 0);
-            //readline.cursorTo(process.stdout, 0, null);
             process.stdout.write(`${this.timestamp()} - [DEBUG] ${msg}\n`);
         }
     }
     transient(msg) {
         if (this.log_level > 2) {
-            //readline.clearLine(process.stdout, 0);
-            //readline.cursorTo(process.stdout, 0, null);
             process.stdout.write(msg);
         }
     }

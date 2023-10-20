@@ -10,8 +10,6 @@ import { TextEncoder, TextDecoder } from "util";
 
 export default class EOS extends BlockchainAPI {
 
-    // https://github.com/steemit/steem-js/tree/master/doc#broadcast-api
-
     _connect(nodeToConnect) {
         return new Promise((resolve, reject) => {
             if (nodeToConnect == null) {
