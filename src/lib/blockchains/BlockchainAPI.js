@@ -391,9 +391,7 @@ export default class BlockchainAPI {
 
     getSignUpInput() {
         return {
-            active: true,
-            memo: true,
-            owner: false
+            privateKey: true
         }
     }
 

@@ -11,15 +11,6 @@
     onMounted(() => {
         logger.debug("Small Header mounted");
     });
-
-    /*
-            <ui-grid-cell
-                class="smallHeader"
-                columns="6"
-            >
-                <langSelect location="small" />
-            </ui-grid-cell>
-    */
 </script>
 
 <template>
@@ -42,7 +33,7 @@
                     alt
                 >
                 <h4 class="h4 beet-typo-small">
-                    Beet
+                    BeetEOS
                 </h4>
             </ui-grid-cell>
         </ui-grid>
