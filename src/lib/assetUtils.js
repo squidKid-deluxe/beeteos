@@ -1,7 +1,7 @@
 const lookupPrecision = {
-    "BTC": 8,
-    "BNB": 8,
-    "BTS": 5
+    "EOS": 4,
+    "TLOS": 4,
+    "BEOS": 4,
 };
 
 export function humanReadableFloat(satoshis, precision) {

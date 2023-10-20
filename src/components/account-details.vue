@@ -84,14 +84,6 @@
                         {{ account.accountName }}
                     </ui-item-last-content>
                 </ui-item>
-                <ui-item :key="account.accountID">
-                    <ui-item-text-content v-if="account.accountName != account.accountID">
-                        {{ t('common.account_details_id_lbl') }}
-                    </ui-item-text-content>
-                    <ui-item-last-content>
-                        {{ account.accountID }}
-                    </ui-item-last-content>
-                </ui-item>
             </ui-list>
         </ui-card>
     </div>

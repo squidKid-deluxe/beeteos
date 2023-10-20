@@ -59,12 +59,6 @@
     let accountName = computed(() => {
         return props.account.accountName;
     });
-
-    /*
-    let accountID = computed(() => {
-        return props.account.accountID;
-    });
-    */
     
     let blockchain = computed(() => {
         return props.blockchain;

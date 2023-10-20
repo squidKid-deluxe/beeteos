@@ -16,10 +16,7 @@
     });
 
     let accountname = ref("");
-    let activepk = ref("");
-    let ownerpk = ref("");
-    let memopk = ref("");
-    let includeOwner = ref(0);
+    let privateKey = ref("");
 
     let accessType = computed(() => {
         if (!props.chain) {
@@ -42,32 +39,31 @@
     }
 
     async function next() {
-        let blockchain = getBlockchainAPI(props.chain);
-        let authorities = {};
+        let blockchain = await getBlockchainAPI(props.chain);
 
-        if (requiredFields.value.active != null) {
-            authorities.active = activepk.value;
-        }
-        if (requiredFields.value.memo != null) {
-            authorities.memo = memopk.value;
-        }
-        if (includeOwner.value == 1 && requiredFields.value.owner != null) {
-            authorities.owner = ownerpk.value;
+        let authorities = {};
+        if (requiredFields.value.privateKey != null) {
+            authorities.privateKey = privateKey.value;
         }
 
         let account;
         try {
-            account = await blockchain.verifyAccount(accountname.value, authorities);
+            account = await blockchain.verifyAccount(accountname.value, authorities.privateKey, props.chain);
         } catch (error) {
             console.log(error);
             ipcRenderer.send("notify", t("common.unverified_account_error"));
             return;
         }
 
+        if (!account) {
+            console.log("Account not found");
+            return;
+        }
+
         emitter.emit('accounts_to_import', [{
             account: {
                 accountName: accountname.value,
-                accountID: account.id,
+                storedAccount: account,
                 chain: props.chain,
                 keys: authorities
             }
@@ -91,52 +87,19 @@
         <p class="my-3 font-weight-normal">
             {{ t('common.keys_cta') }}
         </p>
-        <template v-if="requiredFields.active !== null">
+
+        <template v-if="requiredFields.privateKey !== null">
             <p class="mb-2 font-weight-bold">
                 {{ t(accessType == 'account' ? 'common.active_authority' : 'common.public_authority') }}
             </p>
             <input
                 id="inputActive"
-                v-model="activepk"
+                v-model="privateKey"
                 type="password"
                 class="form-control mb-3 small"
                 :placeholder="t(accessType == 'account' ? 'common.active_authority_placeholder' : 'common.public_authority_placeholder')"
                 required
             >
-        </template>
-        <template v-if="requiredFields.memo !== null">
-            <p class="mb-2 font-weight-bold">
-                {{ t('common.memo_authority') }}
-            </p>
-            <input
-                id="inputMemo"
-                v-model="memopk"
-                type="password"
-                class="form-control mb-3 small"
-                :placeholder="t('common.memo_authority_placeholder')"
-                required
-            >
-        </template>
-        <template v-if="requiredFields.owner !== null">
-            <ui-form-field>
-                <ui-checkbox
-                    v-model="includeOwner"
-                    value="1"
-                    unchecked-value="0"
-                    input-id="incOwnerCB"
-                />
-                <label>{{ t('common.include_owner_check') }}</label>
-            </ui-form-field>
-            <div v-if="includeOwner == 1">
-                <input
-                    id="inputOwner"
-                    v-model="ownerpk"
-                    type="password"
-                    class="form-control mb-3 small"
-                    :placeholder="t('common.owner_authority_placeholder')"
-                    required
-                >
-            </div>
         </template>
 
         <ui-grid>
@@ -149,37 +112,9 @@
                     {{ t('common.back_btn') }}
                 </ui-button>
 
-                <span v-if="includeOwner == 1 && requiredFields.memo != null && requiredFields.active != null">
+                <span v-if="requiredFields.privateKey != null">
                     <ui-button
-                        v-if="
-                            accountname !== ''
-                                && ownerpk !== ''
-                                && memopk !== ''
-                                && activepk !== ''
-                        "
-                        raised
-                        class="step_btn"
-                        type="submit"
-                        @click="next"
-                    >
-                        {{ t('common.next_btn') }}
-                    </ui-button>
-                    <ui-button
-                        v-else
-                        disabled
-                        class="step_btn"
-                        type="submit"
-                    >
-                        {{ t('common.next_btn') }}
-                    </ui-button>
-                </span>
-                <span v-else-if="includeOwner == 0 && requiredFields.memo != null && requiredFields.active != null">
-                    <ui-button
-                        v-if="
-                            accountname !== ''
-                                && memopk !== ''
-                                && activepk !== ''
-                        "
+                        v-if="accountname !== '' && privateKey !== ''"
                         raised
                         class="step_btn"
                         type="submit"

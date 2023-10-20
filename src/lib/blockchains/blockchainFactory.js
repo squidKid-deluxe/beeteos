@@ -1,17 +1,10 @@
 import { blockchains } from "../../config/config.js";
 
-import BitShares from "./BitShares"
-import TUSC from "./TUSC"
 import store from "../../store";
-import Bitcoin from "./Bitcoin";
 
-/*
-import Steem from "./Steem"
-import WhaleShares from "./WhaleShares";
 import EOSmainnet from "./EOSmainnet";
 import TLOS from "./TLOS";
-import Binance from "./Binance";
-*/
+import BEOS from "./BEOS";
 
 let storedChain;
 let lastChain;
@@ -39,26 +32,13 @@ export default function getBlockchainAPI(chain = null, node = null) {
 
     if (!storedChain) {
         try {
-            if (chain == "BTS" || chain == "BTS_TEST") {
-                storedChain = new BitShares(config, node);
-            } else if (chain == "TUSC") {
-                storedChain = new TUSC(config, node);
-            } else if (chain == "BTC" || chain == "BTC_TEST") {
-                storedChain = new Bitcoin(config, node);
-            }
-            /*
-                else if (chain == "STEEM" || chain == "STM") {
-                   storedChain = new Steem(config, node);
-                } else if (chain == "WLS") {
-                   storedChain = new WhaleShares(config, node);
-                } else if (chain == "EOS") {
-                   storedChain = new EOSmainnet(config, node);
-                } else if (chain == "TLOS") {
-                   storedChain = new TLOS(config, node);
-                } else if (chain == "BNB" || chain == "BNB_TEST") {
-                   storedChain = new Binance(config, node);
-                }
-            */
+            if (chain == "EOS") {
+                storedChain = new EOSmainnet(config, node);
+             } else if (chain == "BEOS") {
+                storedChain = new BEOS(config, node);
+             } else if (chain == "TLOS") {
+                storedChain = new TLOS(config, node);
+             }
         } catch (error) {
             console.log(error);
             return;

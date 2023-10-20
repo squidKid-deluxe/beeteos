@@ -10,23 +10,247 @@ import { TextEncoder, TextDecoder } from "util";
 
 export default class EOS extends BlockchainAPI {
 
-    // https://github.com/steemit/steem-js/tree/master/doc#broadcast-api
-
-    _connect(nodeToConnect) {
-        return new Promise((resolve, reject) => {
-            if (nodeToConnect == null) {
-                nodeToConnect = this.getNodes()[0].url;
-            }
-            if (!this.rpc) {
-                this.rpc = new JsonRpc(nodeToConnect, {fetch});
-            }
+    /*
+     * Establish a connection
+     * @param {String} nodeToConnect
+     * @param {Promise} resolve
+     * @param {Promise} reject
+     * @returns {String}
+     */
+    async _establishConnection(nodeToConnect, resolve, reject) {
+        if (!nodeToConnect) {
+            this._connectionFailed(reject, '', 'No node url')
+        }
+    
+        this.rpc = new JsonRpc(nodeToConnect ?? this.getNodes()[0].url, {fetch});
+        try {
+            await this.rpc.get_info();
             this._connectionEstablished(resolve, nodeToConnect);
+        } catch (error) {
+            this._connectionFailed(reject, nodeToConnect, error.message);
+        }
+    }
+
+        /*
+     * Connect to the Bitshares blockchain. (placeholder replacement)
+     * @param {String||null} nodeToConnect
+     * @returns {String}
+     */
+        _connect(nodeToConnect = null) {
+            return new Promise((resolve, reject) => {
+    
+                if (nodeToConnect) {
+                    //console.log(`nodetoconnect: ${nodeToConnect}`)
+                    return this._establishConnection(nodeToConnect, resolve, reject);
+                }
+    
+                if (this._isConnected && this._isConnectedToNode && !nodeToConnect) {
+                    //console.log(`isConnected: ${this._isConnectedToNode}`)
+                    return this._connectionEstablished(resolve, this._isConnectedToNode);
+                }
+    
+                let diff;
+                if (this._nodeCheckTime) {
+                    let now = new Date();
+                    let nowTS = now.getTime();
+                    diff = Math.abs(Math.round((nowTS - this._nodeCheckTime) / 1000));
+                }
+    
+                if (!nodeToConnect && (!this._nodeLatencies || diff && diff > 360)) {
+                    // initializing the blockchain
+                    return this._testNodes().then((res) => {
+                      this._node = res.node;
+                      this._nodeLatencies = res.latencies;
+                      this._nodeCheckTime = res.timestamp;
+                      console.log(`Establishing connection to ${res.node}`);
+                      return this._establishConnection(res.node, resolve, reject);
+                    })
+                    .catch(error => {
+                      console.log(error);
+                      return this._connectionFailed(reject, '', 'Node test fail');
+                    })
+                } else if (!nodeToConnect && this._nodeLatencies) {
+                  // blockchain has previously been initialized
+                  let filteredNodes = this._nodeLatencies
+                                      .filter(item => {
+                                        if (!this._tempBanned.includes(item.url)) {
+                                          return true;
+                                        }
+                                      });
+    
+                  this._nodeLatencies = filteredNodes;
+                  if (!filteredNodes || !filteredNodes.length) {
+                    return this._connectionFailed(reject, '', 'No working nodes');
+                  }
+    
+                  this._node = filteredNodes[0].url;
+                  return this._establishConnection(filteredNodes[0].url, resolve, reject);
+                }
+    
+            });
+        }
+
+    /**
+     * Test a wss url for successful connection.
+     * @param {String} url
+     * @returns {Object}
+     */
+    _testConnection(url) {
+        let timeoutPromise = new Promise((resolve) => {
+            setTimeout(() => {
+                resolve(null);
+            }, 2000);
         });
+
+        let connectionPromise = new Promise(async (resolve, reject) => {
+            //console.log(`Testing: ${url}`);
+            let before = new Date();
+            let beforeTS = before.getTime();
+
+            let socket = new Socket(url);
+            socket.on('connect', () => {
+                let now = new Date();
+                let nowTS = now.getTime();
+                socket.destroy();
+                //console.log(`Success: ${url} (${nowTS - beforeTS}ms)`);
+                return resolve({ url: url, lag: nowTS - beforeTS });
+            });
+
+            socket.on('error', (error) => {
+                //console.log(`Failure: ${url}`);
+                socket.destroy();
+                return resolve(null);
+            });
+        });
+
+        const fastestPromise = Promise.race([connectionPromise, timeoutPromise]).catch(
+            (error) => {
+                return null;
+            }
+        );
+
+        return fastestPromise;
+    }
+
+  /**
+   * Test the wss nodes, return latencies and fastest url.
+   * @returns {Promise}
+   */
+    async _testNodes() {
+      return new Promise(async (resolve, reject) => {
+          let urls = this.getNodes().map(node => node.url);
+
+          let filteredURLS = urls.filter(url => {
+            if (!this._tempBanned || !this._tempBanned.includes(url)) {
+              return true;
+            }
+          });
+
+          return Promise.all(filteredURLS.map(url => this._testConnection(url)))
+          .then((validNodes) => {
+            let filteredNodes = validNodes.filter(x => x);
+            if (filteredNodes.length) {
+              let sortedNodes = filteredNodes.sort((a, b) => a.lag - b.lag);
+              let now = new Date();
+              return resolve({
+                node: sortedNodes[0].url,
+                latencies: sortedNodes,
+                timestamp: now.getTime()
+              });
+            } else {
+              console.error("No valid BTS WSS connections established; Please check your internet connection.")
+              return reject();
+            }
+          })
+          .catch(error => {
+            console.log(error);
+          })
+
+
+      });
+
+    }
+
+    
+    /*
+     * Check if the connection needs reestablished (placeholder replacement)
+     * @returns {Boolean}
+     */
+    async _needsNewConnection() {
+        return new Promise(async (resolve, reject) => {
+            if (
+                !this._isConnected ||
+                !this._isConnectedToNode ||
+                !this._nodeLatencies
+            ) {
+                return resolve(true);
+            }
+    
+            let testConnection = await this._testConnection(this._isConnectedToNode);
+            let connectionResult = testConnection && testConnection.url ? false : true;
+            return resolve(connectionResult);
+        });
+    }
+
+    /**
+     * Verify the private key for an EOS blockchain L1 account
+     * @param {string} accountName 
+     * @param {string} privateKey 
+     * @param {string} chain // EOS, TLOS, BEOS
+     */
+    async verifyAccount(accountName, privateKey, chain = "EOS") {
+
+        let fetchedAccount;
+        try {
+            fetchedAccount = await this.getAccount(accountName);
+            // Keys must resolve to one of these types of permissions
+          } catch (err) {
+            console.log(err);
+            return;
+          }
+
+          if (!fetchedAccount) {
+            console.log("Account not found");
+            return;
+          }
+
+          let publicKey;
+          try {
+            // Derive the public key from the private key provided
+            publicKey = ecc.privateToPublic(privateKey, chain);
+          } catch (err) {
+            // key is likely invalid, an exception was thrown
+            console.log(err)
+            return;
+          }
+
+          if (!publicKey) {
+            console.log("Public key not found");
+            return;
+          }
+
+          const validPermissions = fetchedAccount.permissions.filter((perm) => {
+            // Get the threshold a key needs to perform operations
+            const { threshold } = perm.required_auth;
+            // finally determine if any keys match
+            const matches = perm.required_auth.keys.filter((auth) =>
+              (auth.key === publicKey) && (auth.weight >= threshold));
+            // this is a valid permission should any of the keys and thresholds match
+            return (matches.length > 0);
+          });
+
+          if (validPermissions.length > 0) {
+            console.log("Key is valid");
+            return {
+              fetchedAccount,
+              publicKey,
+            }
+          }
     }
 
     getAccount(accountname) {
         return new Promise((resolve, reject) => {
-            this.ensureConnection().then(result => {
+            this._establishConnection().then(result => {
                 this.rpc.get_account(accountname).then(account => {
                     account.active = {}
                     account.owner = {}
@@ -60,17 +284,24 @@ export default class EOS extends BlockchainAPI {
                 balances.push({
                     asset_type: "UIA",
                     asset_name: "CPU Stake",
-                    balance: parseFloat(account.total_resources.cpu_weight),
+                    balance: parseFloat(account.cpu_weight),
                     owner: "-",
                     prefix: ""
                 });
                 balances.push({
                     asset_type: "UIA",
                     asset_name: "Bandwith Stake",
-                    balance: parseFloat(account.total_resources.net_weight),
+                    balance: parseFloat(account.net_weight),
                     owner: "-",
                     prefix: ""
                 });
+                balances.push({
+                    asset_type: "UIA",
+                    asset_name: `RAM Stake (-${account.ram_usage} bytes)`,
+                    balance : parseFloat(account.ram_quota),
+                    owner: "-",
+                    prefix: ""
+                })
                 resolve(balances);
             });
         });
@@ -178,6 +409,19 @@ export default class EOS extends BlockchainAPI {
             return false;
         }
 
+    }
+
+    /*
+     * Returns an array of default import options. (placeholder replacement)
+     * @returns {Array}
+     */
+    getImportOptions() {
+        return [
+            {
+                type: "ImportKeys",
+                translate_key: "import_keys"
+            }
+        ];
     }
 
 }

@@ -6,10 +6,6 @@ export function formatAccount(account, withTooltip=false) {
     if (accountString.length > 20) {
         displayString = displayString.substring(0, 20) + "...";
     }
-    if (account.accountName != account.accountID) {
-        accountString = accountString + " (" + account.accountID + ")";
-        displayString = displayString + " (" + account.accountID + ")";
-    }
     if (withTooltip) {
         return `<span v-tooltip="${accountString}">${displayString}</span>`;
     } else {
