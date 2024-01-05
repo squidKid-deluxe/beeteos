@@ -1,20 +1,11 @@
 import { defineConfig } from "vite";
 import path from "node:path";
 import electron from "vite-plugin-electron/simple";
-//import vue from "@vitejs/plugin-vue";
 import vue from "@vitejs/plugin-vue";
 
-//const vue = require("@vitejs/plugin-vue");
-
-//import vueJsx from "@vitejs/plugin-vue-jsx";
-
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    //vueJsx({
-      // options are passed on to @vue/babel-plugin-jsx
-    //}),
-    vue({}),
+    vue(),
     electron({
       main: {
         // Shortcut of `build.lib.entry`.
@@ -28,7 +19,6 @@ export default defineConfig({
                 receipt: path.join(__dirname, "receipt.html"),
               },
               external: ["~/lib/applicationMenu", "~/lib/SecureRemote", "~/lib/Actions"],
-              //external: [], // remove local files from external array
               output: {
                 // Provide global variables to use in the UMD build
                 // for externalized deps
