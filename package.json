@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "apiversion": 3,
   "description": "BeetEOS is a stand-alone key-manager and signing app for EOS based blockchains.",
-  "author": "BeetEOS team",
+  "author": "BeetEOS team <nftea.gallery@gmail.com>",
   "license": "MIT",
   "homepage": "https://github.com/beetapp/beeteos",
   "repository": "github:beetapp/beeteos",
