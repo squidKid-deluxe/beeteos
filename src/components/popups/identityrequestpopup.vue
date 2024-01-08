@@ -28,7 +28,9 @@
         if (!props.accounts || !props.accounts.length) {
             return '';
         }
-        return props.accounts[0].accountID;
+        return props.accounts[0].accountID
+            ? props.accounts[0].accountID
+            : props.accounts[0].accountName;
     });
 
     let accountName = computed(() => {

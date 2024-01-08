@@ -17,7 +17,12 @@
     function fetchDapps() {
         let storedDapps = [];
         for (let i = 0; i < store.state.AccountStore.accountlist.length; i++) {
-            let apps = store.getters['OriginStore/walletAccessibleDapps'](store.state.AccountStore.accountlist[i].accountID, store.state.AccountStore.accountlist[i].chain);
+            let apps = store.getters['OriginStore/walletAccessibleDapps'](
+                store.state.AccountStore.accountlist[i].accountID
+                    ? store.state.AccountStore.accountlist[i].accountID
+                    : store.state.AccountStore.accountlist[i].accountName,
+                store.state.AccountStore.accountlist[i].chain
+            );
             if (typeof apps != 'undefined') {
                 storedDapps = storedDapps.concat(apps);
             }
@@ -28,7 +33,12 @@
     let dapps = computed(() => {
         let storedDapps = [];
         for (let i = 0; i < store.state.AccountStore.accountlist.length; i++) {
-            let apps = store.getters['OriginStore/walletAccessibleDapps'](store.state.AccountStore.accountlist[i].accountID, store.state.AccountStore.accountlist[i].chain);
+            let apps = store.getters['OriginStore/walletAccessibleDapps'](
+                store.state.AccountStore.accountlist[i].accountID
+                    ? store.state.AccountStore.accountlist[i].accountID
+                    : store.state.AccountStore.accountlist[i].accountName,
+                store.state.AccountStore.accountlist[i].chain
+            );
             if (typeof apps != 'undefined') {
                 storedDapps = storedDapps.concat(apps);
             }

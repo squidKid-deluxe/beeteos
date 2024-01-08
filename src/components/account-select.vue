@@ -56,7 +56,12 @@
             selectedAccount.value = accounts.value[newVal];
             store.dispatch(
                 "AccountStore/selectAccount",
-                {chain: accounts.value[newVal].chain, accountID: accounts.value[newVal].accountID}
+                {
+                    chain: accounts.value[newVal].chain,
+                    accountID: accounts.value[newVal].accountID
+                        ? accounts.value[newVal].accountID
+                        : accounts.value[newVal].accountName
+                }
             );
         }
     }, {immediate: true});

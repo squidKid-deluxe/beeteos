@@ -33,7 +33,10 @@ const actions = {
         state
     }, payload) {
         return new Promise((resolve, reject) => {
-            let existingAccount = state.accountlist.find(x => x.chain == payload.account.chain && x.accountID == payload.account.accountID)
+            let existingAccount = state.accountlist.find(
+                x => x.chain == payload.account.chain &&
+                (x.accountID == payload.account.accountName || x.accountName === payload.account.accountName)
+            );
 
             if (!existingAccount) {
                 for (let keytype in payload.account.keys) {
@@ -83,7 +86,14 @@ const actions = {
         return new Promise((resolve, reject) => {
             let index = -1;
             for (let i = 0; i < state.accountlist.length; i++) {
-                if ((payload.chain == state.accountlist[i].chain) && (payload.accountID == state.accountlist[i].accountID)) {
+                if (
+                    (payload.chain == state.accountlist[i].chain) &&
+                    (
+                        payload.accountID == state.accountlist[i].accountID ||
+                        payload.accountID == state.accountlist[i].accountName ||
+                        payload.accountName == state.accountlist[i].accountName
+                    )
+                ) {
                     index = i;
                     break;
                 }

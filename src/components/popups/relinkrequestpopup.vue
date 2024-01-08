@@ -36,6 +36,8 @@
                 origin: props.request.origin,
                 chain: props.request.chain,
                 accountId: props.accounts[0].accountID
+                    ? props.accounts[0].accountID
+                    : props.accounts[0].accountName
             }
         );
     });
@@ -52,7 +54,9 @@
                     identityhash: props.request.payload.identityhash,
                     name: props.accounts[0].accountName,
                     chain: props.accounts[0].chain,
-                    id: props.accounts[0].accountID,
+                    id: props.accounts[0].accountID
+                        ? props.accounts[0].accountID
+                        : props.accounts[0].accountName,
                     success: true
                 },
                 request: {
