@@ -296,7 +296,7 @@ export async function injectedCall(request, blockchain) {
       return _promptFail("injectedCall", 'injectedCall', request, reject);
     }
 
-    let regex = /1.2.\d+/g
+    let regexBTS = /1.2.\d+/g
     let isBlocked = false;
     let blockedAccounts;
     let foundIDs = [];
@@ -305,7 +305,7 @@ export async function injectedCall(request, blockchain) {
         // Decentralized warn list
         
         let stringifiedPayload = JSON.stringify(request.payload.params);
-        let regexMatches = stringifiedPayload.matchAll(regex);
+        let regexMatches = stringifiedPayload.matchAll(regexBTS);
         for (const match of regexMatches) {
             foundIDs.push(match[0]);
         }
@@ -345,7 +345,7 @@ export async function injectedCall(request, blockchain) {
             }
 
             let strVirtParams = JSON.stringify(visualizedParams);
-            let regexMatches = strVirtParams.matchAll(regex);
+            let regexMatches = strVirtParams.matchAll(regexBTS);
 
             for (const match of regexMatches) {
                 foundIDs.push(match[0]);
@@ -359,34 +359,57 @@ export async function injectedCall(request, blockchain) {
     }
 
     let types = blockchain.getOperationTypes();
-    let fromField = types.find(type => type.method === request.type).from;
 
     let account;
     let visualizedAccount;
-    if (!fromField || !fromField.length) {
-        account = store.getters['AccountStore/getCurrentSafeAccount']();
-    } else {
-        let visualizeContents = request.payload[fromField];
-        try {
-            visualizedAccount = await blockchain.visualize(visualizeContents);
-        } catch (error) {
-            console.log(error);
-            return _promptFail("injectedCall", request.id, request, reject);
+    if (blockchain._config.identifier === "BTS") {
+        let fromField = types.find(type => type.method === request.type).from;
+        if (!fromField || !fromField.length) {
+            account = store.getters['AccountStore/getCurrentSafeAccount']();
+        } else {
+            let visualizeContents = request.payload[fromField];
+            try {
+                visualizedAccount = await blockchain.visualize(visualizeContents);
+            } catch (error) {
+                console.log(error);
+                return _promptFail("injectedCall", request.id, request, reject);
+            }
         }
     }
 
-    if ((!visualizedAccount && !account || !account.accountName) || !visualizedParams) {
-        console.log("Missing required fields for injected call");
+    if (
+        blockchain._config.identifier === "BTS" &&
+        ((!visualizedAccount && !account || !account.accountName) || !visualizedParams)
+    ) {
+        console.log("Missing required fields for injected BTS call");
         return _promptFail("injectedCall", request.id, request, reject);
     }
 
-    const popupContents = {
-        request: request,
-        visualizedAccount: visualizedAccount || account.accountName,
-        visualizedParams: JSON.stringify(visualizedParams)
-    };
+    if (
+        (blockchain._config.identifier === "EOS" ||
+        blockchain._config.identifier === "BEOS" ||
+        blockchain._config.identifier === "TLOS") &&
+        !visualizedParams
+    ) {
+        console.log(`Missing required fields for injected ${blockchain._config.identifier} based call`);
+        return _promptFail("injectedCall", request.id, request, reject);
+    }
 
-    if (foundIDs.length) {
+    const popupContents = blockchain._config.identifier === "EOS" ||
+                        blockchain._config.identifier === "BEOS" ||
+                        blockchain._config.identifier === "TLOS"
+                            ? {
+                                request: request,
+                                visualizedAccount: "",
+                                visualizedParams: JSON.stringify(visualizedParams)
+                            }
+                            : {
+                                request: request,
+                                visualizedAccount: visualizedAccount || account.accountName,
+                                visualizedParams: JSON.stringify(visualizedParams)
+                            };
+
+    if (blockchain._config.identifier === "BTS" && foundIDs.length) {
         popupContents['isBlockedAccount'] = isBlocked;
     }
 
@@ -407,44 +430,48 @@ export async function injectedCall(request, blockchain) {
 
     ipcRenderer.once(`popupApproved_${request.id}`, async (event, args) => {
         let memoObject;
-        let reference = request;
-        if (request.payload.memo) {
-            let from;
-            let to;
-            if (request.payload.from) {
-                from = request.payload.from;
-                to = request.payload.to;
-            } else if (request.payload.withdraw_from_account) {
-                from = request.payload.withdraw_from_account;
-                to = request.payload.withdraw_to_account;
-            } else if (request.payload.issuer) {
-                from = request.payload.issuer;
-                to = request.payload.issue_to_account;
-            }
+        let _request = request;
+        if (blockchain._config.identifier === "BTS") {        
+            if (request.payload.memo) {
+                let from;
+                let to;
+                if (request.payload.from) {
+                    from = request.payload.from;
+                    to = request.payload.to;
+                } else if (request.payload.withdraw_from_account) {
+                    from = request.payload.withdraw_from_account;
+                    to = request.payload.withdraw_to_account;
+                } else if (request.payload.issuer) {
+                    from = request.payload.issuer;
+                    to = request.payload.issue_to_account;
+                }
 
-            try {
-                memoObject = blockchain._createMemoObject(
-                    from,
-                    to,
-                    request.payload.memo,
-                    request.payload.params.optionalNonce ?? undefined,
-                    request.payload.params.encryptMemo ?? undefined
-                );
-            } catch (error) {
-                console.log(error);
-            }
+                try {
+                    memoObject = blockchain._createMemoObject(
+                        from,
+                        to,
+                        request.payload.memo,
+                        request.payload.params.optionalNonce ?? undefined,
+                        request.payload.params.encryptMemo ?? undefined
+                    );
+                } catch (error) {
+                    console.log(error);
+                }
 
-            reference.payload.memo = memoObject;
+                _request.payload.memo = memoObject;
+            }
         }
 
         return _signOrBroadcast(
             blockchain,
-            reference,
+            _request,
             resolve,
             reject,
             args?.result?.receipt
                 ? {
-                    visualizedAccount: popupContents.visualizedAccount,
+                    visualizedAccount: blockchain._config.identifier === "BTS"
+                        ? popupContents.visualizedAccount
+                        : "",
                     visualizedParams: popupContents.visualizedParams
                 }
                 : null

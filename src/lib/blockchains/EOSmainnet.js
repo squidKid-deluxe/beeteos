@@ -8,6 +8,8 @@ import { JsSignatureProvider } from "eosjs/dist/eosjs-jssig";
 import * as ecc from "eosjs-ecc";
 import { TextEncoder, TextDecoder } from "util";
 
+import beautify from "./EOS/beautify";
+
 const operations = [
     "setalimits",
     "setacctram",
@@ -478,6 +480,39 @@ export default class EOS extends BlockchainAPI {
                 translate_key: "import_keys"
             }
         ];
+    }
+
+    /**
+     * Processing and localizing operations in the transaction
+     * @param {Object[]} trx 
+     * @returns 
+     */
+    async visualize(trx) {    
+        let beautifiedOpPromises = [];
+        for (let i = 0; i < trx.length; i++) {
+            let operation = trx[i];
+            beautifiedOpPromises.push(
+                beautify(operation)
+            );
+        }
+
+        return Promise.all(beautifiedOpPromises)
+            .then((operations) => {
+                if (
+                    operations.some(
+                        (op) =>
+                            !Object.prototype.hasOwnProperty.call(op, "rows")
+                    )
+                ) {
+                    throw new Error(
+                        "There's an issue with the format of an operation!"
+                    );
+                }
+                return operations;
+            })
+            .catch((error) => {
+                console.log(error);
+            });
     }
 
 }
