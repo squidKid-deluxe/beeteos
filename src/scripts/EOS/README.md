@@ -4,7 +4,7 @@ These scripts enable you to easily craft multi-operation transactions for EOS ba
 
 Edit the contents of the `trx` actions array to reference your accounts, and to perform the actions you want.
 
-For more info on how to construct an EOS blockchain based operation, [check these docs]([text](https://github.com/EOSIO/eosjs/tree/master/docs/how-to-guides)), and check out the [EOS beautify file](https://github.com/beetapp/beeteos/blob/master/src/lib/blockchains/EOS/beautify.js) to check the supported operations and their expected parameters.
+For more info on how to construct an EOS blockchain based operation, [check these docs](https://github.com/EOSIO/eosjs/tree/master/docs/how-to-guides), and check out the [EOS beautify file](https://github.com/beetapp/beeteos/blob/master/src/lib/blockchains/EOS/beautify.js) to check the supported operations and their expected parameters.
 
 ## Pre-requisites
 
