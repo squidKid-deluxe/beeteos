@@ -8,6 +8,62 @@ import { JsSignatureProvider } from "eosjs/dist/eosjs-jssig";
 import * as ecc from "eosjs-ecc";
 import { TextEncoder, TextDecoder } from "util";
 
+import beautify from "./EOS/beautify";
+import * as Actions from '../Actions';
+
+const operations = [
+    Actions.GET_ACCOUNT,
+    Actions.REQUEST_SIGNATURE,
+    Actions.INJECTED_CALL,
+    Actions.VOTE_FOR,
+    Actions.SIGN_MESSAGE,
+    Actions.VERIFY_MESSAGE,
+    Actions.TRANSFER,
+    "setalimits",
+    "setacctram",
+    "setacctnet",
+    "setacctcpu",
+    "activate",
+    "delegatebw",
+    "setrex",
+    "deposit",
+    "withdraw",
+    "buyrex",
+    "unstaketorex",
+    "sellrex",
+    "cnclrexorder",
+    "rentcpu",
+    "rentnet",
+    "fundcpuloan",
+    "fundnetloan",
+    "defcpuloan",
+    "defnetloan",
+    "updaterex",
+    "rexexec",
+    "consolidate",
+    "mvtosavings",
+    "mvfrsavings",
+    "closerex",
+    "undelegatebw",
+    "buyram",
+    "buyrambytes",
+    "sellram",
+    "refund",
+    "regproducer",
+    "unregprod",
+    "setram",
+    "setramrate",
+    "voteproducer",
+    "regproxy",
+    "setparams",
+    "claimrewards",
+    "setpriv",
+    "rmvproducer",
+    "updtrevision",
+    "bidname",
+    "bidrefund"
+];
+
 export default class EOS extends BlockchainAPI {
 
     /*
@@ -31,64 +87,78 @@ export default class EOS extends BlockchainAPI {
         }
     }
 
-        /*
+    /**
+     * Returning the list of injectable operations
+     * @returns {Array}
+     */
+    getOperationTypes() {
+        // No virtual operations included
+        return operations.map((op) => {
+            return {
+                id: op,
+                method: op
+            }
+        });
+    }
+
+    /*
      * Connect to the Bitshares blockchain. (placeholder replacement)
      * @param {String||null} nodeToConnect
      * @returns {String}
      */
-        _connect(nodeToConnect = null) {
-            return new Promise((resolve, reject) => {
-    
-                if (nodeToConnect) {
-                    //console.log(`nodetoconnect: ${nodeToConnect}`)
-                    return this._establishConnection(nodeToConnect, resolve, reject);
+    _connect(nodeToConnect = null) {
+        return new Promise((resolve, reject) => {
+
+            if (nodeToConnect) {
+                //console.log(`nodetoconnect: ${nodeToConnect}`)
+                return this._establishConnection(nodeToConnect, resolve, reject);
+            }
+
+            if (this._isConnected && this._isConnectedToNode && !nodeToConnect) {
+                //console.log(`isConnected: ${this._isConnectedToNode}`)
+                return this._connectionEstablished(resolve, this._isConnectedToNode);
+            }
+
+            let diff;
+            if (this._nodeCheckTime) {
+                let now = new Date();
+                let nowTS = now.getTime();
+                diff = Math.abs(Math.round((nowTS - this._nodeCheckTime) / 1000));
+            }
+
+            if (!nodeToConnect && (!this._nodeLatencies || diff && diff > 360)) {
+                // initializing the blockchain
+                return this._testNodes().then((res) => {
+                    this._node = res.node;
+                    this._nodeLatencies = res.latencies;
+                    this._nodeCheckTime = res.timestamp;
+                    console.log(`Establishing connection to ${res.node}`);
+                    return this._establishConnection(res.node, resolve, reject);
+                })
+                .catch(error => {
+                    console.log(error);
+                    return this._connectionFailed(reject, '', 'Node test fail');
+                })
+            } else if (!nodeToConnect && this._nodeLatencies) {
+                // blockchain has previously been initialized
+                let filteredNodes = this._nodeLatencies
+                                    .filter(item => {
+                                    if (!this._tempBanned.includes(item.url)) {
+                                        return true;
+                                    }
+                                    });
+
+                this._nodeLatencies = filteredNodes;
+                if (!filteredNodes || !filteredNodes.length) {
+                return this._connectionFailed(reject, '', 'No working nodes');
                 }
-    
-                if (this._isConnected && this._isConnectedToNode && !nodeToConnect) {
-                    //console.log(`isConnected: ${this._isConnectedToNode}`)
-                    return this._connectionEstablished(resolve, this._isConnectedToNode);
-                }
-    
-                let diff;
-                if (this._nodeCheckTime) {
-                    let now = new Date();
-                    let nowTS = now.getTime();
-                    diff = Math.abs(Math.round((nowTS - this._nodeCheckTime) / 1000));
-                }
-    
-                if (!nodeToConnect && (!this._nodeLatencies || diff && diff > 360)) {
-                    // initializing the blockchain
-                    return this._testNodes().then((res) => {
-                      this._node = res.node;
-                      this._nodeLatencies = res.latencies;
-                      this._nodeCheckTime = res.timestamp;
-                      console.log(`Establishing connection to ${res.node}`);
-                      return this._establishConnection(res.node, resolve, reject);
-                    })
-                    .catch(error => {
-                      console.log(error);
-                      return this._connectionFailed(reject, '', 'Node test fail');
-                    })
-                } else if (!nodeToConnect && this._nodeLatencies) {
-                  // blockchain has previously been initialized
-                  let filteredNodes = this._nodeLatencies
-                                      .filter(item => {
-                                        if (!this._tempBanned.includes(item.url)) {
-                                          return true;
-                                        }
-                                      });
-    
-                  this._nodeLatencies = filteredNodes;
-                  if (!filteredNodes || !filteredNodes.length) {
-                    return this._connectionFailed(reject, '', 'No working nodes');
-                  }
-    
-                  this._node = filteredNodes[0].url;
-                  return this._establishConnection(filteredNodes[0].url, resolve, reject);
-                }
-    
-            });
-        }
+
+                this._node = filteredNodes[0].url;
+                return this._establishConnection(filteredNodes[0].url, resolve, reject);
+            }
+
+        });
+    }
 
     /**
      * Test a wss url for successful connection.
@@ -307,6 +377,30 @@ export default class EOS extends BlockchainAPI {
         });
     }
 
+    /**
+     * Placeholder for blockchain TOTP implementation
+     * @returns Boolean
+     */
+    supportsTOTP() {
+        return true;
+    }
+
+    /**
+     * Placeholder for blockchain QR implementation
+     * @returns Boolean
+     */
+    supportsQR() {
+        return true;
+    }
+    
+    /**
+     * Placeholder for local file processing
+     * @returns Boolean
+     */
+    supportsLocal() {
+        return true;
+    }
+
     sign(transaction, key) {
         return new Promise((resolve, reject) => {
             transaction.signatureProvider = new JsSignatureProvider([key]);
@@ -322,6 +416,7 @@ export default class EOS extends BlockchainAPI {
                 textDecoder: new TextDecoder(),
                 textEncoder: new TextEncoder()
             });
+
             api.transact(
                 {
                     actions: transaction.actions
@@ -329,11 +424,13 @@ export default class EOS extends BlockchainAPI {
                 {
                     blocksBehind: 3,
                     expireSeconds: 30
-
                 }
-            ).then(result => {
-                  resolve(result);
-            }).catch(reject);
+            ).then((result) => {
+                resolve(result);
+            }).catch((error) => {
+                console.log({error});
+                reject();
+            });
         });
     }
 
@@ -372,10 +469,6 @@ export default class EOS extends BlockchainAPI {
             memo = "";
         }
 
-        if (amount.asset_id !== "EOS") {
-            throw "Only EOS supported at the moment."
-        }
-
         let actions = [{
             account: 'eosio.token',
             name: 'transfer',
@@ -408,7 +501,6 @@ export default class EOS extends BlockchainAPI {
         } else {
             return false;
         }
-
     }
 
     /*
@@ -422,6 +514,40 @@ export default class EOS extends BlockchainAPI {
                 translate_key: "import_keys"
             }
         ];
+    }
+
+    /**
+     * Processing and localizing operations in the transaction
+     * @param {Object[]} trx 
+     * @returns 
+     */
+    async visualize(trx) {
+        const _trx = JSON.parse(trx[1]);
+        let beautifiedOpPromises = [];
+        for (let i = 0; i < _trx.actions.length; i++) {
+            let operation = _trx.actions[i];
+            beautifiedOpPromises.push(
+                beautify(operation)
+            );
+        }
+
+        return Promise.all(beautifiedOpPromises)
+            .then((operations) => {
+                if (
+                    operations.some(
+                        (op) =>
+                            !Object.prototype.hasOwnProperty.call(op, "rows")
+                    )
+                ) {
+                    throw new Error(
+                        "There's an issue with the format of an operation!"
+                    );
+                }
+                return operations;
+            })
+            .catch((error) => {
+                console.log(error);
+            });
     }
 
 }

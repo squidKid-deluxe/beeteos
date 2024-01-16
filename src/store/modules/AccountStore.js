@@ -154,6 +154,10 @@ const getters = {
         let currentAccount = state.accountlist[state.selectedIndex];
         return currentAccount.keys.active;
     },
+    getEOSKey: (state) => () => {
+        let currentAccount = state.accountlist[state.selectedIndex];
+        return currentAccount.keys.privateKey;
+    },
     getActiveKey: (state) => (request) => {
       let signing = state.accountlist.filter(account => {
           return (

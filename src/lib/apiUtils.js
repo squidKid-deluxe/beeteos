@@ -158,61 +158,81 @@ async function _signOrBroadcast(
   reject,
   receipt = null
 ) {
-  let finalResult;
-  let notifyTXT = "";
+    let finalResult;
+    let notifyTXT = "";
 
-  let txType = request.payload.params[0] ?? "signAndBroadcast";
-  if (txType == "broadcast") {
-      try {
-        finalResult = await blockchain.broadcast(request.payload.params);
-      } catch (error) {
+    let txType = request.payload.params[0] ?? "signAndBroadcast";
+    if (txType == "broadcast") {
+        try {
+            finalResult = await blockchain.broadcast(request.payload.params);
+        } catch (error) {
+            console.log(error)
+            return _promptFail(txType, request.id, error, reject);
+        }
+        notifyTXT = window.t('common.apiUtils.broadcast');
+        return resolve({result: finalResult});
+    }
+
+    let activeKey;
+    if (blockchain._config.identifier === "BTS") {
+        try {
+            activeKey = request.payload.account_id
+                            ? store.getters['AccountStore/getActiveKey'](request)
+                            : store.getters['AccountStore/getCurrentActiveKey']();
+        } catch (error) {
+            console.log(error)
+            return _promptFail(txType + '.getActiveKey', request.id, error, reject);
+        }
+    } else if (
+        blockchain._config.identifier === "EOS" ||
+        blockchain._config.identifier === "BEOS" ||
+        blockchain._config.identifier === "TLOS"
+    ) {
+        activeKey = store.getters['AccountStore/getEOSKey']();
+    }
+
+    let signingKey;
+    try {
+        signingKey = await getKey(activeKey);
+    } catch (error) {
         console.log(error)
-        return _promptFail(txType, request.id, error, reject);
-      }
-      notifyTXT = window.t('common.apiUtils.broadcast');
-      return resolve({result: finalResult});
-  }
+        return _promptFail(txType + '.getKey', request.id, {error: error, key: activeKey, req: request}, reject);
+    }
 
-  let activeKey;
-  try {
-    activeKey = request.payload.account_id
-                    ? store.getters['AccountStore/getActiveKey'](request)
-                    : store.getters['AccountStore/getCurrentActiveKey']();
-  } catch (error) {
-    console.log(error)
-    return _promptFail(txType + '.getActiveKey', request.id, error, reject);
-  }
-
-  let signingKey;
-  try {
-    signingKey = await getKey(activeKey);
-  } catch (error) {
-    console.log(error)
-    return _promptFail(txType + '.getKey', request.id, {error: error, key: activeKey, req: request}, reject);
-  }
-
-  let transaction;
-  try {
-    transaction = await blockchain.sign(request.payload.params, signingKey);
-  } catch (error) {
-    console.log(error)
-    return _promptFail(txType + '.blockchain.sign', request.id, error, reject);
-  }
-
-  if (txType == "sign") {
-      finalResult = transaction.toObject();
-      notifyTXT = window.t('common.apiUtils.sign');
-  } else if (txType == "signAndBroadcast") {
-      try {
-        finalResult = await blockchain.broadcast(transaction);
-      } catch (error) {
+    let transaction;
+    try {
+        if (blockchain._config.identifier === "BTS") {
+            transaction = await blockchain.sign(request.payload.params, signingKey);
+        } else if (
+            blockchain._config.identifier === "EOS" ||
+            blockchain._config.identifier === "BEOS" ||
+            blockchain._config.identifier === "TLOS"
+        ) {
+            transaction = await blockchain.sign(JSON.parse(request.payload.params[1]), signingKey);
+        }   
+    } catch (error) {
         console.log(error)
-        return _promptFail(txType + ".broadcast", request.id, error, reject);
-      }
-      notifyTXT = window.t('common.apiUtils.signAndBroadcast');
-  }
+        return _promptFail(txType + '.blockchain.sign', request.id, error, reject);
+    }
 
-  store.dispatch("WalletStore/notifyUser", {notify: "request", message: notifyTXT});
+    if (txType == "sign" && blockchain._config.identifier === "BTS") {
+        finalResult = transaction.toObject();
+        notifyTXT = window.t('common.apiUtils.sign');
+    } else if (txType == "signAndBroadcast") {
+        try {
+            finalResult = await blockchain.broadcast(transaction);
+        } catch (error) {
+            console.log(error)
+            return _promptFail(txType + ".broadcast", request.id, error, reject);
+        }
+        notifyTXT = window.t('common.apiUtils.signAndBroadcast');
+    }
+
+    if (!finalResult) {
+        reject("Failed to process approved prompt");
+    }
+
+    store.dispatch("WalletStore/notifyUser", {notify: "request", message: notifyTXT});
 
   if (receipt) {
     try {
@@ -257,11 +277,21 @@ export async function requestSignature(request, blockchain) {
     }
 
     let visualizedAccount;
-    try {
-        visualizedAccount = await blockchain.visualize(request.payload.account_id);
-    } catch (error) {
-        console.log(error);
-        return _promptFail("requestSignature.visualizedAccount", request.id, request, reject);
+    if (blockchain._config.identifier === "BTS") {
+        try {
+            visualizedAccount = await blockchain.visualize(request.payload.account_id);
+        } catch (error) {
+            console.log(error);
+            return _promptFail("requestSignature.visualizedAccount", request.id, request, reject);
+        }
+    } else if (
+        blockchain._config.identifier === "EOS" ||
+        blockchain._config.identifier === "BEOS" ||
+        blockchain._config.identifier === "TLOS"
+    ) {
+        visualizedAccount = request.payload.authorization && request.payload.authorization.length
+            ? request.payload.authorization[0].actor
+            : "";
     }
 
     ipcRenderer.send(
@@ -296,7 +326,7 @@ export async function injectedCall(request, blockchain) {
       return _promptFail("injectedCall", 'injectedCall', request, reject);
     }
 
-    let regex = /1.2.\d+/g
+    let regexBTS = /1.2.\d+/g
     let isBlocked = false;
     let blockedAccounts;
     let foundIDs = [];
@@ -305,7 +335,7 @@ export async function injectedCall(request, blockchain) {
         // Decentralized warn list
         
         let stringifiedPayload = JSON.stringify(request.payload.params);
-        let regexMatches = stringifiedPayload.matchAll(regex);
+        let regexMatches = stringifiedPayload.matchAll(regexBTS);
         for (const match of regexMatches) {
             foundIDs.push(match[0]);
         }
@@ -345,7 +375,7 @@ export async function injectedCall(request, blockchain) {
             }
 
             let strVirtParams = JSON.stringify(visualizedParams);
-            let regexMatches = strVirtParams.matchAll(regex);
+            let regexMatches = strVirtParams.matchAll(regexBTS);
 
             for (const match of regexMatches) {
                 foundIDs.push(match[0]);
@@ -359,34 +389,64 @@ export async function injectedCall(request, blockchain) {
     }
 
     let types = blockchain.getOperationTypes();
-    let fromField = types.find(type => type.method === request.type).from;
 
-    let account;
+    let account = "";
     let visualizedAccount;
-    if (!fromField || !fromField.length) {
-        account = store.getters['AccountStore/getCurrentSafeAccount']();
-    } else {
-        let visualizeContents = request.payload[fromField];
-        try {
-            visualizedAccount = await blockchain.visualize(visualizeContents);
-        } catch (error) {
-            console.log(error);
-            return _promptFail("injectedCall", request.id, request, reject);
+    if (blockchain._config.identifier === "BTS") {
+        let fromField = types.find(type => type.method === request.type).from;
+        if (!fromField || !fromField.length) {
+            account = store.getters['AccountStore/getCurrentSafeAccount']();
+        } else {
+            let visualizeContents = request.payload[fromField];
+            try {
+                visualizedAccount = await blockchain.visualize(visualizeContents);
+            } catch (error) {
+                console.log(error);
+                return _promptFail("injectedCall", request.id, request, reject);
+            }
         }
+    } else if (
+        blockchain._config.identifier === "EOS" ||
+        blockchain._config.identifier === "BEOS" ||
+        blockchain._config.identifier === "TLOS"
+    ) {
+        const _actions = JSON.parse(request.payload.params[1]).actions;
+        visualizedAccount = _actions[0].authorization[0].actor; 
     }
 
-    if ((!visualizedAccount && !account || !account.accountName) || !visualizedParams) {
-        console.log("Missing required fields for injected call");
+    if (
+        blockchain._config.identifier === "BTS" &&
+        ((!visualizedAccount && !account || !account.accountName) || !visualizedParams)
+    ) {
+        console.log("Missing required fields for injected BTS call");
         return _promptFail("injectedCall", request.id, request, reject);
     }
 
-    const popupContents = {
-        request: request,
-        visualizedAccount: visualizedAccount || account.accountName,
-        visualizedParams: JSON.stringify(visualizedParams)
-    };
+    if (
+        (blockchain._config.identifier === "EOS" ||
+        blockchain._config.identifier === "BEOS" ||
+        blockchain._config.identifier === "TLOS") &&
+        !visualizedParams
+    ) {
+        console.log(`Missing required fields for injected ${blockchain._config.identifier} based call`);
+        return _promptFail("injectedCall", request.id, request, reject);
+    }
 
-    if (foundIDs.length) {
+    const popupContents = blockchain._config.identifier === "EOS" ||
+                        blockchain._config.identifier === "BEOS" ||
+                        blockchain._config.identifier === "TLOS"
+                            ? {
+                                request: request,
+                                visualizedAccount: visualizedAccount,
+                                visualizedParams: JSON.stringify(visualizedParams)
+                            }
+                            : {
+                                request: request,
+                                visualizedAccount: visualizedAccount || account.accountName,
+                                visualizedParams: JSON.stringify(visualizedParams)
+                            };
+
+    if (blockchain._config.identifier === "BTS" && foundIDs.length) {
         popupContents['isBlockedAccount'] = isBlocked;
     }
 
@@ -407,39 +467,41 @@ export async function injectedCall(request, blockchain) {
 
     ipcRenderer.once(`popupApproved_${request.id}`, async (event, args) => {
         let memoObject;
-        let reference = request;
-        if (request.payload.memo) {
-            let from;
-            let to;
-            if (request.payload.from) {
-                from = request.payload.from;
-                to = request.payload.to;
-            } else if (request.payload.withdraw_from_account) {
-                from = request.payload.withdraw_from_account;
-                to = request.payload.withdraw_to_account;
-            } else if (request.payload.issuer) {
-                from = request.payload.issuer;
-                to = request.payload.issue_to_account;
-            }
+        let _request = request;
+        if (blockchain._config.identifier === "BTS") {        
+            if (request.payload.memo) {
+                let from;
+                let to;
+                if (request.payload.from) {
+                    from = request.payload.from;
+                    to = request.payload.to;
+                } else if (request.payload.withdraw_from_account) {
+                    from = request.payload.withdraw_from_account;
+                    to = request.payload.withdraw_to_account;
+                } else if (request.payload.issuer) {
+                    from = request.payload.issuer;
+                    to = request.payload.issue_to_account;
+                }
 
-            try {
-                memoObject = blockchain._createMemoObject(
-                    from,
-                    to,
-                    request.payload.memo,
-                    request.payload.params.optionalNonce ?? undefined,
-                    request.payload.params.encryptMemo ?? undefined
-                );
-            } catch (error) {
-                console.log(error);
-            }
+                try {
+                    memoObject = blockchain._createMemoObject(
+                        from,
+                        to,
+                        request.payload.memo,
+                        request.payload.params.optionalNonce ?? undefined,
+                        request.payload.params.encryptMemo ?? undefined
+                    );
+                } catch (error) {
+                    console.log(error);
+                }
 
-            reference.payload.memo = memoObject;
+                _request.payload.memo = memoObject;
+            }
         }
 
         return _signOrBroadcast(
             blockchain,
-            reference,
+            _request,
             resolve,
             reject,
             args?.result?.receipt
@@ -698,6 +760,11 @@ export async function transfer(request, blockchain) {
       return _promptFail("transfer", request.id, 'No beetApp', reject);
     }
 
+    if (!blockchain._config.identifier === "BTS") {
+        // TODO: support other chains
+        return;
+    }
+
     let accountDetails;
     try {
       accountDetails = store.getters['AccountStore/getSafeAccount'](JSON.parse(JSON.stringify(shownBeetApp)));
@@ -738,48 +805,6 @@ export async function transfer(request, blockchain) {
 
     let isBlocked = blockedAccounts.find(x => x === targetID) ? true : false;
 
-    /*
-    if (!request.payload.params.amount && request.payload.params.satoshis) {
-      popupContents.request.payload.params.amount = request.payload.params.satoshis;
-    }
-
-    if (blockchain.supportsFeeCalculation() && request.chain === "BTC") {
-
-        let activeKey = store.getters['AccountStore/getActiveKey'](request);
-
-        let signingKey;
-        try {
-          signingKey = await getKey(activeKey);
-        } catch (error) {
-          return _promptFail("transfer.getKey", request.id, error, reject);
-        }
-
-        if (signingKey) {
-          let transferResult;
-          try {
-              transferResult = await blockchain.transfer(
-                  signingKey, // Can we do this without the key?
-                  accountDetails.accountName,
-                  request.params.to,
-                  {
-                      amount: request.params.amount.satoshis || request.params.amount.amount,
-                      asset_id: request.params.amount.asset_id
-                  },
-                  request.params.memo,
-                  false // PREVENTS SENDING!
-              );
-          } catch (error) {
-              return _promptFail("transfer.falseTransfer", request.id, error, reject);
-          }
-
-          if (transferResult) {
-              popupContents['feeInSatoshis'] = transferResult.feeInSatoshis;
-              popupContents['toSendFee'] = blockchain.format(transferResult.feeInSatoshis);
-          }
-        }
-    }
-    */
-
     store.dispatch("WalletStore/notifyUser", {notify: "request", message: window.t('common.apiUtils.transfer')});
 
     ipcRenderer.send(
@@ -797,6 +822,7 @@ export async function transfer(request, blockchain) {
 
     ipcRenderer.once(`popupApproved_${request.id}`, async (event, result) => {
       let activeKey = store.getters['AccountStore/getActiveKey'](request);
+
       let liveActiveKey;
       try {
         liveActiveKey = await getKey(activeKey);

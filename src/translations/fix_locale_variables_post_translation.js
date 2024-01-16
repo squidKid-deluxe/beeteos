@@ -31,11 +31,11 @@ function getNestedValue(obj, path) {
 }
 
 // 1. import en.json files to use as primary sources of truth
-const en_common = require('./common/en.json');
+//const en_common = require('./common/en.json');
 const en_operations = require('./operations/en.json');
 
 // 2. Extract all nested keys from ./common/en.json and ./operations/en.json
-const en_common_keys = getAllKeys(en_common);
+//const en_common_keys = getAllKeys(en_common);
 const en_operations_keys = getAllKeys(en_operations);
 // The above keys will be identical for all languages, no need to getAllKeys for all languages
 
@@ -43,12 +43,12 @@ const en_operations_keys = getAllKeys(en_operations);
 // for all keys, find those which values contain the variable string e.g {variable}
 // for all keys, find those which values contain the variable string e.g {variable}
 const variable_regex = /{(.+?)}/g;
-const common_variables = [];
+//const common_variables = [];
 const operations_variables = [];
 
 // 3. For all retrieved keys, detect if they have variables like "text {variable} text", and extract an array of these detected variables
+/*
 en_common_keys.forEach((key) => {
-    //const value = en_common[key];
     const value = getNestedValue(en_common, key);
     if (typeof value === 'string') {
         const matches = value.match(variable_regex);
@@ -61,6 +61,7 @@ en_common_keys.forEach((key) => {
         console.log('not a string', key, value);
     }
 });
+*/
 
 en_operations_keys.forEach((key) => {
     const value = getNestedValue(en_operations, key);
@@ -81,6 +82,7 @@ const languages = [
     'da',
     'de',
     'es',
+    'et',
     'fr',
     'it',
     'ja',
@@ -91,10 +93,10 @@ const languages = [
 
 function overwriteVariables() {
     languages.forEach((language) => {
-        const commonLanguageFile = require(`./common/${language}.json`);
+        //const commonLanguageFile = require(`./common/${language}.json`);
         const operationsLanguageFile = require(`./operations/${language}.json`);
 
-        let comparisonCommonJSON = commonLanguageFile; // for overwriting
+        //let comparisonCommonJSON = commonLanguageFile; // for overwriting
         let comparisonOperationsJSON = operationsLanguageFile; // for overwriting
 
         function setNestedValue(obj, lookupKey, newValue) {
@@ -108,7 +110,8 @@ function overwriteVariables() {
             }, obj);
             parent[lastPart] = newValue;
           }
-
+        
+        /*
         en_common_keys
             .forEach((x) => {
                 const {key, matches} = x;
@@ -149,6 +152,7 @@ function overwriteVariables() {
             if (err) return console.log(err);
             console.log(`writing to common ${language}.json`);
         });
+        */
 
         operations_variables
         .forEach((x) => {
@@ -163,6 +167,9 @@ function overwriteVariables() {
                     //console.log({key, comparisonValue, comparisonMatches})
                     const partialRegex = /(?<=\s|^)[^{\s]+(?=\})/g;
                     const partialMatches = comparisonValue.match(partialRegex);
+                    if (!partialMatches || !partialMatches.length) {
+                        return;
+                    }
                     partialMatches.forEach((match, i) => {
                         comparisonValue = comparisonValue.replace(match + "}", matches[i]);
                     });

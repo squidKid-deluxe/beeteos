@@ -120,14 +120,14 @@
                         <b>{{ t(visualizedParams[page - 1].title) }}</b>
                     </div>
                     <div>
-                        {{ t(`operations.injected.BTS.${visualizedParams[page - 1].method}.headers.result`) }}
+                        {{ t(`operations.injected.${props.request.payload.chain}.${visualizedParams[page - 1].method}.headers.result`) }}
                     </div>
                     <div
                         v-for="row in visualizedParams[page - 1].rows"
                         :key="row.key"
                         :class="$tt('subtitle2')"
                     >
-                        {{ t(`operations.injected.BTS.${visualizedParams[page - 1].method}.rows.${row.key}`, row.params) }}
+                        {{ t(`operations.injected.${props.request.payload.chain}.${visualizedParams[page - 1].method}.rows.${row.key}`, row.params) }}
                     </div>
                 </ui-card-text>
             </ui-card-content>

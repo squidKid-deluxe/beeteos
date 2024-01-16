@@ -263,11 +263,25 @@
             }
 
             let authorizedUse = false;
-            for (let i = 0; i < tr.operations.length; i++) {
-                let operation = tr.operations[i];
-                if (settingsRows.value && settingsRows.value.includes(operation[0])) {
-                    authorizedUse = true;
-                    break;
+            if (chain === "BTS") {
+                for (let i = 0; i < tr.operations.length; i++) {
+                    let operation = tr.operations[i];
+                    if (settingsRows.value && settingsRows.value.includes(operation[0])) {
+                        authorizedUse = true;
+                        break;
+                    }
+                }
+            } else if (
+                chain === "EOS" ||
+                chain === "BEOS" ||
+                chain === "TLOS"
+            ) {
+                for (let i = 0; i < tr.actions.length; i++) {
+                    let operation = tr.actions[i];
+                    if (settingsRows.value && settingsRows.value.includes(operation.name)) {
+                        authorizedUse = true;
+                        break;
+                    }
                 }
             }
 
@@ -464,7 +478,7 @@
             </router-link>
         </span>
         <span v-else>
-            {{ t('common.totp.notSupported') }}
+            {{ t('common.totp.unsupported') }}
         </span>
     </div>
 </template>
