@@ -120,7 +120,7 @@
                     text: !type.id === type.method
                         ? `${type.id}: ${type.method.replaceAll("_", " ")}`
                         : type.method.replaceAll("_", " "),
-                    tooltip: t(`operations.injected.BTS.${type.method}.tooltip`)
+                    tooltip: t(`operations.injected.${thisChain}.${type.method}.tooltip`)
                 }
             });
         }
@@ -135,8 +135,8 @@
                 break;
             } else {
                 injectChips.push({
-                    text: `${foundCurrent.id}: ` + t(`operations.injected.BTS.${foundCurrent.method}`),
-                    tooltip: t(`operations.injected.BTS.${foundCurrent.method}.tooltip`)
+                    text: `${foundCurrent.id}: ` + t(`operations.injected.${thisChain}.${foundCurrent.method}`),
+                    tooltip: t(`operations.injected.${thisChain}.${foundCurrent.method}.tooltip`)
                 })
             }   
         }

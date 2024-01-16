@@ -9,8 +9,16 @@ import * as ecc from "eosjs-ecc";
 import { TextEncoder, TextDecoder } from "util";
 
 import beautify from "./EOS/beautify";
+import * as Actions from '../Actions';
 
 const operations = [
+    Actions.GET_ACCOUNT,
+    Actions.REQUEST_SIGNATURE,
+    Actions.INJECTED_CALL,
+    Actions.VOTE_FOR,
+    Actions.SIGN_MESSAGE,
+    Actions.VERIFY_MESSAGE,
+    Actions.TRANSFER,
     "setalimits",
     "setacctram",
     "setacctnet",
@@ -151,8 +159,6 @@ export default class EOS extends BlockchainAPI {
 
         });
     }
-
-
 
     /**
      * Test a wss url for successful connection.
@@ -371,6 +377,30 @@ export default class EOS extends BlockchainAPI {
         });
     }
 
+    /**
+     * Placeholder for blockchain TOTP implementation
+     * @returns Boolean
+     */
+    supportsTOTP() {
+        return true;
+    }
+
+    /**
+     * Placeholder for blockchain QR implementation
+     * @returns Boolean
+     */
+    supportsQR() {
+        return true;
+    }
+    
+    /**
+     * Placeholder for local file processing
+     * @returns Boolean
+     */
+    supportsLocal() {
+        return true;
+    }
+
     sign(transaction, key) {
         return new Promise((resolve, reject) => {
             transaction.signatureProvider = new JsSignatureProvider([key]);
@@ -386,6 +416,7 @@ export default class EOS extends BlockchainAPI {
                 textDecoder: new TextDecoder(),
                 textEncoder: new TextEncoder()
             });
+
             api.transact(
                 {
                     actions: transaction.actions
@@ -394,9 +425,12 @@ export default class EOS extends BlockchainAPI {
                     blocksBehind: 3,
                     expireSeconds: 30
                 }
-            ).then(result => {
-                  resolve(result);
-            }).catch(reject);
+            ).then((result) => {
+                resolve(result);
+            }).catch((error) => {
+                console.log({error});
+                reject();
+            });
         });
     }
 
@@ -487,10 +521,11 @@ export default class EOS extends BlockchainAPI {
      * @param {Object[]} trx 
      * @returns 
      */
-    async visualize(trx) {    
+    async visualize(trx) {
+        const _trx = JSON.parse(trx[1]);
         let beautifiedOpPromises = [];
-        for (let i = 0; i < trx.length; i++) {
-            let operation = trx[i];
+        for (let i = 0; i < _trx.actions.length; i++) {
+            let operation = _trx.actions[i];
             beautifiedOpPromises.push(
                 beautify(operation)
             );

@@ -291,7 +291,7 @@
             </router-link>
         </span>
         <span v-else>
-            {{ t('common.local.notSupported') }}
+            {{ t('common.local.unsupported') }}
         </span>
     </div>
 </template>

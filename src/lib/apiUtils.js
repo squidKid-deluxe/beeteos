@@ -158,61 +158,81 @@ async function _signOrBroadcast(
   reject,
   receipt = null
 ) {
-  let finalResult;
-  let notifyTXT = "";
+    let finalResult;
+    let notifyTXT = "";
 
-  let txType = request.payload.params[0] ?? "signAndBroadcast";
-  if (txType == "broadcast") {
-      try {
-        finalResult = await blockchain.broadcast(request.payload.params);
-      } catch (error) {
+    let txType = request.payload.params[0] ?? "signAndBroadcast";
+    if (txType == "broadcast") {
+        try {
+            finalResult = await blockchain.broadcast(request.payload.params);
+        } catch (error) {
+            console.log(error)
+            return _promptFail(txType, request.id, error, reject);
+        }
+        notifyTXT = window.t('common.apiUtils.broadcast');
+        return resolve({result: finalResult});
+    }
+
+    let activeKey;
+    if (blockchain._config.identifier === "BTS") {
+        try {
+            activeKey = request.payload.account_id
+                            ? store.getters['AccountStore/getActiveKey'](request)
+                            : store.getters['AccountStore/getCurrentActiveKey']();
+        } catch (error) {
+            console.log(error)
+            return _promptFail(txType + '.getActiveKey', request.id, error, reject);
+        }
+    } else if (
+        blockchain._config.identifier === "EOS" ||
+        blockchain._config.identifier === "BEOS" ||
+        blockchain._config.identifier === "TLOS"
+    ) {
+        activeKey = store.getters['AccountStore/getEOSKey']();
+    }
+
+    let signingKey;
+    try {
+        signingKey = await getKey(activeKey);
+    } catch (error) {
         console.log(error)
-        return _promptFail(txType, request.id, error, reject);
-      }
-      notifyTXT = window.t('common.apiUtils.broadcast');
-      return resolve({result: finalResult});
-  }
+        return _promptFail(txType + '.getKey', request.id, {error: error, key: activeKey, req: request}, reject);
+    }
 
-  let activeKey;
-  try {
-    activeKey = request.payload.account_id
-                    ? store.getters['AccountStore/getActiveKey'](request)
-                    : store.getters['AccountStore/getCurrentActiveKey']();
-  } catch (error) {
-    console.log(error)
-    return _promptFail(txType + '.getActiveKey', request.id, error, reject);
-  }
-
-  let signingKey;
-  try {
-    signingKey = await getKey(activeKey);
-  } catch (error) {
-    console.log(error)
-    return _promptFail(txType + '.getKey', request.id, {error: error, key: activeKey, req: request}, reject);
-  }
-
-  let transaction;
-  try {
-    transaction = await blockchain.sign(request.payload.params, signingKey);
-  } catch (error) {
-    console.log(error)
-    return _promptFail(txType + '.blockchain.sign', request.id, error, reject);
-  }
-
-  if (txType == "sign") {
-      finalResult = transaction.toObject();
-      notifyTXT = window.t('common.apiUtils.sign');
-  } else if (txType == "signAndBroadcast") {
-      try {
-        finalResult = await blockchain.broadcast(transaction);
-      } catch (error) {
+    let transaction;
+    try {
+        if (blockchain._config.identifier === "BTS") {
+            transaction = await blockchain.sign(request.payload.params, signingKey);
+        } else if (
+            blockchain._config.identifier === "EOS" ||
+            blockchain._config.identifier === "BEOS" ||
+            blockchain._config.identifier === "TLOS"
+        ) {
+            transaction = await blockchain.sign(JSON.parse(request.payload.params[1]), signingKey);
+        }   
+    } catch (error) {
         console.log(error)
-        return _promptFail(txType + ".broadcast", request.id, error, reject);
-      }
-      notifyTXT = window.t('common.apiUtils.signAndBroadcast');
-  }
+        return _promptFail(txType + '.blockchain.sign', request.id, error, reject);
+    }
 
-  store.dispatch("WalletStore/notifyUser", {notify: "request", message: notifyTXT});
+    if (txType == "sign" && blockchain._config.identifier === "BTS") {
+        finalResult = transaction.toObject();
+        notifyTXT = window.t('common.apiUtils.sign');
+    } else if (txType == "signAndBroadcast") {
+        try {
+            finalResult = await blockchain.broadcast(transaction);
+        } catch (error) {
+            console.log(error)
+            return _promptFail(txType + ".broadcast", request.id, error, reject);
+        }
+        notifyTXT = window.t('common.apiUtils.signAndBroadcast');
+    }
+
+    if (!finalResult) {
+        reject("Failed to process approved prompt");
+    }
+
+    store.dispatch("WalletStore/notifyUser", {notify: "request", message: notifyTXT});
 
   if (receipt) {
     try {
@@ -370,7 +390,7 @@ export async function injectedCall(request, blockchain) {
 
     let types = blockchain.getOperationTypes();
 
-    let account;
+    let account = "";
     let visualizedAccount;
     if (blockchain._config.identifier === "BTS") {
         let fromField = types.find(type => type.method === request.type).from;
@@ -385,6 +405,13 @@ export async function injectedCall(request, blockchain) {
                 return _promptFail("injectedCall", request.id, request, reject);
             }
         }
+    } else if (
+        blockchain._config.identifier === "EOS" ||
+        blockchain._config.identifier === "BEOS" ||
+        blockchain._config.identifier === "TLOS"
+    ) {
+        const _actions = JSON.parse(request.payload.params[1]).actions;
+        visualizedAccount = _actions[0].authorization[0].actor; 
     }
 
     if (
@@ -410,9 +437,7 @@ export async function injectedCall(request, blockchain) {
                         blockchain._config.identifier === "TLOS"
                             ? {
                                 request: request,
-                                visualizedAccount: request.payload.authorization && request.payload.authorization.length
-                                    ? request.payload.authorization[0].actor
-                                    : "",
+                                visualizedAccount: visualizedAccount,
                                 visualizedParams: JSON.stringify(visualizedParams)
                             }
                             : {
@@ -797,6 +822,7 @@ export async function transfer(request, blockchain) {
 
     ipcRenderer.once(`popupApproved_${request.id}`, async (event, result) => {
       let activeKey = store.getters['AccountStore/getActiveKey'](request);
+
       let liveActiveKey;
       try {
         liveActiveKey = await getKey(activeKey);

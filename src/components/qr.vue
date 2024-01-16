@@ -30,7 +30,7 @@
 
         let qrTX;
         try {
-            qrTX = await blockchain.handleQR(data);
+            qrTX = refChain === "BTS" ? await blockchain.handleQR(data) : JSON.parse(data);
         } catch (error) {
             console.log(error);
             ipcRenderer.send("notify", t("common.qr.promptFailure"));
@@ -46,11 +46,25 @@
         }
 
         let authorizedUse = false;
-        for (let i = 0; i < qrTX.operations.length; i++) {
-            let operation = qrTX.operations[i];
-            if (settingsRows.value && settingsRows.value.includes(operation[0])) {
-                authorizedUse = true;
-                break;
+        if (refChain === "BTS") {
+            for (let i = 0; i < qrTX.operations.length; i++) {
+                let operation = qrTX.operations[i];
+                if (settingsRows.value && settingsRows.value.includes(operation[0])) {
+                    authorizedUse = true;
+                    break;
+                }
+            }
+        } else if (
+            refChain === "EOS" ||
+            refChain === "BEOS" ||
+            refChain === "TLOS"
+        ) {
+            for (let i = 0; i < qrTX.actions.length; i++) {
+                let operation = qrTX.actions[i];
+                if (settingsRows.value && settingsRows.value.includes(operation.name)) {
+                    authorizedUse = true;
+                    break;
+                }
             }
         }
 
@@ -71,7 +85,7 @@
                 origin: 'localhost',
                 appName: 'qr',
                 browser: qrChoice.value,
-                params: qrTX.toObject(),
+                params: refChain === "BTS" ? qrTX.toObject() : qrTX,
                 chain: refChain
             }
         }
@@ -287,7 +301,7 @@
             </router-link>
         </span>
         <span v-else>
-            {{ t('common.qr.notSupported') }}
+            {{ t('common.qr.unsupported') }}
         </span>
     </div>
 </template>

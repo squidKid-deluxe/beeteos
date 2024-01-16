@@ -29,6 +29,8 @@
 
     let thead = ref(['ID', 'Method', 'Info'])
 
+    let chain = store.getters['AccountStore/getChain'];
+
     let tbody = ref([
         {
             field: 'id',
@@ -39,13 +41,13 @@
         {
             field: 'method',
             fn: data => {
-                return t(`operations.injected.BTS.${data.method}.method`)
+                return t(`operations.injected.${chain}.${data.method}.method`)
             }
         },
         {
             field: 'info',
             fn: data => {
-                return t(`operations.injected.BTS.${data.method}.tooltip`)
+                return t(`operations.injected.${chain}.${data.method}.tooltip`)
             }
         }
     ]);
