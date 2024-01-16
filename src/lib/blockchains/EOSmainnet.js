@@ -74,16 +74,23 @@ export default class EOS extends BlockchainAPI {
      * @returns {String}
      */
     async _establishConnection(nodeToConnect, resolve, reject) {
-        if (!nodeToConnect) {
+        if ((!nodeToConnect || !nodeToConnect.length) && !this.getNodes()[0].url) {
             this._connectionFailed(reject, '', 'No node url')
         }
     
-        this.rpc = new JsonRpc(nodeToConnect ?? this.getNodes()[0].url, {fetch});
+        const chosenURL = nodeToConnect && nodeToConnect.length
+            ? nodeToConnect
+            : this.getNodes()[0].url;
+
+        this.rpc = new JsonRpc(chosenURL, {fetch});
+
         try {
-            await this.rpc.get_info();
-            this._connectionEstablished(resolve, nodeToConnect);
+            this.rpc.get_info().then(() => {
+                this._connectionEstablished(resolve, chosenURL);
+            })
         } catch (error) {
-            this._connectionFailed(reject, nodeToConnect, error.message);
+            console.log({error})
+            this._connectionFailed(reject, chosenURL, error.message);
         }
     }
 
@@ -340,10 +347,27 @@ export default class EOS extends BlockchainAPI {
         return ecc.PrivateKey.fromString(privateKey).toPublic().toString();
     }
 
+    getTableRows(contract = "eosio.token", accountname, table = "accounts", limit = 100) {
+        return new Promise((resolve, reject) => {
+            this.rpc.get_table_rows({
+                json: true,
+                code: contract,
+                scope: accountname,
+                table: table,
+                limit: limit
+            }).then(result => {
+                if (result && result.rows) {
+                    resolve(result.rows);
+                }
+                reject();
+            }).catch(reject);
+        });
+    }
+
     getBalances(accountName) {
         return new Promise((resolve, reject) => {
+            let balances = [];
             this.getAccount(accountName).then((account) => {
-                let balances = [];
                 balances.push({
                     asset_type: "Core",
                     asset_name: this._getCoreSymbol(),
@@ -371,8 +395,31 @@ export default class EOS extends BlockchainAPI {
                     balance : parseFloat(account.ram_quota),
                     owner: "-",
                     prefix: ""
+                });
+            }).then(() => {
+                // Call getTableRows after getting the account information
+                this.getTableRows("eosio.token", accountName, "accounts", 100).then((tableRows) => {
+                    // Merge the results
+                    tableRows.forEach((row) => {
+                        if (!balances.some((balance) => balance.asset_name === row.balance.split(" ")[1])) {
+                            balances.push({
+                                asset_type: "UIA",
+                                asset_name: row.balance.split(" ")[1], // replace 'key' with the actual property name
+                                balance: parseFloat(row.balance.split(" ")[0]), // replace 'value' with the actual property name
+                                owner: "-",
+                                prefix: ""
+                            });
+                        }
+                    });
+                    console.log({balances, tableRows});
                 })
+            })
+            .then(() => {
                 resolve(balances);
+            })
+            .catch((error) => {
+                console.log({error});
+                reject();
             });
         });
     }
