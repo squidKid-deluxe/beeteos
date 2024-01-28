@@ -151,6 +151,9 @@ const initialState = {
         chainPermissions: {
             BTS: [],
             BTS_TEST: [],
+            EOS: [],
+            BEOS: [],
+            TLOS: [],
             TUSC: [],
             BTC: [],
             BTC_TEST: []

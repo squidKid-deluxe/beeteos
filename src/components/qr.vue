@@ -44,9 +44,9 @@
             qrInProgress.value = false;
             return;
         }
-
+        
         let authorizedUse = false;
-        if (refChain === "BTS") {
+        if (!["BTS", "BTS_TEST", "TUSC"].includes(refChain)) {
             for (let i = 0; i < qrTX.operations.length; i++) {
                 let operation = qrTX.operations[i];
                 if (settingsRows.value && settingsRows.value.includes(operation[0])) {

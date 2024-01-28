@@ -572,7 +572,7 @@ if (currentOS == 'win32') {
                     let urlType = args[3].includes('raw') ? 'rawdeeplink' : 'deeplink';
 
                     let deeplinkingUrl = args[3].replace(
-                        urlType === 'deeplink' ? 'beet://api/' : 'rawbeet://api/',
+                        urlType === 'deeplink' ? 'beeteos://api/' : 'rawbeeteos://api/',
                         ''
                     );
 
@@ -599,16 +599,16 @@ if (currentOS == 'win32') {
             console.log(error)
         }
         
-        app.setAsDefaultProtocolClient('beet', process.execPath, [defaultPath])
-        app.setAsDefaultProtocolClient('rawbeet', process.execPath, [defaultPath])
+        app.setAsDefaultProtocolClient('beeteos', process.execPath, [defaultPath])
+        app.setAsDefaultProtocolClient('rawbeeteos', process.execPath, [defaultPath])
 
         app.whenReady().then(() => {
             createWindow();
         });       
     }
 } else {
-    app.setAsDefaultProtocolClient('beet')
-    app.setAsDefaultProtocolClient('rawbeet')
+    app.setAsDefaultProtocolClient('beeteos')
+    app.setAsDefaultProtocolClient('rawbeeteos')
     
     // mac or linux
     app.whenReady().then(() => {
@@ -620,7 +620,7 @@ if (currentOS == 'win32') {
         let urlType = urlString.contains('raw') ? 'rawdeeplink' : 'deeplink';
 
         let deeplinkingUrl = urlString.replace(
-            urlType === 'deeplink' ? 'beet://api/' : 'rawbeet://api/',
+            urlType === 'deeplink' ? 'beeteos://api/' : 'rawbeeteos://api/',
             ''
         );
 

@@ -3,6 +3,9 @@
     import { ipcRenderer } from 'electron';
     import { useI18n } from 'vue-i18n';
 
+    import ImportCloudPass from "./blockchains/bitshares/ImportCloudPass";
+    import ImportBinFile from "./blockchains/bitshares/ImportBinFile";
+    import ImportMemo from "./blockchains/bitshares/ImportMemo";
     import ImportKeys from "./blockchains/ImportKeys";
 
     import store from '../store/index';
@@ -385,6 +388,21 @@
             >
                 <ImportKeys
                     v-if="selectedImportOption.type == 'ImportKeys'"
+                    v-model="importMethod"
+                    :chain="selectedChain"
+                />
+                <ImportCloudPass
+                    v-else-if="selectedImportOption.type == 'bitshares/ImportCloudPass'"
+                    v-model="importMethod"
+                    :chain="selectedChain"
+                />
+                <ImportBinFile
+                    v-else-if="selectedImportOption.type == 'bitshares/ImportBinFile'"
+                    v-model="importMethod"
+                    :chain="selectedChain"
+                />
+                <ImportMemo
+                    v-else-if="selectedImportOption.type == 'bitshares/ImportMemo'"
                     v-model="importMethod"
                     :chain="selectedChain"
                 />

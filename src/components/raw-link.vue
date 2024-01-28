@@ -166,13 +166,9 @@
         if (apiobj.type === Actions.INJECTED_CALL) {
             let tr;
             try {
-                if (chain === "BTS") {
+                if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
                     tr = blockchain._parseTransactionBuilder(request.payload.params);
-                } else if (
-                    chain === "EOS" ||
-                    chain === "BEOS" ||
-                    chain === "TLOS"
-                ) {
+                } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
                     tr = JSON.parse(request.payload.params[1]);
                 }                
             } catch (error) {
@@ -180,7 +176,7 @@
             }
 
             let authorizedUse = false;
-            if (chain === "BTS") {
+            if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
                 for (let i = 0; i < tr.operations.length; i++) {
                     let operation = tr.operations[i];
                     if (settingsRows.value && settingsRows.value.includes(operation[0])) {
@@ -188,11 +184,7 @@
                         break;
                     }
                 }
-            } else if (
-                chain === "EOS" ||
-                chain === "BEOS" ||
-                chain === "TLOS"
-            ) {
+            } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
                 for (let i = 0; i < tr.actions.length; i++) {
                     let operation = tr.actions[i];
                     if (settingsRows.value && settingsRows.value.includes(operation.name)) {
