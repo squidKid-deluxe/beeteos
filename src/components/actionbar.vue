@@ -1,10 +1,9 @@
 <script setup>
-    import { onMounted, inject, ref, watchEffect, computed } from "vue";
+    import { inject, ref, watchEffect, computed } from "vue";
     import { useI18n } from 'vue-i18n';
     import router from '../router/index.js';
     import store from '../store/index';
-    import RendererLogger from "../lib/RendererLogger";
-    const logger = new RendererLogger();
+    
     const emitter = inject('emitter');
     const { t } = useI18n({ useScope: 'global' });
 

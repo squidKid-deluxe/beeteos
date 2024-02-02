@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed, inject, onMounted } from 'vue';
+    import { ref, inject, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
     import { QrcodeStream } from 'vue-qrcode-reader'
 

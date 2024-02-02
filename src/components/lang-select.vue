@@ -1,13 +1,11 @@
 <script setup>
-    import { ref, onMounted, computed, inject, defineProps } from 'vue';
+    import { ref, computed, inject, defineProps } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import { defaultLocale, selectLocales, menuLocales } from "../config/i18n.js";
-    import RendererLogger from "../lib/RendererLogger";
+    import { defaultLocale, selectLocales } from "../config/i18n.js";
     import store from '../store/index';
 
     const { t } = useI18n({ useScope: 'global' });
     const emitter = inject('emitter');
-    const logger = new RendererLogger();
 
     const props = defineProps({
         location: {
@@ -28,10 +26,6 @@
     );
 
     let open = ref(false);
-
-    onMounted(() => {
-        logger.debug("Language Selector mounted");
-    });
 
     function menuClick() {
         open.value = true;

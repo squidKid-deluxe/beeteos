@@ -1,18 +1,14 @@
 <script setup>
-    import { ref, computed, inject } from 'vue';
+    import { ref, computed, inject, watchEffect } from 'vue';
     import { useI18n } from 'vue-i18n';
     import { ipcRenderer } from "electron";
-    import { v4 as uuidv4 } from 'uuid';
 
     import AccountSelect from "./account-select";
     import Operations from "./blockchains/operations";
     import QRDrag from "./qr/Drag";
     import QRScan from "./qr/Scan";
     import QRUpload from "./qr/Upload";
-    import * as Actions from '../lib/Actions';
 
-    import { injectedCall } from '../lib/apiUtils.js';
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
     import store from '../store/index';
 
     const { t } = useI18n({ useScope: 'global' });
@@ -20,98 +16,6 @@
 
     let opPermissions = ref();
     let qrInProgress = ref(false);
-    let isValidQR = ref();
-
-    emitter.on('detectedQR', async (data) => {
-        qrInProgress.value = true;
-        // check if valid operation in QR code
-        let refChain = store.getters['AccountStore/getChain'];
-        let blockchain = getBlockchainAPI(refChain);
-
-        let qrTX;
-        try {
-            qrTX = refChain === "BTS" ? await blockchain.handleQR(data) : JSON.parse(data);
-        } catch (error) {
-            console.log(error);
-            ipcRenderer.send("notify", t("common.qr.promptFailure"));
-            qrInProgress.value = false;
-            return;
-        }
-
-        if (!qrTX) {
-            console.log("Couldn't process scanned QR code, sorry.")
-            ipcRenderer.send("notify", t("common.qr.promptFailure"));
-            qrInProgress.value = false;
-            return;
-        }
-        
-        let authorizedUse = false;
-        if (!["BTS", "BTS_TEST", "TUSC"].includes(refChain)) {
-            for (let i = 0; i < qrTX.operations.length; i++) {
-                let operation = qrTX.operations[i];
-                if (settingsRows.value && settingsRows.value.includes(operation[0])) {
-                    authorizedUse = true;
-                    break;
-                }
-            }
-        } else if (
-            refChain === "EOS" ||
-            refChain === "BEOS" ||
-            refChain === "TLOS"
-        ) {
-            for (let i = 0; i < qrTX.actions.length; i++) {
-                let operation = qrTX.actions[i];
-                if (settingsRows.value && settingsRows.value.includes(operation.name)) {
-                    authorizedUse = true;
-                    break;
-                }
-            }
-        }
-
-        if (!authorizedUse) {
-            console.log(`Unauthorized QR use of ${refChain} blockchain operation`);
-            ipcRenderer.send("notify", t("common.qr.promptFailure"));
-            qrInProgress.value = false;
-            return;
-        }
-
-        isValidQR.value = true;
-        console.log('Authorized use of QR codes');
-
-        let apiobj = {
-            type: Actions.INJECTED_CALL,
-            id: await uuidv4(),
-            payload: {
-                origin: 'localhost',
-                appName: 'qr',
-                browser: qrChoice.value,
-                params: refChain === "BTS" ? qrTX.toObject() : qrTX,
-                chain: refChain
-            }
-        }
-
-        let status;
-        try {
-            status = await injectedCall(apiobj, blockchain);
-        } catch (error) {
-            console.log(error)
-            ipcRenderer.send("notify", t("common.qr.promptFailure"));
-            qrInProgress.value = false;
-            return;
-        }
-
-        if (!status || !status.result || status.result.isError || status.result.canceled) {
-            console.log("Issue occurred in approved prompt");
-            ipcRenderer.send("notify", t("common.qr.promptFailure"));
-            qrInProgress.value = false;
-            return;
-        }
-
-        console.log(status);
-        ipcRenderer.send("notify", t("common.qr.prompt_success"));
-        qrInProgress.value = false;
-    });
-
     let qrChoice = ref();
     let selectedRows = ref();
 
@@ -137,13 +41,43 @@
         qrChoice.value = choice;
     }
 
+    const chain = computed(() => {
+        return store.getters['AccountStore/getChain'];
+    });
+
+    emitter.on('detectedQR', async (data) => {
+        qrInProgress.value = true;
+        ipcRenderer.send("blockchainRequest", {
+            methods: ["processQR"],
+            chain: chain.value,
+            qrChoice: qrChoice.value,
+            qrData: data,
+            settingsRows: settingsRows.value,
+            location: 'qrData'
+        })
+    });
+
+    ipcRenderer.on('blockchainResponse:qrData', (event, data) => {
+        const { qrData } = data;
+        if (qrData) {
+            console.log({ qrData });
+            ipcRenderer.send("notify", t("common.qr.prompt_success"));
+        }
+        qrInProgress.value = false;
+    });
+
+    ipcRenderer.on('blockchainResponse:qrData:error', (event, data) => {
+        ipcRenderer.send("notify", t("common.qr.promptFailure"));
+        qrInProgress.value = false;
+    });
+
+
     let settingsRows = computed(() => { // last approved operation rows for this chain
         if (!store.state.WalletStore.isUnlocked) {
             return;
         }
 
-        let chain = store.getters['AccountStore/getChain']
-        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain);
+        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain.value);
         if (!rememberedRows || !rememberedRows.length) {
             return [];
         }
@@ -151,27 +85,38 @@
         return rememberedRows;
     });
 
-    let supportsQR = computed(() => {
-        let chain = store.getters['AccountStore/getChain'];
-        return getBlockchainAPI(chain).supportsQR();
+    watchEffect(() => {
+        if (chain.value && chain.value) {
+            ipcRenderer.send("blockchainRequest", {
+                methods: ["supportsQR", "getOperationTypes"],
+                chain: chain.value,
+                location: 'qrInit',
+                settingsRows: settingsRows.value
+            })
+        }
+    });
+
+    let compatible = ref(false);
+    let operationTypes = ref([]);
+    ipcRenderer.on("blockchainResponse:qrInit", (event, data) => {
+        const { supportsQR, getOperationTypes } = data;
+        compatible.value = supportsQR;
+        operationTypes.value = getOperationTypes;
     });
 
     function setScope(newValue) {
         opPermissions.value = newValue;
         if (newValue === 'AllowAll') {
             selectedRows.value = true;
-            let chain = store.getters['AccountStore/getChain'];
-            let types = getBlockchainAPI(chain).getOperationTypes();
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
-                    chain: chain,
-                    rows: types.map(type => type.id)
+                    chain: chain.value,
+                    rows: operationTypes.value.map(type => type.id)
                 }
             );
         }
     }
-
 </script>
 
 <template>
@@ -179,7 +124,7 @@
         v-if="settingsRows"
         class="bottom p-0"
     >
-        <span v-if="supportsQR">
+        <span v-if="compatible">
             <span v-if="qrInProgress">
                 <p>
                     {{ t('common.qr.progress') }}

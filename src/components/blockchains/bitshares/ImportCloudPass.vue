@@ -1,10 +1,8 @@
 <script setup>
-    import {ref, onMounted, inject} from "vue";
+    import {ref, onMounted, defineEmits} from "vue";
     import { useI18n } from 'vue-i18n';
-    import {PrivateKey} from "bitsharesjs";
-    import getBlockchainAPI from "../../../lib/blockchains/blockchainFactory";
+    import { ipcRenderer } from "electron";
 
-    const emitter = inject('emitter');
     const { t } = useI18n({ useScope: 'global' });
 
     const props = defineProps({
@@ -15,6 +13,8 @@
         }
     });
 
+    const emit = defineEmits(['back', 'continue', 'imported']);
+
     onMounted(() => {
         if (!["BTS", "BTS_TEST", "TUSC"].includes(props.chain)) {
             throw "Unsupported chain!";
@@ -22,71 +22,35 @@
     })
 
     let accountname = ref("");
-    let bitshares_cloud_login_password = ref("");
+    let cloud_pass = ref("");
     let legacy = ref(false);
 
     let inProgress = ref();
     let errorOcurred = ref();
 
-    function getAuthoritiesFromPass(legacyMode=false) {
-        let active_seed = accountname.value + 'active' + bitshares_cloud_login_password.value;
-        let owner_seed = accountname.value + 'owner' + bitshares_cloud_login_password.value;
-        let memo_seed = accountname.value + 'memo' + bitshares_cloud_login_password.value;
-        return legacyMode
-            ? {
-                active: PrivateKey.fromSeed(active_seed).toWif(),
-                memo: PrivateKey.fromSeed(active_seed).toWif(), // legacy wallets improperly used active key for memo
-                owner: PrivateKey.fromSeed(owner_seed).toWif()
-            }
-            : {
-                active: PrivateKey.fromSeed(active_seed).toWif(),
-                memo: PrivateKey.fromSeed(memo_seed).toWif(),
-                owner: PrivateKey.fromSeed(owner_seed).toWif()
-            };
-    }
-
-    function back() {
-        emitter.emit('back', true);
-    }
-
     async function next() {
         inProgress.value = true;
         errorOcurred.value = false;
 
-        let blockchain;
-        try {
-            blockchain = getBlockchainAPI(props.chain);
-        } catch (error) {
-            console.log(error);
-            errorOcurred.value = true;
-            inProgress.value = false;
-            return;
-        }
+        ipcRenderer.send("blockchainRequest", {
+            methods: ["verifyCloudAccount"],
+            location: 'importCloudPass',
+            accountname: accountname.value,
+            pass: cloud_pass.value,
+            legacy: legacy.value,
+            chain: props.chain
+        });
+    }
 
-        // abstract UI concept more
-        let authorities;
-        try {
-            authorities = getAuthoritiesFromPass(legacy.value);
-        } catch (error) {
-            console.log(error);
-            errorOcurred.value = true;
-            inProgress.value = false;
-            return;
-        }
+    ipcRenderer.on("blockchainResponse:importCloudPass", (event, data) => {
+        const { account, authorities } = data;
+        if (account && authorities) {
+            console.log("Account verified");
+            cloud_pass.value = "";
 
-        let account;
-        try {
-            account = await blockchain.verifyAccount(accountname.value, authorities);
-        } catch (error) {
-            console.log(error);
-            errorOcurred.value = true;
             inProgress.value = false;
-            return;
-        }
-
-        if (account) {
-            inProgress.value = false;
-            emitter.emit('accounts_to_import', [{
+            emit('continue');
+            emit('imported', [{
                 account: {
                     accountName: accountname.value,
                     accountID: account.id,
@@ -95,7 +59,14 @@
                 }
             }]);
         }
-    }
+    });
+
+    ipcRenderer.on("blockchainResponse:importCloudPass:error", (event, data) => {
+        console.log("Account verification error, check your cloud account password and try again");
+        //cloud_pass.value = "";
+        errorOcurred.value = true;
+        inProgress.value = false;
+    });
 </script>
 
 <template>
@@ -116,7 +87,7 @@
         </p>
         <input
             id="inputActive"
-            v-model="bitshares_cloud_login_password"
+            v-model="cloud_pass"
             type="password"
             class="form-control mb-3 small"
             :placeholder="t('common.btspass_placeholder')"
@@ -133,12 +104,12 @@
                 <ui-button
                     outlined
                     class="step_btn"
-                    @click="back"
+                    @click="emit('back')"
                 >
                     {{ t('common.back_btn') }}
                 </ui-button>
                 <ui-button
-                    v-if="accountname !== '' && bitshares_cloud_login_password !== '' && !inProgress && !errorOcurred"
+                    v-if="accountname !== '' && cloud_pass !== '' && !inProgress && !errorOcurred"
                     raised
                     class="step_btn"
                     type="submit"
@@ -146,7 +117,7 @@
                 >
                     {{ t('common.next_btn') }}
                 </ui-button>
-                <span v-if="accountname !== '' && bitshares_cloud_login_password !== '' && errorOcurred">
+                <span v-if="accountname !== '' && cloud_pass !== '' && errorOcurred">
                     <ui-button
                         raised
                         class="step_btn"
@@ -160,13 +131,13 @@
                         {{ t('common.error_text') }}
                     </ui-alert>
                 </span>
-                <figure v-if="accountname !== '' && bitshares_cloud_login_password !== '' && inProgress">
+                <figure v-if="accountname !== '' && cloud_pass !== '' && inProgress">
                     <ui-progress indeterminate />
                     <br>
                     <figcaption>Connecting to blockchain</figcaption>
                 </figure>
                 <ui-button
-                    v-if="accountname === '' || bitshares_cloud_login_password === ''"
+                    v-if="accountname === '' || cloud_pass === ''"
                     disabled
                     class="step_btn"
                     type="submit"

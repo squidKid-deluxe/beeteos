@@ -3,7 +3,6 @@
     import { ipcRenderer } from 'electron';
     import queryString from "query-string";
     import { useI18n } from 'vue-i18n';
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
 
     import * as Actions from '../lib/Actions';
 
@@ -103,6 +102,30 @@
         });
     })
 
+    watchEffect(() => {
+        let thisType = type.value ?? payload.value?.type;
+        if (thisType !== Actions.REQUEST_LINK) {
+            return;
+        }
+
+        let thisChain = chain.value ?? request.value.chain;
+
+        ipcRenderer.send('blockchainRequest', {
+            methods: ["getOperationTypes"],
+            account: null,
+            chain: thisChain,
+            location: 'popups'
+        });
+    })
+
+    let types = ref();
+    ipcRenderer.on('blockchainResponse:popups', (event, data) => {
+        const { getOperationTypes } = data;
+        if (getOperationTypes) {
+            types.value = getOperationTypes;
+        }
+    });
+
     let chainOperations = computed(() => {
         let thisType = type.value ?? payload.value?.type;
         if (thisType !== Actions.REQUEST_LINK) {
@@ -112,10 +135,9 @@
         let thisChain = chain.value ?? request.value.chain;
         let thisRequest = request.value ?? payload.value.request;
 
-        let types = getBlockchainAPI(thisChain).getOperationTypes();
-        if (!thisRequest.injectables || !thisRequest.injectables.length) {
+        if (types && (!thisRequest.injectables || !thisRequest.injectables.length)) {
             // All operations are required
-            return types.map(type => {
+            return types.value.map(type => {
                 return {
                     text: !type.id === type.method
                         ? `${type.id}: ${type.method.replaceAll("_", " ")}`
@@ -129,7 +151,9 @@
         for (let i = 0; i < thisRequest.injectables.length; i++) {
             // Subset of operations are required
             const currentInjection = thisRequest.injectables[i]; // id
-            let foundCurrent = types.find(type => type.id === currentInjection.id);
+            let foundCurrent = types.value
+                ? types.value.find(type => type.id === currentInjection.id)
+                : null;
             if (!foundCurrent) {
                 injectChips = []; // invalid op will nullify link request
                 break;

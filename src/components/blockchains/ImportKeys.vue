@@ -1,74 +1,83 @@
 <script setup>
-    import {ref, inject, computed} from "vue";
+    import {ref, inject, computed, watchEffect} from "vue";
     import { ipcRenderer } from 'electron';
 
-    const emitter = inject('emitter');
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n({ useScope: 'global' });
-    import getBlockchainAPI from "../../lib/blockchains/blockchainFactory";
 
     const props = defineProps({
         chain: {
             type: String,
             required: true,
             default: ''
+        },
+    });
+
+    const emit = defineEmits(['back', 'continue', 'imported']);
+
+    watchEffect(() => {
+        if (props.chain) {
+            ipcRenderer.send("blockchainRequest", {
+                methods: ["getAccessType", "getSignUpInput"],
+                location: 'importKeysInit',
+                chain: props.chain
+            });
+        }
+    });
+
+    let accessType = ref();
+    let requiredFields = ref();
+    ipcRenderer.on("blockchainResponse:importKeysInit", (event, data) => {
+        const { getAccessType, getSignUpInput } = data;
+        if (getAccessType) {
+            accessType.value = getAccessType;
+        }
+        if (getSignUpInput) {
+            requiredFields.value = getSignUpInput;
         }
     });
 
     let accountname = ref("");
     let privateKey = ref("");
-
-    let accessType = computed(() => {
-        if (!props.chain) {
-            return null;
-        }
-        let blockchain = getBlockchainAPI(props.chain);
-        return blockchain.getAccessType();
-    });
-
-    let requiredFields = computed(() => {
-        if (!props.chain) {
-            return null;
-        }
-        let blockchain = getBlockchainAPI(props.chain);
-        return blockchain.getSignUpInput();
-    });
-
-    function back() {
-        emitter.emit('back', true);
-    }
-
     async function next() {
-        let blockchain = await getBlockchainAPI(props.chain);
-
         let authorities = {};
         if (requiredFields.value.privateKey != null) {
             authorities.privateKey = privateKey.value;
         }
 
-        let account;
-        try {
-            account = await blockchain.verifyAccount(accountname.value, authorities.privateKey, props.chain);
-        } catch (error) {
-            console.log(error);
-            ipcRenderer.send("notify", t("common.unverified_account_error"));
-            return;
-        }
+        console.log("Verifying account");
+        ipcRenderer.send("blockchainRequest", {
+            methods: ["verifyAccount"],
+            location: 'import',
+            accountname: accountname.value,
+            chain: props.chain,
+            authorities: authorities.privateKey
+        });
 
-        if (!account) {
-            console.log("Account not found");
-            return;
-        }
-
-        emitter.emit('accounts_to_import', [{
-            account: {
-                accountName: accountname.value,
-                storedAccount: account,
-                chain: props.chain,
-                keys: authorities
-            }
-        }]);
     }
+
+    ipcRenderer.on("blockchainResponse:import", (event, data) => {
+        const { account, authorities } = data;
+        if (account && authorities) {
+            console.log("Account verified");
+            privateKey.value = "";
+
+            emit('continue');
+            emit('imported', [{
+                account: {
+                    accountName: accountname.value,
+                    accountID: account.id,
+                    chain: props.chain,
+                    keys: authorities
+                }
+            }]);
+        }
+    });
+
+    ipcRenderer.on("blockchainResponse:import:error", (event, data) => {
+        console.log("Account verification error, check your key and try again");
+        ipcRenderer.send("notify", t("common.unverified_account_error"));
+    });
 </script>
 
 <template>
@@ -107,7 +116,7 @@
                 <ui-button
                     outlined
                     class="step_btn"
-                    @click="back"
+                    @click="emit('back')"
                 >
                     {{ t('common.back_btn') }}
                 </ui-button>

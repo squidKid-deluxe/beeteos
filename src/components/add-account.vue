@@ -1,5 +1,5 @@
 <script setup>
-    import { watch, ref, computed, onMounted, inject } from "vue";
+    import { watch, ref, computed, onMounted, inject, defineEmits } from "vue";
     import { ipcRenderer } from 'electron';
     import { useI18n } from 'vue-i18n';
 
@@ -11,12 +11,9 @@
     import store from '../store/index';
     import router from '../router/index.js';
     import { blockchains } from "../config/config.js";
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
-    import RendererLogger from "../lib/RendererLogger";
+    import { watchEffect } from "vue";
 
-    const logger = new RendererLogger();
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
 
     let importMethod = ref(null);
     let walletname = ref("");
@@ -35,24 +32,7 @@
     let selectedImport = ref(0);
 
     let accounts_to_import = ref(null);
-    let import_accounts = ref(null);
-    let enterPassword = ref(null);
     let confirmPassword = ref(null);
-
-    emitter.on('accounts_to_import', response => {
-        if (response) {
-            accounts_to_import.value = response;
-            step.value = 3;
-        }
-    });
-
-    emitter.on('back', response => {
-        step.value -= 1;
-    });
-
-    onMounted(() => {
-        logger.debug("Account-Add wizard Mounted");
-    });
 
     /*
      * Check if the user has a wallet already
@@ -87,15 +67,22 @@
         return !store.state.WalletStore.isUnlocked;
     });
 
-    /*
-     * Array of chain import methods for select menu
-     */
-    let selectedImportOptions = computed(() => {
-        if (!selectedChain.value || !selectedChain.value) {
-            return [];
+    let selectedImportOptions = ref([]);
+    watchEffect(() => {
+        if (selectedChain.value) {
+            ipcRenderer.send("blockchainRequest", {
+                methods: ["getImportOptions"],
+                location: 'addAccount',
+                chain: selectedChain.value
+            });
         }
+    });
 
-        return getBlockchainAPI(selectedChain.value, null).getImportOptions();
+    ipcRenderer.on("blockchainResponse:addAccount", (event, data) => {
+        const { getImportOptions } = data;
+        if (getImportOptions) {
+            selectedImportOptions.value = getImportOptions;
+        }
     });
 
     /*
@@ -119,9 +106,7 @@
             ? selectedImportOptions.value[0]
             : selectedImport.value;
 
-        return getBlockchainAPI(selectedChain.value)
-            .getImportOptions()
-            .find(option => { return option.type == useImport.type; });
+        return selectedImportOptions.value.find(option => { return option.type == useImport.type; });
     });
 
     /*
@@ -390,21 +375,33 @@
                     v-if="selectedImportOption.type == 'ImportKeys'"
                     v-model="importMethod"
                     :chain="selectedChain"
+                    @back="() => step -= 1"
+                    @continue="() => step = 3"
+                    @imported="(x) => accounts_to_import = x"
                 />
                 <ImportCloudPass
                     v-else-if="selectedImportOption.type == 'bitshares/ImportCloudPass'"
                     v-model="importMethod"
                     :chain="selectedChain"
+                    @back="() => step -= 1"
+                    @continue="() => step = 3"
+                    @imported="(x) => accounts_to_import = x"
                 />
                 <ImportBinFile
                     v-else-if="selectedImportOption.type == 'bitshares/ImportBinFile'"
                     v-model="importMethod"
                     :chain="selectedChain"
+                    @back="() => step -= 1"
+                    @continue="() => step = 3"
+                    @imported="(x) => accounts_to_import = x"
                 />
                 <ImportMemo
                     v-else-if="selectedImportOption.type == 'bitshares/ImportMemo'"
                     v-model="importMethod"
                     :chain="selectedChain"
+                    @back="() => step -= 1"
+                    @continue="() => step = 3"
+                    @imported="(x) => accounts_to_import = x"
                 />
                 <div v-else>
                     No import option found

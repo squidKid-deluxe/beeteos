@@ -1,6 +1,3 @@
-import {
-    v4 as uuidv4
-} from "uuid";
 import * as OTPAuth from "otpauth";
 
 import sha256 from "crypto-js/sha256.js";

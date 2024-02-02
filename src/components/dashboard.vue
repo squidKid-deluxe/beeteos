@@ -1,6 +1,5 @@
 <script setup>
-    import { computed, inject, onMounted, watchEffect, ref } from "vue";
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
+    import { computed, inject, onMounted, watchEffect, ref, ipcRenderer } from "vue";
 
     import Balances from "./balances";
     import AccountDetails from "./account-details";
@@ -16,27 +15,72 @@
         }
         return store.getters["AccountStore/getCurrentSafeAccount"]()
     })
-
+    
+    let isConnected = ref();
+    let isConnecting = ref();
     let lastBlockchain = ref(null);
-    let blockchain = ref();
+    let fetchQty = ref(1);
+
     watchEffect(() => {
+        console.log(`Fetching blockchain data #${fetchQty.value}`);
         if (selectedAccount.value) {
-            if (!lastBlockchain.value) {
-                console.log("new account selected")
+            isConnecting.value = true;
+            isConnected.value = false;
+            if (
+                !lastBlockchain.value ||
+                (lastBlockchain.value && lastBlockchain.value !== selectedAccount.value.chain)
+            ) {
                 lastBlockchain.value = selectedAccount.value.chain;
-                blockchain.value = getBlockchainAPI(selectedAccount.value.chain);
+                ipcRenderer.send(
+                    'blockchainRequest',
+                    { 
+                        methods: ['getExplorer', 'getAccessType', 'getBalances'],
+                        account: selectedAccount.value,
+                        chain: selectedAccount.value.chain,
+                        location: 'dashboard'
+                    }
+                );
             } else {
-                if (lastBlockchain.value !== selectedAccount.value.chain) {
-                    console.log("account with different blockchain selected")
-                    lastBlockchain.value = selectedAccount.value.chain;
-                    blockchain.value = null;
-                    blockchain.value = getBlockchainAPI(selectedAccount.value.chain);
-                } else {
-                    console.log("account with same blockchain selected")
-                }
+                ipcRenderer.send(
+                    'blockchainRequest',
+                    {
+                        methods: ['getBalances'],
+                        account: selectedAccount.value,
+                        chain: selectedAccount.value.chain,
+                        location: 'dashboard'
+                    }
+                );
             }
         }
     })
+
+    emitter.on('refreshBalances', () => {
+        console.log("Refreshing balances")
+        fetchQty.value++;
+    });
+
+    const _explorer = ref(null);
+    const _accessType = ref(null);
+    const _balances = ref(null);
+    const _chain = ref(null);
+    
+    ipcRenderer.on(`blockchainResponse:dashboard`, (event, data) => {
+        const { getExplorer, getAccessType, getBalances, chain } = data;
+        if (getExplorer) {
+            _explorer.value = getExplorer;
+        }
+        if (getAccessType) {
+            _accessType.value = getAccessType;
+        }
+        if (getBalances) {
+            _balances.value = getBalances;
+        }
+        if (chain) {
+            _chain.value = chain;
+        }
+        isConnecting.value = false;
+        isConnected.value = true;
+    });
 
     /**
      * Set the initial menu value
@@ -55,11 +99,15 @@
         <span v-if="selectedAccount">
             <AccountDetails
                 :account="selectedAccount"
-                :blockchain="blockchain"
+                :explorer="_explorer"
+                :type="_accessType"
             />
             <Balances
                 :account="selectedAccount"
-                :blockchain="blockchain"
+                :balances="_balances"
+                :chain="_chain"
+                :is-connected="isConnected"
+                :is-connecting="isConnecting"
             />
         </span>
     </span>

@@ -4,7 +4,6 @@
     import store from '../store/index';
     import RendererLogger from "../lib/RendererLogger";
     import {formatAccount} from "../lib/formatter";
-    import getBlockchainAPI from '../lib/blockchains/blockchainFactory';
 
     const { t } = useI18n({ useScope: 'global' });
     const logger = new RendererLogger();
@@ -55,8 +54,6 @@
         if (dapps.value && dapps.value.length) {
             tableData.value = {
                 data: dapps.value.map(dapp => {
-                    let types = getBlockchainAPI(dapp.chain).getOperationTypes();
-
                     return {
                         appName: dapp.appName,
                         origin: dapp.origin,
@@ -64,7 +61,7 @@
                         chain: dapp.chain,
                         injectables: dapp.injectables && dapp.injectables.length
                             ? dapp.injectables.length
-                            : types.length,
+                            : '100%',
                         actions: dapp.id
                     }
                 }),

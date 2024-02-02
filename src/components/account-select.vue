@@ -7,7 +7,7 @@
     const { t } = useI18n({ useScope: 'global' });
 
     let chosenAccount = ref(store.getters["AccountStore/getCurrentIndex"]);
-    let selectedAccount = ref()
+    let selectedAccount = ref();
 
     /*
      * Retrieve the list of accounts for allocation to prop
@@ -28,15 +28,11 @@
      * @returns {Array}
      */
     let accountOptions = computed(() => {
-        let accountList;
-        try {
-            accountList = store.getters['AccountStore/getSafeAccountList'];
-        } catch (error) {
-            console.log(error);
+        if (!accounts.value || !accounts.value || !accounts.value.length) {
             return [];
         }
 
-        let options = accountList.map((account, i) => {
+        let options = accounts.value.map((account, i) => {
             return {
                 label: !account.accountID && account.trackId == 0
                     ? 'cta' // TODO: Replace

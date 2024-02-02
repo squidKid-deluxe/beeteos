@@ -1,7 +1,6 @@
 import {ipcRenderer} from 'electron';
 import store from '../store/index.js';
 import {getKey} from './SecureRemote.js';
-import getBlockchainAPI from "./blockchains/blockchainFactory.js";
 
 /*
  * @param {String} method
@@ -174,7 +173,7 @@ async function _signOrBroadcast(
     }
 
     let activeKey;
-    if (blockchain._config.identifier === "BTS") {
+    if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
         try {
             activeKey = request.payload.account_id
                             ? store.getters['AccountStore/getActiveKey'](request)
@@ -183,11 +182,7 @@ async function _signOrBroadcast(
             console.log(error)
             return _promptFail(txType + '.getActiveKey', request.id, error, reject);
         }
-    } else if (
-        blockchain._config.identifier === "EOS" ||
-        blockchain._config.identifier === "BEOS" ||
-        blockchain._config.identifier === "TLOS"
-    ) {
+    } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
         activeKey = store.getters['AccountStore/getEOSKey']();
     }
 
@@ -201,13 +196,9 @@ async function _signOrBroadcast(
 
     let transaction;
     try {
-        if (blockchain._config.identifier === "BTS") {
+        if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
             transaction = await blockchain.sign(request.payload.params, signingKey);
-        } else if (
-            blockchain._config.identifier === "EOS" ||
-            blockchain._config.identifier === "BEOS" ||
-            blockchain._config.identifier === "TLOS"
-        ) {
+        } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
             transaction = await blockchain.sign(JSON.parse(request.payload.params[1]), signingKey);
         }   
     } catch (error) {
@@ -277,18 +268,14 @@ export async function requestSignature(request, blockchain) {
     }
 
     let visualizedAccount;
-    if (blockchain._config.identifier === "BTS") {
+    if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
         try {
             visualizedAccount = await blockchain.visualize(request.payload.account_id);
         } catch (error) {
             console.log(error);
             return _promptFail("requestSignature.visualizedAccount", request.id, request, reject);
         }
-    } else if (
-        blockchain._config.identifier === "EOS" ||
-        blockchain._config.identifier === "BEOS" ||
-        blockchain._config.identifier === "TLOS"
-    ) {
+    } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
         visualizedAccount = request.payload.authorization && request.payload.authorization.length
             ? request.payload.authorization[0].actor
             : "";
@@ -331,7 +318,7 @@ export async function injectedCall(request, blockchain) {
     let blockedAccounts;
     let foundIDs = [];
 
-    if (blockchain._config.identifier === "BTS") {
+    if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
         // Decentralized warn list
         
         let stringifiedPayload = JSON.stringify(request.payload.params);
@@ -363,7 +350,7 @@ export async function injectedCall(request, blockchain) {
         return _promptFail("injectedCall", request.id, request, reject);
     }
     
-    if (blockchain._config.identifier === "BTS") {
+    if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
         if (!isBlocked && visualizedParams) {
             // account names will have 1.2.x in parenthesis now - check again
             if (!blockedAccounts) {
@@ -392,7 +379,7 @@ export async function injectedCall(request, blockchain) {
 
     let account = "";
     let visualizedAccount;
-    if (blockchain._config.identifier === "BTS") {
+    if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
         let fromField = types.find(type => type.method === request.type).from;
         if (!fromField || !fromField.length) {
             account = store.getters['AccountStore/getCurrentSafeAccount']();
@@ -405,17 +392,13 @@ export async function injectedCall(request, blockchain) {
                 return _promptFail("injectedCall", request.id, request, reject);
             }
         }
-    } else if (
-        blockchain._config.identifier === "EOS" ||
-        blockchain._config.identifier === "BEOS" ||
-        blockchain._config.identifier === "TLOS"
-    ) {
+    } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
         const _actions = JSON.parse(request.payload.params[1]).actions;
         visualizedAccount = _actions[0].authorization[0].actor; 
     }
 
     if (
-        blockchain._config.identifier === "BTS" &&
+        (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) &&
         ((!visualizedAccount && !account || !account.accountName) || !visualizedParams)
     ) {
         console.log("Missing required fields for injected BTS call");
@@ -423,18 +406,14 @@ export async function injectedCall(request, blockchain) {
     }
 
     if (
-        (blockchain._config.identifier === "EOS" ||
-        blockchain._config.identifier === "BEOS" ||
-        blockchain._config.identifier === "TLOS") &&
+        (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) &&
         !visualizedParams
     ) {
         console.log(`Missing required fields for injected ${blockchain._config.identifier} based call`);
         return _promptFail("injectedCall", request.id, request, reject);
     }
 
-    const popupContents = blockchain._config.identifier === "EOS" ||
-                        blockchain._config.identifier === "BEOS" ||
-                        blockchain._config.identifier === "TLOS"
+    const popupContents = (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier))
                             ? {
                                 request: request,
                                 visualizedAccount: visualizedAccount,
@@ -468,7 +447,7 @@ export async function injectedCall(request, blockchain) {
     ipcRenderer.once(`popupApproved_${request.id}`, async (event, args) => {
         let memoObject;
         let _request = request;
-        if (blockchain._config.identifier === "BTS") {        
+        if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {        
             if (request.payload.memo) {
                 let from;
                 let to;

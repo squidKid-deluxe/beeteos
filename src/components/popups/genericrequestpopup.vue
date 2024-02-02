@@ -1,11 +1,9 @@
 <script setup>
     import { ipcRenderer } from 'electron';
-    import { onMounted, computed } from "vue";
+    import { computed } from "vue";
     import { useI18n } from 'vue-i18n';
-    import RendererLogger from "../../lib/RendererLogger";
 
     const { t } = useI18n({ useScope: 'global' });
-    const logger = new RendererLogger();
 
     const props = defineProps({
         request: {
@@ -57,10 +55,6 @@
             return;
         }
         return props.warning;
-    });
-
-    onMounted(() => {
-        logger.debug("Req Popup initialised");
     });
 
     function _clickedAllow() {

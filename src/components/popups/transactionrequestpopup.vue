@@ -1,12 +1,10 @@
 <script setup>
     import { ipcRenderer } from 'electron';
-    import { computed, onMounted, ref, watchEffect } from "vue";
+    import { computed, ref, watchEffect } from "vue";
     import { useI18n } from 'vue-i18n';
     import {formatChain} from "../../lib/formatter";
-    import RendererLogger from "../../lib/RendererLogger";
 
     const { t } = useI18n({ useScope: 'global' });
-    const logger = new RendererLogger();
 
     const props = defineProps({
         request: {
@@ -70,10 +68,6 @@
             ? t('operations.rawsig.sign_btn')
             : t('operations.rawsig.sign_and_broadcast_btn')
     })
-
-    onMounted(() => {
-        logger.debug("Transaction request popup initialised");
-    });
 
     function _clickedAllow() {
         ipcRenderer.send(

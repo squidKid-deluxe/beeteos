@@ -1,38 +1,27 @@
 <script setup>
-    import { onMounted, watchEffect, watch, ref, computed, inject } from 'vue';
+    import { watchEffect, ref, computed, inject } from 'vue';
     import { useI18n } from 'vue-i18n';
     import { ipcRenderer } from "electron";
-    import { v4 as uuidv4 } from 'uuid';
 
-    import sha512 from "crypto-js/sha512.js";
-    import aes from "crypto-js/aes.js";
-    import ENC from 'crypto-js/enc-utf8.js';
-    import Base64 from 'crypto-js/enc-base64';
-
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
     import AccountSelect from "./account-select";
-    import * as Actions from '../lib/Actions';
+    import Operations from "./blockchains/operations";
+
     import store from '../store/index';
     import router from '../router/index.js';
 
-    import {
-        injectedCall,
-        voteFor,
-        transfer
-    } from '../lib/apiUtils.js';
-
-    import Operations from "./blockchains/operations";
-
     const { t } = useI18n({ useScope: 'global' });
     const emitter = inject('emitter');
+
+    let chain = computed(() => {
+        return store.getters['AccountStore/getChain'];
+    });
 
     let settingsRows = computed(() => { // last approved TOTP rows for this chain
         if (!store.state.WalletStore.isUnlocked) {
             return;
         }
 
-        let chain = store.getters['AccountStore/getChain']
-        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain);
+        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain.value);
         if (!rememberedRows || !rememberedRows.length) {
             return [];
         }
@@ -40,9 +29,26 @@
         return rememberedRows;
     });
     
-    let supportsTOTP = computed(() => {
-        let chain = store.getters['AccountStore/getChain'];
-        return getBlockchainAPI(chain).supportsTOTP();
+    watchEffect(() => {
+        if (chain.value) {
+            ipcRenderer.send("blockchainRequest", {
+                methods: ["supportsTOTP", "getOperationTypes"],
+                location: 'totpInit',
+                chain: chain.value
+            })
+        }
+    })
+
+    let compatible = ref(false);
+    let operationTypes = ref([]);
+    ipcRenderer.on("blockchainResponse:totpInit", (event, data) => {
+        const { supportsTOTP, getOperationTypes } = data;
+        if (supportsTOTP) {
+            compatible.value = supportsTOTP;
+        }
+        if (getOperationTypes) {
+            operationTypes.value = getOperationTypes;
+        }
     });
 
     let selectedRows = ref();
@@ -55,13 +61,11 @@
         opPermissions.value = newValue;
         if (newValue === 'AllowAll') {
             selectedRows.value = true;
-            let chain = store.getters['AccountStore/getChain'];
-            let types = getBlockchainAPI(chain).getOperationTypes();
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
-                    chain: chain,
-                    rows: types.map(type => type.id)
+                    chain: chain.value,
+                    rows: operationTypes.value.map(type => type.id)
                 }
             );
         }
@@ -117,209 +121,70 @@
     let copyContents = ref();
     watchEffect(() => {
         if (timestamp && timestamp.value) {
-            let msg = uuidv4();
-            let shaMSG = sha512(msg + timestamp.value.getTime()).toString().substring(0, 15);
-            currentCode.value = shaMSG;
-            copyContents.value = {text: shaMSG, success: () => {console.log('copied code')}};
+            ipcRenderer.send("blockchainRequest", {
+                methods: ["totpCode"],
+                chain: chain.value,
+                location: "totpCode",
+                timestamp: timestamp.value
+            });
         }
     });
 
+    ipcRenderer.on("blockchainResponse:totpCode", (event, args) => {
+        const {code} = args;
+        if (!code) {
+            console.log("No code generated");
+            return;
+        }
+        currentCode.value = code;
+        copyContents.value = {text: code, success: () => {console.log('copied code')}};
+    })
+
     let deepLinkInProgress = ref(false);
     ipcRenderer.on('deeplink', async (event, args) => {
-        /**
-         * Deeplink
-         */
         if (!store.state.WalletStore.isUnlocked || router.currentRoute.value.path != "/totp") {
             console.log("Wallet must be unlocked for deeplinks to work.");
             ipcRenderer.send("notify", t("common.totp.promptFailure"));
             return;
         }
 
-        deepLinkInProgress.value = true;
-        if (!currentCode.value) {
-            console.log('No auth key')
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        let processedRequest;
-        try {
-            processedRequest = decodeURIComponent(args.request);
-        } catch (error) {
-            console.log('Processing request failed')
-            deepLinkInProgress.value = false;
-            return;
-        }
-        
-        let parsedRequest;
-        try {
-            parsedRequest = Base64.parse(processedRequest).toString(ENC)
-        } catch (error) {
-            console.log('Parsing request failed')
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        let decryptedBytes;
-        try {
-            decryptedBytes = aes.decrypt(parsedRequest, currentCode.value);
-        } catch (error) {
-            console.log(error);
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        let decryptedData;
-        try {
-            decryptedData = decryptedBytes.toString(ENC);
-        } catch (error) {
-            console.log(error);
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        let request;
-        try {
-            request = JSON.parse(decryptedData);
-        } catch (error) {
-            console.log(error);
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        if (
-            !request
-            || !request.id
-            || !request.payload
-            || !request.payload.chain
-            || !request.payload.method
-            || request.payload.method === Actions.INJECTED_CALL && !request.payload.params
-        ) {
-            console.log('invalid request format')
-            deepLinkInProgress.value = false;
-            return;
-        }
-        
-        let requestedChain = args.chain || request.payload.chain;
-        let chain = store.getters['AccountStore/getChain'];
-        if (!requestedChain || chain !== requestedChain) {
-            console.log("Incoming deeplink request for wrong chain");
-            ipcRenderer.send("notify", t("common.totp.failed"));
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        if (!Object.keys(Actions).map(key => Actions[key]).includes(request.payload.method)) {
-            console.log("Unsupported request type rejected");
-            return;
-        }
-
-        let blockchainActions = [
-            Actions.TRANSFER,
-            Actions.VOTE_FOR,
-            Actions.INJECTED_CALL
-        ];
-
-        let apiobj = {
-            id: request.id,
-            type: request.payload.method,
-            payload: request.payload
-        };
-
-        let blockchain;
-        if (blockchainActions.includes(apiobj.type)) {
-            try {
-                blockchain = await getBlockchainAPI(chain);
-            } catch (error) {
-                console.log(error);
-                deepLinkInProgress.value = false;
-                return;
-            }
-        } else {
-            console.log({
-                msg: "Unsupported request type rejected",
-                apiobj
-            })
-        }
-
-        if (!blockchain) {
-            console.log('no blockchain')
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        if (!settingsRows.value.includes(apiobj.type)) {
-            console.log("Unauthorized beet operation")
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        if (apiobj.type === Actions.INJECTED_CALL) {
-            let tr;
-            try {
-                tr = blockchain._parseTransactionBuilder(request.payload.params);
-            } catch (error) {
-                console.log(error)
-            }
-
-            let authorizedUse = false;
-            if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
-                for (let i = 0; i < tr.operations.length; i++) {
-                    let operation = tr.operations[i];
-                    if (settingsRows.value && settingsRows.value.includes(operation[0])) {
-                        authorizedUse = true;
-                        break;
-                    }
-                }
-            } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
-                for (let i = 0; i < tr.actions.length; i++) {
-                    let operation = tr.actions[i];
-                    if (settingsRows.value && settingsRows.value.includes(operation.name)) {
-                        authorizedUse = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!authorizedUse) {
-                console.log(`Unauthorized use of deeplinked ${chain} blockchain operation`);              
-                deepLinkInProgress.value = false;
-                return;
-            }
-            console.log("Authorized use of deeplinks")
-        }
-
         let account = store.getters['AccountStore/getCurrentSafeAccount']();
-        if (!account) {
-            console.log('No account')
-            deepLinkInProgress.value = false;
+        if (!account || !currentCode.value) {
+            console.log('Insufficient state to proceed')
             return;
         }
 
-        let status;
-        try {
-            if (apiobj.type === Actions.INJECTED_CALL) {
-                status = await injectedCall(apiobj, blockchain);
-            } else if (apiobj.type === Actions.VOTE_FOR) {
-                status = await voteFor(apiobj, blockchain);
-            } else if (apiobj.type === Actions.TRANSFER) {
-                status = await transfer(apiobj, blockchain);
+        deepLinkInProgress.value = true;
+        ipcRenderer.send(
+            "blockchainRequest",
+            {
+                methods: ["totpDeeplink"],
+                chain: chain.value,
+                location: "totpDeeplink",
+                currentCode: currentCode.value,
+                settingsRows: settingsRows.value,
+                requestContent: args.request
             }
-        } catch (error) {
-            console.log({error: error || "No status"});
-            deepLinkInProgress.value = false;
-            return;
-        }
+        );
+    });
 
-        if (!status || !status.result || status.result.isError || status.result.canceled) {
-            console.log("Issue occurred in approved prompt");
-            deepLinkInProgress.value = false;
-            return;
+    ipcRenderer.on('blockchainResponse:totpDeeplink', (event, args) => {
+        const { totpDeeplink } = args;
+        if (totpDeeplink) {
+            console.log({totpDeeplink})
         }
-
-        console.log(status);
         deepLinkInProgress.value = false;
-    })
+    });
+
+    ipcRenderer.on('blockchainResponse:totpDeeplink:error', (event, args) => {
+        deepLinkInProgress.value = false;
+        ipcRenderer.send("notify", t("common.totp.promptFailure"));
+    });
+
+    ipcRenderer.on('blockchainResponse:totpDeeplink:fail', (event, args) => {
+        deepLinkInProgress.value = false;
+        ipcRenderer.send("notify", t("common.totp.failed"));
+    });
 </script>
 
 <template>
@@ -327,7 +192,7 @@
         v-if="settingsRows"
         class="bottom p-0"
     >
-        <span v-if="supportsTOTP">
+        <span v-if="compatible">
             <AccountSelect />
             <span v-if="deepLinkInProgress">
                 <p style="marginBottom:0px;">

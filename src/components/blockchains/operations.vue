@@ -2,7 +2,7 @@
     import { onMounted, watchEffect, ref, computed, inject } from 'vue';
     import { useI18n } from 'vue-i18n';
     import store from '../../store/index';
-    import getBlockchainAPI from "../../lib/blockchains/blockchainFactory";
+    import { ipcRenderer } from 'electron';
 
     const { t } = useI18n({ useScope: 'global' });
     const emitter = inject('emitter');
@@ -28,9 +28,6 @@
     }
 
     let thead = ref(['ID', 'Method', 'Info'])
-
-    let chain = store.getters['AccountStore/getChain'];
-
     let tbody = ref([
         {
             field: 'id',
@@ -41,33 +38,54 @@
         {
             field: 'method',
             fn: data => {
-                return t(`operations.injected.${chain}.${data.method}.method`)
+                return t(`operations.injected.${chain.value}.${data.method}.method`)
             }
         },
         {
             field: 'info',
             fn: data => {
-                return t(`operations.injected.${chain}.${data.method}.tooltip`)
+                return t(`operations.injected.${chain.value}.${data.method}.tooltip`)
             }
         }
     ]);
 
-    let data = computed(() => {
-        // get operations
-        let chain = store.getters['AccountStore/getChain'];
-        let types = getBlockchainAPI(chain).getOperationTypes();
-        return types;
+    let chain = computed(() => {
+        return store.getters['AccountStore/getChain'];
+    });
+
+    let data = ref([]);
+    watchEffect(() => {
+        if (chain.value) {
+            ipcRenderer.send('blockchainRequest', {
+                methods: ["getOperationTypes"],
+                location: 'operations',
+                chain: chain.value
+            });
+        }
+    });
+
+    ipcRenderer.on('blockchainResponse:operations', (event, arg) => {
+        const { getOperationTypes } = arg;
+        if (getOperationTypes) {
+            data.value = getOperationTypes;
+        }
+    });
+
+    ipcRenderer.on('blockchainResponse:operations:error', (event, arg) => {
+        console.log('Error getting operation types');
     });
 
     let settingsRows = computed(() => {
         // last approved TOTP rows for this chain
-        let chain = store.getters['AccountStore/getChain']
-        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain);
-        if (!rememberedRows || !rememberedRows.length) {
-            return [];
-        }
+        if (chain.value) {
+            let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain.value);
+            if (!rememberedRows || !rememberedRows.length) {
+                return [];
+            }
 
-        return rememberedRows;
+            return rememberedRows;
+        }
+        return [];
     });
 
     let hasSelectedNewRows = ref(false);

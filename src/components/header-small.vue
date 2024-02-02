@@ -1,16 +1,5 @@
 <script setup>
-    import { onMounted } from 'vue';
-    import { useI18n } from 'vue-i18n';
-    import RendererLogger from "../lib/RendererLogger";
-    import langSelect from "./lang-select.vue";
     import MainMenu from "./main-menu.vue";
-
-    const { t } = useI18n({ useScope: 'global' });
-    const logger = new RendererLogger();
-
-    onMounted(() => {
-        logger.debug("Small Header mounted");
-    });
 </script>
 
 <template>

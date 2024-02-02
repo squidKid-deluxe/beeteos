@@ -1,3 +1,4 @@
+/*
 import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
 
 export default class operations {
@@ -11,3 +12,4 @@ export default class operations {
         };
     }
 }
+*/

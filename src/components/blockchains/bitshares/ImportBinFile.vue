@@ -3,9 +3,6 @@
     import { ipcRenderer } from 'electron';
     import { useI18n } from 'vue-i18n';
 
-    import getBlockchainAPI from "../../../lib/blockchains/blockchainFactory";
-    import BTSWalletHandler from "../../../lib/blockchains/bitshares/BTSWalletHandler";
-    const emitter = inject('emitter');
     const { t } = useI18n({ useScope: 'global' });
 
     const props = defineProps({
@@ -15,6 +12,8 @@
             default: ''
         }
     });
+
+    const emit = defineEmits(['back', 'continue', 'imported']);
 
     onMounted(() => {
         if (!["BTS", "BTS_TEST", "TUSC"].includes(props.chain)) {
@@ -28,7 +27,6 @@
     let wallet_file = ref(null);
     let bin_file_password = ref(null);
     let accounts = ref([]);
-    let picked = ref([]);
 
     // function to remove account from accounts given an account id
     function removeAccount(id) {
@@ -37,36 +35,6 @@
 
     function handleWalletSelect(e) {
         wallet_file.value = e.target.files[0];
-    }
-
-    async function _decryptBackup() {
-        let loaderPromise = new Promise((resolve, reject) => {
-            inProgress.value = true;
-            let reader = new FileReader();
-            reader.onload = async evt => {
-                let wh = new BTSWalletHandler(evt.target.result);
-                let unlocked;
-                try {
-                    unlocked = await wh.unlock(bin_file_password.value);
-                } catch (e) {
-                    ipcRenderer.send("notify", t("common.error_text"));
-                    reject(e);
-                }
-
-                if (unlocked) {
-                    accounts.value = await wh.lookupAccounts();
-                    substep1.value = false;
-                    substep2.value = true;
-                    inProgress.value = false;
-                    resolve(null);
-                } else {
-                    inProgress.value = false;
-                    reject("Wallet could not be unlocked");
-                }
-            };
-            reader.readAsBinaryString(wallet_file.value);
-        });
-        return await loaderPromise;
     }
 
     function _getPickedAccounts() {
@@ -89,21 +57,36 @@
         
         if (pickedAccounts && pickedAccounts.length) {
             console.log('importing accounts');
-            emitter.emit('accounts_to_import', pickedAccounts);
+            emit('imported', pickedAccounts);
         }
-    }
-
-    function back() {
-        emitter.emit('back', true);
     }
 
     async function next() {
         if (substep1.value) {
-            await _decryptBackup()
+            ipcRenderer.send("blockchainRequest", {
+                methods: ["decryptBackup"],
+                location: 'importBinFile',
+                chain: props.chain,
+                filePath: wallet_file.value,
+                pass: bin_file_password.value
+            });
         } else {
             _getPickedAccounts();
         }
     }
+
+    ipcRenderer.on("blockchainResponse:importBinFile", (event, data) => {
+        const { decryptBackup } = data;
+        if (decryptBackup) {
+            accounts.value = decryptBackup;
+            substep1.value = false;
+            substep2.value = true;
+        }
+    });
+
+    ipcRenderer.on("blockchainResponse:importBinFile:error", (event, data) => {
+        ipcRenderer.send("notify", t("common.error_text"));
+    })
 </script>
 
 <template>
@@ -145,7 +128,7 @@
             <ui-button
                 outlined
                 class="step_btn"
-                @click="back"
+                @click="emit('back')"
             >
                 {{ t('common.back_btn') }}
             </ui-button>
