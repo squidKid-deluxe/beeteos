@@ -163,7 +163,7 @@ const createModal = async (arg, modalEvent) => {
 
     modalWindows[id] = new BrowserWindow({
         parent: mainWindow,
-        title: 'Beet prompt',
+        title: 'BeetEOS prompt',
         width: modalWidth,
         height: modalHeight,
         minWidth: modalWidth,
@@ -173,9 +173,9 @@ const createModal = async (arg, modalEvent) => {
         maxHeight: modalHeight,
         useContentSize: true,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            enableRemoteModule: true
+            nodeIntegration: false, // Keep false for security
+            contextIsolation: true, // Keep true for security
+            enableRemoteModule: false // Keep false for security
         },
         icon: __dirname + '/img/beet-taskbar.png'
     });
@@ -244,7 +244,7 @@ const createReceipt = async (arg, modalEvent) => {
 
     receiptWindows[id] = new BrowserWindow({
         parent: mainWindow,
-        title: 'Beet receipt',
+        title: 'BeetEOS receipt',
         width: modalWidth,
         height: modalHeight,
         minWidth: modalWidth,
@@ -254,9 +254,9 @@ const createReceipt = async (arg, modalEvent) => {
         maxHeight: modalHeight,
         useContentSize: true,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            enableRemoteModule: true
+            nodeIntegration: false, // Keep false for security
+            contextIsolation: true, // Keep true for security
+            enableRemoteModule: false // Keep false for security
         },
         icon: __dirname + '/img/beet-taskbar.png'
     });
@@ -342,9 +342,9 @@ const createWindow = async () => {
       useContentSize: true,
       autoHideMenuBar: true,
       webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false,
-          enableRemoteModule: true
+          nodeIntegration: false, // Keep false for security
+          contextIsolation: true, // Keep true for security
+          enableRemoteModule: false // Keep false for security
       },
       icon: __dirname + '/img/beet-taskbar.png'
   });
