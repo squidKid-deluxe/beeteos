@@ -1,5 +1,4 @@
 <script setup>
-    import { ipcRenderer } from 'electron';
     import { computed, ref, watchEffect } from "vue";
     import { useI18n } from 'vue-i18n';
     import {formatChain} from "../../lib/formatter";
@@ -70,23 +69,26 @@
     })
 
     function _clickedAllow() {
-        ipcRenderer.send(
-            "clickedAllow",
-            {
-                result: {success: true, receipt: receipt.value},
-                request: {id: props.request.id}
+        window.electron.clickedAllow({
+            result: {
+                success: true,
+                receipt: receipt.value
+            },
+            request: {
+                id: props.request.id
             }
-        );
+        });
     }
 
     function _clickedDeny() {
-        ipcRenderer.send(
-            "clickedDeny",
-            {
-                result: {canceled: true},
-                request: {id: props.request.id}
+        window.electron.clickedDeny({
+            result: {
+                canceled: true
+            },
+            request: {
+                id: props.request.id
             }
-        );
+        });
     }
 
     let jsonData = ref("");

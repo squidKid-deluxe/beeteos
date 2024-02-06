@@ -2,7 +2,6 @@
     import { onMounted, watchEffect, ref, computed, inject } from 'vue';
     import { useI18n } from 'vue-i18n';
     import store from '../../store/index';
-    import { ipcRenderer } from 'electron';
 
     const { t } = useI18n({ useScope: 'global' });
     const emitter = inject('emitter');
@@ -54,25 +53,27 @@
     });
 
     let data = ref([]);
-    watchEffect(() => {
+    watchEffect(async () => {
+        async function initialize() {
+            let blockchainResponse;
+            try {
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ['getOperationTypes'],
+                    location: 'operations',
+                    chain: chain.value
+                });
+            } catch (error) {
+                console.log({error});
+            }
+
+            if (blockchainResponse && blockchainResponse.getOperationTypes) {
+                data.value = blockchainResponse.getOperationTypes;
+            }
+        }
+
         if (chain.value) {
-            ipcRenderer.send('blockchainRequest', {
-                methods: ["getOperationTypes"],
-                location: 'operations',
-                chain: chain.value
-            });
+            initialize();
         }
-    });
-
-    ipcRenderer.on('blockchainResponse:operations', (event, arg) => {
-        const { getOperationTypes } = arg;
-        if (getOperationTypes) {
-            data.value = getOperationTypes;
-        }
-    });
-
-    ipcRenderer.on('blockchainResponse:operations:error', (event, arg) => {
-        console.log('Error getting operation types');
     });
 
     let settingsRows = computed(() => {

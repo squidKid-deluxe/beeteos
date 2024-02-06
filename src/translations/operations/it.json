@@ -1539,6 +1539,22 @@
       }
     },
     "EOS": {
+      "transfer": {
+        "method": "Trasferimento",
+        "title": "Richiesta di trasferimento",
+        "result": "Risultato del trasferimento",
+        "headers": {
+          "request": "Vuoi approvare la seguente richiesta di trasferimento?",
+          "result": "È stata approvata la seguente richiesta di trasferimento:"
+        },
+        "rows": {
+          "from": "Da: {from}",
+          "to": "A: {to}",
+          "quantity": "Quantità: {quantity}",
+          "memo": "Nota: {memo}"
+        },
+        "tooltip": "Invia risorse da un account all'altro"
+      },
       "setalimits": {
         "method": "Imposta i limiti dell'account",
         "title": "Imposta la richiesta dei limiti dell'account",

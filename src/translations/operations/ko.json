@@ -1539,6 +1539,22 @@
       }
     },
     "EOS": {
+      "transfer": {
+        "method": "옮기다",
+        "title": "이전 요청",
+        "result": "전송 결과",
+        "headers": {
+          "request": "다음 이전 요청을 승인하시겠습니까?",
+          "result": "다음 이전 요청이 승인되었습니다."
+        },
+        "rows": {
+          "from": "보낸 사람: {from}",
+          "to": "받는 사람: {to}",
+          "quantity": "수량: {quantity}",
+          "memo": "메모: {memo}"
+        },
+        "tooltip": "한 계정에서 다른 계정으로 자산 보내기"
+      },
       "setalimits": {
         "method": "계정 한도 설정",
         "title": "계정 한도 설정 요청",

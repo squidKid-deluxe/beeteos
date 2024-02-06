@@ -14,19 +14,29 @@ module.exports = env => {
   return {
     target: "electron-renderer",
     mode: translateEnvToMode(env),
+    
     node: {
       __dirname: false,
       __filename: false
     },
+    
+    //node: true,
+    
     externals: [nodeExternals({
-      // this WILL include `jquery` and `webpack/hot/dev-server` in the bundle, as well as `lodash/*`
+       //this WILL include `jquery` and `webpack/hot/dev-server` in the bundle, as well as `lodash/*`
       allowlist: ['vue','typeface-roboto','typeface-rajdhani', '@babel/runtime']
     })],
+    
     resolve: {
-      extensions: ['*', '.js', '.vue', '.json', '.css', '.scss'],
+      extensions: ['*', '.js', '*.mjs', '.vue', '.json', '.css', '.scss'],
       mainFields: ["main", "browser"],
       alias: {
-        vue: "vue/dist/vue.esm-bundler.js",
+        vue: "vue/dist/vue.global.js",
+        mitt: 'mitt/dist/mitt.mjs',
+        //"vue-router": "vue-router/dist/vue-router.global.js",
+        //"balm-ui": "balm-ui/dist/balm-ui.js",
+        "flatpickr": "flatpickr/dist/flatpickr.min.css",
+        "balm-gui": "balm-ui/dist/balm-ui.js",
         "balm-ui-plus": "balm-ui/dist/balm-ui-plus.esm.js",
         "balm-ui-css": "balm-ui/dist/balm-ui.css",
         vue$: 'vue/dist/vue.min.js',
@@ -55,6 +65,17 @@ module.exports = env => {
         {
           test: /\.vue$/,
           loader: 'vue-loader'
+        },
+        {
+          test: /\.mjs$/,
+          exclude: /node_modules/,
+          type: "javascript/auto", 
+        },
+        // Additional rule for .js files in node_modules
+        {
+          test: /\.js$/,
+          include: /node_modules/,
+          type: "javascript/auto",
         },
         {
           test: /\.js$/,

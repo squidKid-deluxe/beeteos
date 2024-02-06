@@ -9,7 +9,10 @@ $light:         #E5EAED;
 $dark:          #29324A;
 $white:         #F4F8FB;
 
-//@use "balm-ui/dist/balm-ui";
+//@use "balm-ui/dist/balm-ui.scss";
+
+//@use 'balm-ui/dist/balm-ui';
+
 
 @use "balm-ui/components/core";
 @use 'balm-ui/components/table/table';
@@ -23,5 +26,6 @@ $white:         #F4F8FB;
 @use 'balm-ui/components/tooltip/tooltip';
 @use 'balm-ui/components/divider/divider';
 @use 'balm-ui/components/tabs/tabs';
+
 
 @import "./styles";

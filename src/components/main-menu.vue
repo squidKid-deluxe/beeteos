@@ -1,5 +1,4 @@
 <script setup>
-    import { ipcRenderer } from 'electron';
     import { ref, computed, inject } from 'vue';
     import { useI18n } from 'vue-i18n';
 
@@ -87,11 +86,19 @@
         router.replace(items.value[data.index].url);
     }
 
+    window.electron.timeout({callback: () => {
+        console.log('wallet timed logout')
+        store.dispatch("WalletStore/logout");
+        router.replace("/");
+    }});
+
+    /*
     ipcRenderer.on('timeout', async (event, args) => {
         console.log('wallet timed logout')
         store.dispatch("WalletStore/logout");
         router.replace("/");
     })
+    */
 </script>
 
 <template>

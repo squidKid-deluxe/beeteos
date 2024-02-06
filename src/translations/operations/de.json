@@ -1539,6 +1539,22 @@
       }
     },
     "EOS": {
+      "transfer": {
+        "method": "Überweisen",
+        "title": "Transferanforderung",
+        "result": "Ergebnis übertragen",
+        "headers": {
+          "request": "Möchten Sie die folgende Übertragungsanfrage genehmigen?",
+          "result": "Der folgende Übertragungsantrag wurde genehmigt:"
+        },
+        "rows": {
+          "from": "Von: {from}",
+          "to": "An: {to}",
+          "quantity": "Menge: {quantity}",
+          "memo": "Notiz: {memo}"
+        },
+        "tooltip": "Senden Sie Vermögenswerte von einem Konto auf ein anderes"
+      },
       "setalimits": {
         "method": "Legen Sie Kontolimits fest",
         "title": "Anfrage zum Festlegen von Kontolimits",

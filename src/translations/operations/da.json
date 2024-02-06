@@ -1539,6 +1539,22 @@
       }
     },
     "EOS": {
+      "transfer": {
+        "method": "Overførsel",
+        "title": "Overførselsanmodning",
+        "result": "Overførselsresultat",
+        "headers": {
+          "request": "Vil du godkende følgende overførselsanmodning?",
+          "result": "Følgende anmodning om overførsel blev godkendt:"
+        },
+        "rows": {
+          "from": "Fra: {from}",
+          "to": "Til: {to}",
+          "quantity": "Mængde: {quantity}",
+          "memo": "Notat: {memo}"
+        },
+        "tooltip": "Send aktiver fra en konto til en anden"
+      },
       "setalimits": {
         "method": "Indstil kontogrænser",
         "title": "Anmodning om indstilling af kontogrænser",

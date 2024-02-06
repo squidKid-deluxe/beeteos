@@ -1,6 +1,5 @@
 <script setup>
     import { useI18n } from 'vue-i18n';
-    import { ipcRenderer } from "electron";
     import store from '../store/index';
 
     const { t } = useI18n({ useScope: 'global' });
@@ -9,13 +8,10 @@
         let walletName = store.getters['WalletStore/getWalletName'];
         let accounts = JSON.stringify(store.getters['AccountStore/getAccountList'].slice());
 
-        ipcRenderer.send(
-            "downloadBackup",
-            {
-                walletName: walletName,
-                accounts: accounts
-            }
-        );
+        window.electron.downloadBackup({
+            walletName: walletName,
+            accounts: accounts
+        });
     }
 </script>
 

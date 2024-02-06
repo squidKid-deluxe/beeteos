@@ -1,7 +1,6 @@
 <script setup>
-    import {ref, onMounted, defineEmits} from "vue";
+    import { ref, onMounted } from "vue";
     import { useI18n } from 'vue-i18n';
-    import { ipcRenderer } from "electron";
 
     const { t } = useI18n({ useScope: 'global' });
 
@@ -32,41 +31,43 @@
         inProgress.value = true;
         errorOcurred.value = false;
 
-        ipcRenderer.send("blockchainRequest", {
-            methods: ["verifyCloudAccount"],
-            location: 'importCloudPass',
-            accountname: accountname.value,
-            pass: cloud_pass.value,
-            legacy: legacy.value,
-            chain: props.chain
-        });
-    }
-
-    ipcRenderer.on("blockchainResponse:importCloudPass", (event, data) => {
-        const { account, authorities } = data;
-        if (account && authorities) {
-            console.log("Account verified");
-            cloud_pass.value = "";
-
+        let blockchainResponse;
+        try {
+            blockchainResponse = await window.electron.blockchainRequest({
+                methods: ["verifyCloudAccount"],
+                accountname: accountname.value,
+                pass: cloud_pass.value,
+                legacy: legacy.value,
+                chain: props.chain
+            });
+        } catch (error) {
+            console.log(error);
+            console.log("Account verification error, check your cloud account password and try again");
+            errorOcurred.value = true;
             inProgress.value = false;
-            emit('continue');
-            emit('imported', [{
-                account: {
-                    accountName: accountname.value,
-                    accountID: account.id,
-                    chain: props.chain,
-                    keys: authorities
-                }
-            }]);
+            return;
         }
-    });
 
-    ipcRenderer.on("blockchainResponse:importCloudPass:error", (event, data) => {
-        console.log("Account verification error, check your cloud account password and try again");
-        //cloud_pass.value = "";
-        errorOcurred.value = true;
+        if (!blockchainResponse || !blockchainResponse.verifyCloudAccount) {
+            console.log("Account verification error, check your cloud account password and try again");
+            errorOcurred.value = true;
+            inProgress.value = false;
+            return;
+        }
+
+        console.log("Account verified");
+        cloud_pass.value = "";
         inProgress.value = false;
-    });
+        emit('continue');
+        emit('imported', [{
+            account: {
+                accountName: accountname.value,
+                accountID: blockchainResponse.verifyCloudAccount.id,
+                chain: props.chain,
+                keys: blockchainResponse.verifyCloudAccount.authorities
+            }
+        }]);
+    }
 </script>
 
 <template>

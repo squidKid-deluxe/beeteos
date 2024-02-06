@@ -1,6 +1,5 @@
 <script setup>
     import {ref, inject, computed, watchEffect} from "vue";
-    import { ipcRenderer } from 'electron';
 
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n({ useScope: 'global' });
@@ -15,25 +14,32 @@
 
     const emit = defineEmits(['back', 'continue', 'imported']);
 
-    watchEffect(() => {
-        if (props.chain) {
-            ipcRenderer.send("blockchainRequest", {
-                methods: ["getAccessType", "getSignUpInput"],
-                location: 'importKeysInit',
-                chain: props.chain
-            });
-        }
-    });
-
     let accessType = ref();
     let requiredFields = ref();
-    ipcRenderer.on("blockchainResponse:importKeysInit", (event, data) => {
-        const { getAccessType, getSignUpInput } = data;
-        if (getAccessType) {
-            accessType.value = getAccessType;
+    watchEffect(() => {
+        async function initialize() {
+            let blockchainRequest;
+            try {
+                blockchainRequest = window.electron.blockchainRequest({
+                    methods: ["getAccessType", "getSignUpInput"],
+                    chain: props.chain
+                });
+            } catch (error) {
+                console.log(error);
+                return;
+            }
+            
+            if (blockchainRequest && blockchainRequest.getAccessType) {
+                accessType.value = blockchainRequest.getAccessType;
+            }
+
+            if (blockchainRequest && blockchainRequest.getSignUpInput) {
+                requiredFields.value = blockchainRequest.getSignUpInput;
+            }
+
         }
-        if (getSignUpInput) {
-            requiredFields.value = getSignUpInput;
+        if (props.chain) {
+            initialize();
         }
     });
 
@@ -46,19 +52,23 @@
         }
 
         console.log("Verifying account");
-        ipcRenderer.send("blockchainRequest", {
-            methods: ["verifyAccount"],
-            location: 'import',
-            accountname: accountname.value,
-            chain: props.chain,
-            authorities: authorities.privateKey
-        });
 
-    }
+        let blockchainRequest;
+        try {
+            blockchainRequest = await window.electron.blockchainRequest({
+                methods: ["verifyAccount"],
+                accountname: accountname.value,
+                chain: props.chain,
+                authorities: authorities.privateKey
+            });
+        } catch (error) {
+            console.log(error);
+            console.log("Account verification error, check your key and try again");
+            window.electron.notify(t("common.unverified_account_error"));
+            return;
+        }
 
-    ipcRenderer.on("blockchainResponse:import", (event, data) => {
-        const { account, authorities } = data;
-        if (account && authorities) {
+        if (blockchainRequest && blockchainRequest.verifyAccount) {
             console.log("Account verified");
             privateKey.value = "";
 
@@ -66,18 +76,14 @@
             emit('imported', [{
                 account: {
                     accountName: accountname.value,
-                    accountID: account.id,
+                    accountID: blockchainRequest.verifyAccount.id,
                     chain: props.chain,
                     keys: authorities
                 }
             }]);
         }
-    });
 
-    ipcRenderer.on("blockchainResponse:import:error", (event, data) => {
-        console.log("Account verification error, check your key and try again");
-        ipcRenderer.send("notify", t("common.unverified_account_error"));
-    });
+    }
 </script>
 
 <template>

@@ -1,7 +1,6 @@
 <script setup>
     import { ref, computed, inject, watchEffect } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import { ipcRenderer } from "electron";
 
     import AccountSelect from "./account-select";
     import Operations from "./blockchains/operations";
@@ -47,30 +46,30 @@
 
     emitter.on('detectedQR', async (data) => {
         qrInProgress.value = true;
-        ipcRenderer.send("blockchainRequest", {
-            methods: ["processQR"],
-            chain: chain.value,
-            qrChoice: qrChoice.value,
-            qrData: data,
-            settingsRows: settingsRows.value,
-            location: 'qrData'
-        })
-    });
 
-    ipcRenderer.on('blockchainResponse:qrData', (event, data) => {
-        const { qrData } = data;
-        if (qrData) {
-            console.log({ qrData });
-            ipcRenderer.send("notify", t("common.qr.prompt_success"));
+        let blockchainResponse;
+        try {
+            blockchainResponse = await window.electron.blockchainRequest({
+                methods: ["processQR"],
+                chain: chain.value,
+                qrChoice: qrChoice.value,
+                qrData: data,
+                settingsRows: settingsRows.value,
+                location: 'qrData'
+            });
+        } catch (error) {
+            console.log({error});
+            window.electron.notify(t("common.qr.promptFailure"));
+            qrInProgress.value = false;
+            return;
+        }
+
+        if (blockchainResponse) {
+            console.log({ blockchainResponse });
+            window.electron.notify(t("common.qr.prompt_success"));
         }
         qrInProgress.value = false;
     });
-
-    ipcRenderer.on('blockchainResponse:qrData:error', (event, data) => {
-        ipcRenderer.send("notify", t("common.qr.promptFailure"));
-        qrInProgress.value = false;
-    });
-
 
     let settingsRows = computed(() => { // last approved operation rows for this chain
         if (!store.state.WalletStore.isUnlocked) {
@@ -85,23 +84,35 @@
         return rememberedRows;
     });
 
-    watchEffect(() => {
-        if (chain.value && chain.value) {
-            ipcRenderer.send("blockchainRequest", {
-                methods: ["supportsQR", "getOperationTypes"],
-                chain: chain.value,
-                location: 'qrInit',
-                settingsRows: settingsRows.value
-            })
-        }
-    });
-
     let compatible = ref(false);
     let operationTypes = ref([]);
-    ipcRenderer.on("blockchainResponse:qrInit", (event, data) => {
-        const { supportsQR, getOperationTypes } = data;
-        compatible.value = supportsQR;
-        operationTypes.value = getOperationTypes;
+    watchEffect(() => {
+        async function initialize() {
+            let blockchainResponse;
+            try {
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ["supportsQR", "getOperationTypes"],
+                    chain: chain.value,
+                    location: 'qrInit',
+                    settingsRows: settingsRows.value
+                });
+            } catch (error) {
+                console.log({error});
+                return;
+            }
+
+            if (!blockchainResponse) {
+                return;
+            }
+
+            const { supportsQR, getOperationTypes } = blockchainResponse;
+            compatible.value = supportsQR;
+            operationTypes.value = getOperationTypes;
+        }
+        
+        if (chain.value && chain.value) {
+            initialize();
+        }
     });
 
     function setScope(newValue) {

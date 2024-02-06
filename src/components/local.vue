@@ -1,7 +1,6 @@
 <script setup>
     import { ref, computed, inject, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import { ipcRenderer } from "electron";
 
     import AccountSelect from "./account-select";
     import Operations from "./blockchains/operations";
@@ -48,24 +47,38 @@
     let supportsLocal = ref(false);
     let chainOperationTypes = ref([]);
     onMounted(async () => {
-        ipcRenderer.send(
-            'blockchainRequest',
-            { 
-                methods: ['supportsLocal', 'getOperationTypes'],
-                chain: chain.value,
-                location: 'local'
+        async function initialize() {
+            let blockchainResponse;
+            try {
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ['supportsLocal', 'getOperationTypes'],
+                    chain: chain.value,
+                    location: 'local'
+                });
+            } catch (error) {
+                console.log({error});
+                inProgress.value = false;
+                window.electron.notify(t("common.local.promptFailure"));
+                return;
             }
-        );
-    });
 
-    ipcRenderer.on('blockchainResponse:local', (event, data) => {
-        const { supportsLocal, getOperationTypes } = data;
-        if (supportsLocal) {
-            supportsLocal.value = supportsLocal;
+            if (!blockchainResponse) {
+                console.log("No blockchain response");
+                inProgress.value = false;
+                window.electron.notify(t("common.local.promptFailure"));
+                return;
+            }
+
+            if (blockchainResponse.supportsLocal) {
+                supportsLocal.value = blockchainResponse.supportsLocal;
+            }
+
+            if (blockchainResponse.getOperationTypes) {
+                chainOperationTypes.value = blockchainResponse.getOperationTypes;
+            }
         }
-        if (getOperationTypes) {
-            chainOperationTypes.value = getOperationTypes;
-        }
+
+        initialize();
     });
 
     function setScope(newValue) {
@@ -82,7 +95,7 @@
         }
     }
 
-    function onFileUpload(a) {
+    async function onFileUpload(a) {
         inProgress.value = true;
 
         let account = store.getters['AccountStore/getCurrentSafeAccount']();
@@ -92,29 +105,35 @@
             return;
         }
 
-        ipcRenderer.send(
-            'blockchainRequest',
-            {
+        let blockchainResponse;
+        try {
+            blockchainResponse = await window.electron.blockchainRequest({
                 methods: ['localFileUpload'],
                 chain: chain.value,
                 filePath: a[0].sourceFile.path,
                 settingsRows: settingsRows.value,
-                location: 'localFile'
-            }
-        );
+            });
+        } catch (error) {
+            console.log({error});
+            inProgress.value = false;
+            window.electron.notify(t("common.local.promptFailure"));
+            return;
+        }
+
+        if (!blockchainResponse) {
+            console.log("No blockchain response");
+            inProgress.value = false;
+            window.electron.notify(t("common.local.promptFailure"));
+            return;
+        }
+
+        if (blockchainResponse.localFileUpload) {
+            const { success } = blockchainResponse.localFileUpload;
+            inProgress.value = false;
+            window.electron.notify(t("common.local.promptSuccess"));
+            console.log({success});
+        }
     }
-
-    ipcRenderer.on('blockchainResponse:localFile', (event, data) => {
-        const { success } = data["localFileUpload"];
-        inProgress.value = false;
-        ipcRenderer.send("notify", t("common.local.promptSuccess"));
-        console.log({success});
-    });
-
-    ipcRenderer.on('blockchainResponse:localFile:error', (event, data) => {
-        inProgress.value = false;
-        ipcRenderer.send("notify", t("common.local.promptFailure"));
-    });
 </script>
 
 <template>

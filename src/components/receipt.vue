@@ -2,7 +2,6 @@
     import { computed, ref, watchEffect } from "vue";
     import queryString from "query-string";
     import { useI18n } from 'vue-i18n';
-    import { ipcRenderer } from 'electron';
 
     import langSelect from "./lang-select.vue";
 

@@ -259,7 +259,7 @@
           "voting_account": "Hääletuskonto: {voting_account} ({opVotingAccount})",
           "num_witness": "Tunnistajate arv: {num_witness}",
           "num_committee": "Komisjoni liikmete arv: {num_committee}",
-          "votes": "Hääled: {hääli}",
+          "votes": "Hääled: {votes}",
           "extensions": "Laiendused: {extensions}",
           "fees": "Hinnangulised tasud: {fees}"
         },
@@ -346,7 +346,7 @@
           "main": "Peamine: {main}",
           "market": "Turg: {market}",
           "short_name": "Lühike nimi: {short_name}",
-          "precision": "Täpsus: {täpsus}",
+          "precision": "Täpsus: {precision}",
           "max_supply": "Maksimaalne pakkumine: {max_supply}",
           "market_fee_percent": "Turutasu protsent: {market_fee_percent}",
           "max_market_fee": "Maksimaalne turutasu: {max_market_fee}",
@@ -380,7 +380,7 @@
           "minimum_feeds": "Miinimumvood: {minimum_feeds}",
           "short_backing_asset": "Lühike tagavara: {short_backing_asset}",
           "nft": "NFT sisu:",
-          "acknowledgements": "Tänuavaldused: {acnowledgements}",
+          "acknowledgements": "Tänuavaldused: {acknowledgements}",
           "artist": "Kunstnik: {artist}",
           "attestation": "Tõend: {attestation}",
           "holder_license": "Omaniku litsents: {holder_license}",
@@ -405,7 +405,7 @@
           "main": "Peamine: {main}",
           "market": "Turg: {market}",
           "short_name": "Lühike nimi: {short_name}",
-          "precision": "Täpsus: {täpsus}",
+          "precision": "Täpsus: {precision}",
           "max_supply": "Maksimaalne pakkumine: {max_supply}",
           "market_fee_percent": "Turutasu protsent: {market_fee_percent}",
           "max_market_fee": "Maksimaalne turutasu: {max_market_fee}",
@@ -439,7 +439,7 @@
           "minimum_feeds": "Miinimumvood: {minimum_feeds}",
           "short_backing_asset": "Lühike tagavara: {short_backing_asset}",
           "nft": "NFT sisu:",
-          "acknowledgements": "Tänuavaldused: {acnowledgements}",
+          "acknowledgements": "Tänuavaldused: {acknowledgements}",
           "artist": "Kunstnik: {artist}",
           "attestation": "Tõend: {attestation}",
           "holder_license": "Omaniku litsents: {holder_license}",
@@ -890,7 +890,7 @@
         "rows": {
           "payer": "Maksja: {payer} ({payerOP})",
           "required_auths": "Nõutavad volitused: {required_auths}",
-          "id": "Ma tegin}",
+          "id": "Ma {id}",
           "data": "Andmed: {data}",
           "fee": "Hinnanguline tasu: {fee}"
         },
@@ -906,7 +906,7 @@
         },
         "rows": {
           "fee_paying_account": "Tasu maksmise konto: {fee_paying_account} ({fee_paying_accountOP})",
-          "predicates": "Predikaadid: {predikaadid}",
+          "predicates": "Predikaadid: {predicates}",
           "required_auths": "Nõutavad volitused: {required_auths}",
           "extensions": "Laiendused: {extensions}",
           "fee": "Hinnanguline tasu: {fee}"
@@ -924,7 +924,7 @@
         "rows": {
           "deposit_to_account": "Deposiit kontole: {deposit_to_account} ({deposit_to_accountOP})",
           "balance_to_claim": "Nõutav saldo: {balance_to_claim} ({asset_id})",
-          "balance_owner_key": "Saldo omaniku võti: {saldo_omaniku_võti}",
+          "balance_owner_key": "Saldo omaniku võti: {balance_owner_key}",
           "total_claimed": "Nõude kogusumma: {total_claimed} ({asset_id})",
           "fee": "Hinnanguline tasu: {fee}"
         },
@@ -960,7 +960,7 @@
           "amount": "Summa: {amount}",
           "from": "Saatja: {from} ({fromOP})",
           "blinding_factor": "Pimestav tegur: {blinding_factor}",
-          "outputs": "Väljundid: {väljundid}",
+          "outputs": "Väljundid: {outputs}",
           "fee": "Hinnanguline tasu: {fee}"
         },
         "tooltip": "Viige varad pimedasse sihtkohta"
@@ -975,7 +975,7 @@
         },
         "rows": {
           "inputs": "Sisendid: {inputs}",
-          "outputs": "Väljundid: {väljundid}",
+          "outputs": "Väljundid: {outputs}",
           "fee": "Hinnanguline tasu: {fee}"
         },
         "tooltip": "Pimedate varade pimesi ülekandmine"
@@ -1198,7 +1198,7 @@
           "result": "Järgmist piletit uuendati:"
         },
         "rows": {
-          "ticket": "Pilet: {pilet}",
+          "ticket": "Pilet: {ticket}",
           "account": "Konto: {account} ({accountOP})",
           "target_type": "Sihtmärgi tüüp: {target_type}",
           "amount_for_new_target": "Uue sihtmärgi summa: {amount_for_new_target}",
@@ -1306,7 +1306,7 @@
         "rows": {
           "owner_account": "Omaniku konto: {owner_account} ({owner_accountOP})",
           "asset_type": "Vara tüüp: {asset_type}",
-          "balance": "Saldo: {saldo}",
+          "balance": "Saldo: {balance}",
           "fee_rate": "Tasu määr: {fee_rate}",
           "extensions": "Laiendused: {extensions}",
           "fee": "Hinnanguline tasu: {fee}"
@@ -1393,7 +1393,7 @@
         "rows": {
           "owner_account": "Omaniku konto: {owner_account} ({owner_accountOP})",
           "asset_type": "Vara tüüp: {asset_type}",
-          "balance": "Saldo: {saldo}",
+          "balance": "Saldo: {balance}",
           "fee_rate": "Tasu määr: {fee_rate}",
           "max_duration_seconds": "Maksimaalne kestus sekundid: {max_duration_seconds}",
           "min_deal_amount": "Minimaalne tehingusumma: {min_deal_amount}",
@@ -1458,7 +1458,7 @@
           "borrower": "Laenaja: {borrower} ({borrowerOP})",
           "offer_id": "Pakkumise ID: {offer_id}",
           "borrow_amount": "Laenusumma: {borrow_amount}",
-          "collateral": "Tagatis: {tagatis}",
+          "collateral": "Tagatis: {collateral}",
           "max_fee_rate": "Maksimaalne tasumäär: {max_fee_rate}",
           "min_duration_seconds": "Minimaalne kestus sekundites: {min_duration_seconds}",
           "extensions": "Laiendused: {extensions}",
@@ -1539,6 +1539,22 @@
       }
     },
     "EOS": {
+      "transfer": {
+        "method": "Ülekanne",
+        "title": "Ülekandmise taotlus",
+        "result": "Ülekande tulemus",
+        "headers": {
+          "request": "Kas soovite kinnitada järgmise ülekandetaotluse?",
+          "result": "Järgmine ülekandetaotlus kinnitati:"
+        },
+        "rows": {
+          "from": "Saatja: {from}",
+          "to": "Saaja: {to}",
+          "quantity": "Kogus: {quantity}",
+          "memo": "Memo: {memo}"
+        },
+        "tooltip": "Saatke varasid ühelt kontolt teisele"
+      },
       "setalimits": {
         "method": "Seadke konto limiidid",
         "title": "Seadistage kontopiirangute taotlus",

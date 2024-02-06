@@ -1,9 +1,7 @@
 <script setup>
-    import {ref, inject, computed, defineEmits} from "vue";
+    import {ref, watchEffect} from "vue";
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n({ useScope: 'global' });
-    import { watchEffect } from "vue";
-    import { ipcRenderer } from "electron";
 
     const props = defineProps({
         chain: {
@@ -21,21 +19,29 @@
     let accessType = ref();
     let requiredFields = ref();
     watchEffect(() => {
-        if (props.chain) {
-            ipcRenderer.send("blockchainRequest", {
-                methods: ["getAccessType", "getSignUpInput"],
-                location: 'importMemoInit',
-            });
-        }
-    });
+        async function initialize() {
+            let blockchainRequest;
+            try {
+                blockchainRequest = window.electron.blockchainRequest({
+                    methods: ["getAccessType", "getSignUpInput"],
+                    chain: props.chain
+                });
+            } catch (error) {
+                console.log(error);
+                return;
+            }
 
-    ipcRenderer.on("blockchainResponse:importMemoInit", (event, data) => {
-        const { getAccessType, getSignUpInput } = data;
-        if (getAccessType) {
-            accessType.value = getAccessType;
+            if (blockchainRequest && blockchainRequest.getAccessType) {
+                accessType.value = blockchainRequest.getAccessType;
+            }
+
+            if (blockchainRequest && blockchainRequest.getSignUpInput) {
+                requiredFields.value = blockchainRequest.getSignUpInput;
+            }
         }
-        if (getSignUpInput) {
-            requiredFields.value = getSignUpInput;
+
+        if (props.chain) {
+            initialize();
         }
     });
 
@@ -45,33 +51,37 @@
             authorities.memo = memopk.value;
         }
 
-        ipcRenderer.send("blockchainRequest", {
-            methods: ["verifyAccount"],
-            location: 'importMemo',
-            accountname: accountname.value,
-            chain: props.chain,
-            authorities: authorities
-        });
-    }
+        let blockchainRequest;
+        try {
+            blockchainRequest = await window.electron.blockchainRequest({
+                methods: ["verifyAccount"],
+                accountname: accountname.value,
+                chain: props.chain,
+                authorities: authorities
+            });
+        } catch (error) {
+            console.log(error);
+            console.log("Account verification error, check your memo key and try again");
+            window.electron.notify(t("common.unverified_account_error"));
+            return;
+        }
 
-    ipcRenderer.on("blockchainResponse:importMemo", (event, data) => {
-        const { account, authorities } = data;
- 
+        if (!blockchainRequest || !blockchainRequest.verifyAccount) {
+            console.log("Account verification error, check your memo key and try again");
+            window.electron.notify(t("common.unverified_account_error"));
+            return;
+        }
+
         emit('continue');
         emit('imported', [{
             account: {
                 accountName: accountname.value,
-                accountID: account.id,
+                accountID: blockchainRequest.verifyAccount.id,
                 chain: props.chain,
-                keys: authorities
+                keys: blockchainRequest.verifyAccount.authorities
             }
         }]);
-    });
-
-    ipcRenderer.on("blockchainResponse:importMemo:error", (event, data) => {
-        console.log("Account verification error, check your memo key and try again");
-        ipcRenderer.send("notify", t("common.unverified_account_error"));
-    });
+    }
 </script>
 
 <template>

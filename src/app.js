@@ -1,21 +1,24 @@
 import { createApp } from 'vue';
-import VueRouter from 'vue-router';
-import mitt from 'mitt';
+//import VueRouter from 'vue-router/dist/vue-router.global.js';
+//import mitt from 'mitt/dist/mitt.mjs';
 
+//import BalmUI from 'balm-ui/dist/balm-ui.d.ts'; // Official Google Material Components
+//import BalmUI from 'balm-ui/dist/balm-ui.esm.js'; // Official Google Material Components
+//import BalmUI from 'balm-ui/dist/balm-ui.js'; // Official Google Material Components
 import BalmUI from 'balm-ui'; // Official Google Material Components
 import BalmUIPlus from 'balm-ui/dist/balm-ui-plus'; // BalmJS Team Material Components
-import 'balm-ui-css';
+import 'balm-ui/dist/balm-ui.css';
+
+import 'typeface-roboto';
+import 'typeface-rajdhani';
+
+import './scss/beet.scss';
 
 import router from './router/index.js';
 import store from './store/index';
 import BeetServer from './lib/BeetServer';
 import RendererLogger from './lib/RendererLogger';
 import {i18n} from './lib/i18n.js';
-
-import 'typeface-roboto';
-import 'typeface-rajdhani';
-
-import './scss/beet.scss';
 
 const logger = new RendererLogger;
 
@@ -33,9 +36,9 @@ process.on('unhandledRejection', (reason, p) => {
 store.dispatch("SettingsStore/loadSettings");
 store.dispatch("WhitelistStore/loadWhitelist");
 
-const emitter = mitt();
+//const emitter = mitt();
 const app = createApp({});
-app.provide('emitter', emitter);
+//app.provide('emitter', emitter);
 
 app.config.errorHandler = function (err, vm, info) {
   logger.error(err, vm, info);
@@ -48,7 +51,7 @@ window.t = (key, params) => {
     return i18n.global.t(key, params)
 }
 
-app.use(VueRouter);
+//app.use(VueRouter);
 app.use(BalmUI, {
     $theme: {
         primary: '#C7088E',
@@ -63,6 +66,6 @@ app.mount('#app');
 
 BeetServer.initialize(60554, 60555);
 
-emitter.on('i18n', (data) => {
-  i18n.global.locale.value = data
-});
+//emitter.on('i18n', (data) => {
+//  i18n.global.locale.value = data
+//});

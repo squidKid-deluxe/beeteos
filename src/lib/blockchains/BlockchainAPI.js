@@ -5,9 +5,6 @@ import * as Actions from '../Actions';
 
 const logger = new RendererLogger();
 
-import mitt from 'mitt';
-const emitter = mitt();
-
 export default class BlockchainAPI {
 
     constructor(config, initNode) {

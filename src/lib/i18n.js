@@ -1,8 +1,5 @@
 import { createI18n } from 'vue-i18n';
 
-const locales = ['en', 'de'];
-const namespaces = ['common', 'operations'];
-
 import enCommon from '../translations/common/en.json';
 import enOperations from '../translations/operations/en.json';
 

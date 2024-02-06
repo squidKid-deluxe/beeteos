@@ -1,6 +1,5 @@
 <script setup>
-    import {ref, onMounted, inject} from "vue";
-    import { ipcRenderer } from 'electron';
+    import {ref, onMounted} from "vue";
     import { useI18n } from 'vue-i18n';
 
     const { t } = useI18n({ useScope: 'global' });
@@ -63,30 +62,33 @@
 
     async function next() {
         if (substep1.value) {
-            ipcRenderer.send("blockchainRequest", {
-                methods: ["decryptBackup"],
-                location: 'importBinFile',
-                chain: props.chain,
-                filePath: wallet_file.value,
-                pass: bin_file_password.value
-            });
+            let blockchainResponse;
+            try {
+                inProgress.value = true;
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ["decryptBackup"],
+                    location: 'importBinFile',
+                    chain: props.chain,
+                    filePath: wallet_file.value,
+                    pass: bin_file_password.value
+                });
+            } catch (error) {
+                console.log(error);
+                inProgress.value = false;
+                window.electron.notify(t("common.error_text"));
+                return;
+            }
+
+            if (blockchainResponse && blockchainResponse.decryptBackup) {
+                accounts.value = blockchainResponse.decryptBackup;
+                substep1.value = false;
+                substep2.value = true;
+            }
+            inProgress.value = false;
         } else {
             _getPickedAccounts();
         }
     }
-
-    ipcRenderer.on("blockchainResponse:importBinFile", (event, data) => {
-        const { decryptBackup } = data;
-        if (decryptBackup) {
-            accounts.value = decryptBackup;
-            substep1.value = false;
-            substep2.value = true;
-        }
-    });
-
-    ipcRenderer.on("blockchainResponse:importBinFile:error", (event, data) => {
-        ipcRenderer.send("notify", t("common.error_text"));
-    })
 </script>
 
 <template>

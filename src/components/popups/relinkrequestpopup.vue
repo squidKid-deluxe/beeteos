@@ -1,5 +1,4 @@
 <script setup>
-    import { ipcRenderer } from 'electron';
     import { computed} from "vue";
     import { useI18n } from 'vue-i18n';
 
@@ -41,33 +40,27 @@
     });
 
     function _clickedAllow() {
-        ipcRenderer.send(
-            "clickedAllow",
-            {
-                result: {
-                    identityhash: props.request.payload.identityhash,
-                    name: props.accounts[0].accountName,
-                    chain: props.accounts[0].chain,
-                    id: props.accounts[0].accountID
-                        ? props.accounts[0].accountID
-                        : props.accounts[0].accountName,
-                    success: true
-                },
-                request: {
-                    id: props.request.id
-                }
+        window.electron.clickedAllow({
+            result: {
+                identityhash: props.request.payload.identityhash,
+                name: props.accounts[0].accountName,
+                chain: props.accounts[0].chain,
+                id: props.accounts[0].accountID
+                    ? props.accounts[0].accountID
+                    : props.accounts[0].accountName,
+                success: true
+            },
+            request: {
+                id: props.request.id
             }
-        );
+        });
     }
 
     function _clickedDeny() {
-        ipcRenderer.send(
-            "clickedDeny",
-            {
-                result: {canceled: true},
-                request: {id: props.request.id}
-            }
-        );
+        window.electron.clickedDeny({
+            result: {canceled: true},
+            request: {id: props.request.id}
+        });
     }
 </script>
 

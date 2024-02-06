@@ -62,25 +62,31 @@
     let compatibleChain = ref(false);
     let chainTypes = ref([]);
     watchEffect(() => {
-        if (chain.value) {
-            ipcRenderer.send(
-                'blockchainRequest',
-                { 
-                    methods: ['supportsTOTP', 'getOperationTypes'],
-                    chain: chain.value,
-                    location: 'rawData'
+        async function initialize() {
+            let blockchainRequest;
+            try {
+                blockchainRequest = window.electron.blockchainRequest(
+                    { 
+                        methods: ['supportsTOTP', 'getOperationTypes'],
+                        chain: chain.value
+                    }
+                );
+            } catch (error) {
+                console.error(error);
+            }
+
+            if (blockchainRequest) {
+                const { supportsTOTP, getOperationTypes } = blockchainRequest;
+                if (supportsTOTP) {
+                    compatibleChain.value = supportsTOTP;
                 }
-            );
+                if (getOperationTypes) {
+                    chainTypes.value = getOperationTypes;
+                }
+            }
         }
-    });
-    
-    ipcMain.on('blockchainResponse:rawData', (event, args) => {
-        const { supportsTOTP, getOperationTypes } = args;
-        if (supportsTOTP) {
-            compatibleChain.value = supportsTOTP;
-        }
-        if (getOperationTypes) {
-            chainTypes.value = getOperationTypes;
+        if (chain.value) {
+            initialize();
         }
     });
 
@@ -91,7 +97,7 @@
          */
         if (!store.state.WalletStore.isUnlocked || router.currentRoute.value.path != "/raw-link") {
             console.log("Wallet must be unlocked for raw deeplinks to work.");
-            ipcRenderer.send("notify", t("common.raw.promptFailure"));
+            window.electron.notify(t("common.raw.promptFailure"));
             return;
         }
 
@@ -104,28 +110,30 @@
 
         deepLinkInProgress.value = true;
 
-        ipcRenderer.send(
-            'blockchainRequest',
-            { 
-                methods: ['getRawLink'],
-                chain: account.chain,
-                requestBody: args.request,
-                location: 'raw'
-            }
-        );
-    });
-    
-    ipcRenderer.on('blockchainResponse:raw', (event, args) => {
-        const { success } = args;
-        if (success) {
-            console.log({success})
+        let blockchainRequest;
+        try {
+            blockchainRequest = window.electron.blockchainRequest(
+                { 
+                    methods: ['getRawLink'],
+                    chain: account.chain,
+                    requestBody: args.request
+                }
+            );
+        } catch (error) {
+            console.error(error);
+            deepLinkInProgress.value = false;
+            window.electron.notify(t("common.raw.promptFailure"));
+            return;
         }
-        deepLinkInProgress.value = false;
-    });
 
-    ipcRenderer.on('blockchainResponse:raw:error', (event, args) => {
+        if (blockchainRequest) {
+            const { success } = blockchainRequest;
+            if (success) {
+                console.log({success})
+            }
+        }
+        
         deepLinkInProgress.value = false;
-        ipcRenderer.send("notify", t("common.raw.promptFailure"));
     });
 </script>
 

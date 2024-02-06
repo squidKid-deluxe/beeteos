@@ -1,6 +1,5 @@
 <script setup>
-    import { watch, ref, computed, onMounted, inject, defineEmits } from "vue";
-    import { ipcRenderer } from 'electron';
+    import { watch, ref, computed, onMounted, inject } from "vue";
     import { useI18n } from 'vue-i18n';
 
     import ImportCloudPass from "./blockchains/bitshares/ImportCloudPass";
@@ -69,19 +68,25 @@
 
     let selectedImportOptions = ref([]);
     watchEffect(() => {
-        if (selectedChain.value) {
-            ipcRenderer.send("blockchainRequest", {
-                methods: ["getImportOptions"],
-                location: 'addAccount',
-                chain: selectedChain.value
-            });
+        async function lookup() {
+            let blockchainResponse;
+            try {
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ["getImportOptions"],
+                    chain: selectedChain.value
+                });
+            } catch (error) {
+                console.log(error);
+                return;
+            }
+            
+            if (blockchainResponse.getImportOptions) {
+                selectedImportOptions.value = blockchainResponse.getImportOptions;
+            }
         }
-    });
 
-    ipcRenderer.on("blockchainResponse:addAccount", (event, data) => {
-        const { getImportOptions } = data;
-        if (getImportOptions) {
-            selectedImportOptions.value = getImportOptions;
+        if (selectedChain.value) {
+            lookup();
         }
     });
 
@@ -136,14 +141,14 @@
         }
 
         if (walletname.value.trim() == "") {
-            ipcRenderer.send("notify", t("common.empty_wallet_error"));
+            window.electron.notify(t("common.empty_wallet_error"));
             s1c.value = "is-invalid";
             return;
         }
 
         let walletList = store.getters['WalletStore/getWalletList'];
         if (walletList.map(wallet => wallet.name).includes(walletname.value.trim())) {
-            ipcRenderer.send("notify", t("common.duplicate_wallet_error"));
+            window.electron.notify(t("common.duplicate_wallet_error"));
             s1c.value = "is-invalid";
             return;
         }
@@ -157,13 +162,13 @@
      */
     function _handleError(err) {
         if (err == "invalid") {
-            ipcRenderer.send("notify", t("common.invalid_password"));
+            window.electron.notify(t("common.invalid_password"));
         } else if (err == "update_failed") {
-            ipcRenderer.send("notify", t("common.update_failed"));
+            window.electron.notify(t("common.update_failed"));
         } else if (err.key) {
-            ipcRenderer.send("notify", t(`common.${err.key}`));
+            window.electron.notify(t(`common.${err.key}`));
         } else {
-            ipcRenderer.send("notify", err.toString());
+            window.electron.notify(err.toString());
         }
     }
 
@@ -172,17 +177,17 @@
      */
     async function addAccounts() {
         if (!accounts_to_import.value) {
-            ipcRenderer.send("notify", t(`common.addAccount.none_selected`));
+            window.electron.notify(t(`common.addAccount.none_selected`));
             return;
         }
 
         if (password.value == "") {
-            ipcRenderer.send("notify", t(`common.confirm_pass_error`));
+            window.electron.notify(t(`common.confirm_pass_error`));
             return;
         }
 
         if ((!userHasWallet.value || createNewWallet.value) && password.value !== confirmPassword.value) {
-            ipcRenderer.send("notify", t(`common.confirm_pass_error`));
+            window.electron.notify(t(`common.confirm_pass_error`));
             return;
         }
 

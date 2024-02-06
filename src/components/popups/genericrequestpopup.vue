@@ -1,5 +1,4 @@
 <script setup>
-    import { ipcRenderer } from 'electron';
     import { computed } from "vue";
     import { useI18n } from 'vue-i18n';
 
@@ -58,23 +57,17 @@
     });
 
     function _clickedAllow() {
-        ipcRenderer.send(
-            "clickedAllow",
-            {
-                result: {success: true},
-                request: {id: props.request.id}
-            }
-        );
+        window.electron.clickedAllow({
+            result: {success: true},
+            request: {id: props.request.id}
+        });
     }
 
     function _clickedDeny() {
-        ipcRenderer.send(
-            "clickedDeny",
-            {
-                result: {canceled: true},
-                request: {id: props.request.id}
-            }
-        );
+        window.electron.clickedDeny({
+            result: {canceled: true},
+            request: {id: props.request.id}
+        });
     }
 </script>
 

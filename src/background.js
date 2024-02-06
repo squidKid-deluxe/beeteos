@@ -175,7 +175,8 @@ const createModal = async (arg, modalEvent) => {
         webPreferences: {
             nodeIntegration: false, // Keep false for security
             contextIsolation: true, // Keep true for security
-            enableRemoteModule: false // Keep false for security
+            enableRemoteModule: false, // Keep false for security
+            preload: path.join(__dirname, "preload.js"),
         },
         icon: __dirname + '/img/beet-taskbar.png'
     });
@@ -256,7 +257,8 @@ const createReceipt = async (arg, modalEvent) => {
         webPreferences: {
             nodeIntegration: false, // Keep false for security
             contextIsolation: true, // Keep true for security
-            enableRemoteModule: false // Keep false for security
+            enableRemoteModule: false, // Keep false for security
+            preload: path.join(__dirname, "preload.js"),
         },
         icon: __dirname + '/img/beet-taskbar.png'
     });
@@ -325,6 +327,140 @@ ipcMain.on('modalError', (event, arg) => {
   }
 });
 
+
+function _parseDeeplink(
+    requestContent,
+    chain,
+    blockchain,
+    blockchainActions,
+    settingsRows,
+    currentCode
+) {
+    let processedRequest;
+    try {
+        processedRequest = decodeURIComponent(requestContent);
+    } catch (error) {
+        console.log('Processing request failed');
+        return;
+    }
+    
+    let parsedRequest;
+    try {
+        parsedRequest = Base64.parse(processedRequest).toString(ENC)
+    } catch (error) {
+        console.log('Parsing request failed');
+        return;
+    }
+
+    let request;
+    if (currentCode) {
+        let decryptedBytes;
+        try {
+            decryptedBytes = aes.decrypt(parsedRequest, currentCode);
+        } catch (error) {
+            console.log(error);
+            return;
+        }
+  
+        let decryptedData;
+        try {
+            decryptedData = decryptedBytes.toString(ENC);
+        } catch (error) {
+            console.log(error);
+            return;
+        }
+
+        try {
+            request = JSON.parse(decryptedData);
+        } catch (error) {
+            console.log(error);
+            return;
+        }
+    } else {
+        try {
+            request = JSON.parse(parsedRequest);
+        } catch (error) {
+            console.log(error);
+            return;
+        }
+    }
+
+    if (
+        !request
+        || !request.id
+        || !request.payload
+        || !request.payload.chain
+        || !request.payload.method
+        || request.payload.method === Actions.INJECTED_CALL && !request.payload.params
+    ) {
+        console.log('invalid request format');
+        return;
+    }
+    
+    if (chain !== request.payload.chain) {
+        console.log("Incoming deeplink request for wrong chain");
+        return;
+    }
+
+    if (!Object.keys(Actions).map(key => Actions[key]).includes(request.payload.method)) {
+        console.log("Unsupported request type rejected");
+        return;
+    }
+
+    if (!blockchainActions.includes(request.payload.method)) {
+        console.log({
+            msg: "Unsupported request type rejected",
+            request
+        });
+        return
+    }
+
+    if (!settingsRows.includes(request.payload.method)) {
+        console.log("Unauthorized beet operation");
+        return;
+    }
+
+    if (request.payload.method === Actions.INJECTED_CALL) {
+        let tr;
+        try {
+            tr = blockchain._parseTransactionBuilder(request.payload.params);
+        } catch (error) {
+            console.log(error)
+        }
+
+        let authorizedUse = false;
+        if (tr && ["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
+            for (let i = 0; i < tr.operations.length; i++) {
+                let operation = tr.operations[i];
+                if (settingsRows && settingsRows.includes(operation[0])) {
+                    authorizedUse = true;
+                    break;
+                }
+            }
+        } else if (tr && ["EOS", "BEOS", "TLOS"].includes(chain)) {
+            for (let i = 0; i < tr.actions.length; i++) {
+                let operation = tr.actions[i];
+                if (settingsRows && settingsRows.includes(operation.name)) {
+                    authorizedUse = true;
+                    break;
+                }
+            }
+        }
+
+        if (!authorizedUse) {
+            console.log(`Unauthorized use of deeplinked ${chain} blockchain operation`);
+            return;
+        }
+        console.log("Authorized use of deeplinks")
+    }
+
+    return {
+      id: request.id,
+      type: request.payload.method,
+      payload: request.payload
+    };
+}
+
 /*
  * Creating the primary window, only runs once.
  */
@@ -342,9 +478,10 @@ const createWindow = async () => {
       useContentSize: true,
       autoHideMenuBar: true,
       webPreferences: {
-          nodeIntegration: false, // Keep false for security
-          contextIsolation: true, // Keep true for security
-          enableRemoteModule: false // Keep false for security
+        nodeIntegration: false, // Keep false for security
+        contextIsolation: true, // Keep true for security
+        enableRemoteModule: false, // Keep false for security
+        preload: path.join(__dirname, "preload.js"),
       },
       icon: __dirname + '/img/beet-taskbar.png'
   });
@@ -381,11 +518,13 @@ const createWindow = async () => {
       tray.popUpContextMenu(contextMenu);
   });
 
+
+
   /*
   * Handling front end blockchain requests
   */
-  ipcMain.on('blockchainRequest', async (event, arg) => {
-    const { method, account, chain, location } = arg;
+  ipcMain.handle('blockchainRequest', async (event, arg) => {
+    const { method, account, chain } = arg;
 
     let blockchain;
     try {
@@ -420,6 +559,11 @@ const createWindow = async () => {
         });
     }
 
+    if (method.includes("verifyMessage")) {
+        const { request } = arg;
+        responses['verifyMessage'] = await blockchain.verifyMessage(request);
+    }
+
     if (method.includes("getExplorer")) {
         responses['getExplorer'] = blockchain.getExplorer(account.name);
     }
@@ -444,133 +588,25 @@ const createWindow = async () => {
     }
 
     if (method.includes("totpDeeplink")) {
-      const { requestContent, currentCode } = args;
+      const { requestContent, currentCode, settingsRows } = arg;
 
-      let processedRequest;
+      let apiobj;
       try {
-          processedRequest = decodeURIComponent(requestContent);
+        apiobj = _parseDeeplink(
+            requestContent,
+            chain,
+            blockchain,
+            blockchainActions,
+            settingsRows,
+            currentCode
+        );
       } catch (error) {
-          console.log('Processing request failed');
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
-          return;
-      }
-      
-      let parsedRequest;
-      try {
-          parsedRequest = Base64.parse(processedRequest).toString(ENC)
-      } catch (error) {
-          console.log('Parsing request failed');
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
-          return;
+        console.log(error);
+        return;
       }
 
-      let decryptedBytes;
-      try {
-          decryptedBytes = aes.decrypt(parsedRequest, currentCode.value);
-      } catch (error) {
-          console.log(error);
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
-          return;
-      }
-
-      let decryptedData;
-      try {
-          decryptedData = decryptedBytes.toString(ENC);
-      } catch (error) {
-          console.log(error);
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
-          return;
-      }
-
-      let request;
-      try {
-          request = JSON.parse(decryptedData);
-      } catch (error) {
-          console.log(error);
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
-          return;
-      }
-
-      if (
-          !request
-          || !request.id
-          || !request.payload
-          || !request.payload.chain
-          || !request.payload.method
-          || request.payload.method === Actions.INJECTED_CALL && !request.payload.params
-      ) {
-          console.log('invalid request format');
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
-          return;
-      }
-      
-      let requestedChain = request.payload.chain;
-      if (!requestedChain || chain !== requestedChain) {
-          console.log("Incoming deeplink request for wrong chain");
-          mainWindow.webContents.send(`blockchainResponse:${location}:fail`);
-          return;
-      }
-
-      if (!Object.keys(Actions).map(key => Actions[key]).includes(request.payload.method)) {
-          console.log("Unsupported request type rejected");
-          mainWindow.webContents.send(`blockchainResponse:${location}:fail`);
-          return;
-      }
-
-      let apiobj = {
-          id: request.id,
-          type: request.payload.method,
-          payload: request.payload
-      };
-
-      if (!blockchainActions.includes(apiobj.type)) {
-          console.log({
-              msg: "Unsupported request type rejected",
-              apiobj
-          });
-          mainWindow.webContents.send(`blockchainResponse:${location}:fail`);
-      }
-
-
-      if (!settingsRows.value.includes(apiobj.type)) {
-          console.log("Unauthorized beet operation");
-          mainWindow.webContents.send(`blockchainResponse:${location}:fail`);
-          return;
-      }
-
-      if (apiobj.type === Actions.INJECTED_CALL) {
-          let tr;
-          try {
-              tr = blockchain._parseTransactionBuilder(request.payload.params);
-          } catch (error) {
-              console.log(error)
-          }
-
-          let authorizedUse = false;
-          if (tr && ["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
-              for (let i = 0; i < tr.operations.length; i++) {
-                  let operation = tr.operations[i];
-                  if (settingsRows.value && settingsRows.value.includes(operation[0])) {
-                      authorizedUse = true;
-                      break;
-                  }
-              }
-          } else if (tr && ["EOS", "BEOS", "TLOS"].includes(chain)) {
-              for (let i = 0; i < tr.actions.length; i++) {
-                  let operation = tr.actions[i];
-                  if (settingsRows.value && settingsRows.value.includes(operation.name)) {
-                      authorizedUse = true;
-                      break;
-                  }
-              }
-          }
-
-          if (!authorizedUse) {
-              console.log(`Unauthorized use of deeplinked ${chain} blockchain operation`);
-              mainWindow.webContents.send(`blockchainResponse:${location}:fail`);
-              return;
-          }
-          console.log("Authorized use of deeplinks")
+      if (!apiobj) {
+        return;
       }
 
       let status;
@@ -584,159 +620,54 @@ const createWindow = async () => {
           }
       } catch (error) {
           console.log({error: error || "No status"});
-          mainWindow.webContents.send(`blockchainResponse:${location}:fail`);
           return;
       }
 
       if (!status || !status.result || status.result.isError || status.result.canceled) {
           console.log("Issue occurred in approved prompt");
-          mainWindow.webContents.send(`blockchainResponse:${location}:fail`);
           return;
       }
 
-      mainWindow.webContents.send(`blockchainResponse:${location}`, {status});
+      responses['getRawLink'] = status;
     }
 
     if (method.includes("getRawLink")) {
-       
-      let processedRequest;
-      try {
-          processedRequest = decodeURIComponent(args.request);
-      } catch (error) {
-          console.log('Processing request failed');
-          deepLinkInProgress.value = false;
-          ipcRenderer.send("notify", t("common.raw.promptFailure"));
-          return;
-      }
+        const { requestBody, settingsRows } = arg;
 
-      let request;
-      try {
-          request = JSON.parse(processedRequest);
-      } catch (error) {
-          console.log(error);
-          deepLinkInProgress.value = false;
-          ipcRenderer.send("notify", t("common.raw.promptFailure"));
-          return;
-      }
+        let apiobj;
+        try {
+            apiobj = _parseDeeplink(
+                requestBody,
+                chain,
+                blockchain,
+                blockchainActions,
+                settingsRows
+            );
+        } catch (error) {
+            console.log(error);
+            return;
+        }
 
-      if (
-          !request
-          || !request.id
-          || !request.payload
-          || !request.payload.chain
-          || !request.payload.method
-          || request.payload.method === Actions.INJECTED_CALL && !request.payload.params
-      ) {
-          console.log('invalid request format')
-          deepLinkInProgress.value = false;
-          ipcRenderer.send("notify", t("common.raw.promptFailure"));
-          return;
-      }
+        let status;
+        try {
+            if (apiobj.type === Actions.INJECTED_CALL) {
+                status = await injectedCall(apiobj, blockchain);
+            } else if (apiobj.type === Actions.VOTE_FOR) {
+                status = await voteFor(apiobj, blockchain);
+            } else if (apiobj.type === Actions.TRANSFER) {
+                status = await transfer(apiobj, blockchain);
+            }
+        } catch (error) {
+            console.log(error || "No status")
+            return;
+        }
 
-      let requestedChain = args.chain || request.payload.chain;
-      if (!requestedChain || chain.value !== requestedChain) {
-          console.log("Incoming deeplink request for wrong chain");
-          ipcRenderer.send("notify", t("common.raw.failed"));
-          deepLinkInProgress.value = false;
-          return;
-      }
+        if (!status || !status.result || status.result.isError || status.result.canceled) {
+            console.log("Issue occurred in approved prompt");
+            return;
+        }
 
-      if (!Object.keys(Actions).map(key => Actions[key]).includes(request.payload.method)) {
-          console.log("Unsupported request type rejected");
-          return;
-      }
-
-      let apiobj = {
-          id: request.id,
-          type: request.payload.method,
-          payload: request.payload
-      };
-
-      let blockchain;
-      if (blockchainActions.includes(apiobj.type)) {
-          try {
-              blockchain = await getBlockchainAPI(chain);
-          } catch (error) {
-              console.log(error);
-              deepLinkInProgress.value = false;
-              return;
-          }
-      }
-
-      if (!blockchain) {
-          console.log('no blockchain')
-          deepLinkInProgress.value = false;
-          return;
-      }
-
-      if (!settingsRows.value.includes(apiobj.type)) {
-          console.log("Unauthorized beet operation")
-          deepLinkInProgress.value = false;
-          return;
-      }
-
-      if (apiobj.type === Actions.INJECTED_CALL) {
-          let tr;
-          try {
-              if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
-                  tr = blockchain._parseTransactionBuilder(request.payload.params);
-              } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
-                  tr = JSON.parse(request.payload.params[1]);
-              }                
-          } catch (error) {
-              console.log(error)
-          }
-
-          let authorizedUse = false;
-          if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
-              for (let i = 0; i < tr.operations.length; i++) {
-                  let operation = tr.operations[i];
-                  if (settingsRows.value && settingsRows.value.includes(operation[0])) {
-                      authorizedUse = true;
-                      break;
-                  }
-              }
-          } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
-              for (let i = 0; i < tr.actions.length; i++) {
-                  let operation = tr.actions[i];
-                  if (settingsRows.value && settingsRows.value.includes(operation.name)) {
-                      authorizedUse = true;
-                      break;
-                  }
-              }
-          }
-
-          if (!authorizedUse) {
-              console.log(`Unauthorized use of raw deeplinked ${chain.value} blockchain operation`);              
-              deepLinkInProgress.value = false;
-              return;
-          }
-          console.log("Authorized use of raw deeplinks")
-      }
-
-      let status;
-      try {
-          if (apiobj.type === Actions.INJECTED_CALL) {
-              status = await injectedCall(apiobj, blockchain);
-          } else if (apiobj.type === Actions.VOTE_FOR) {
-              status = await voteFor(apiobj, blockchain);
-          } else if (apiobj.type === Actions.TRANSFER) {
-              status = await transfer(apiobj, blockchain);
-          }
-      } catch (error) {
-          console.log(error || "No status")
-          deepLinkInProgress.value = false;
-          return;
-      }
-
-      if (!status || !status.result || status.result.isError || status.result.canceled) {
-          console.log("Issue occurred in approved prompt");
-          deepLinkInProgress.value = false;
-          return;
-      }
-
-      console.log(status);
-      deepLinkInProgress.value = false;
+        responses['getRawLink'] = status;
     }
 
     if (method.includes("localFileUpload")) {
@@ -744,18 +675,31 @@ const createWindow = async () => {
       fs.readFile(filePath, 'utf-8', async (error, data) => {
         if (error) {
           console.log({error})
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
         }
 
         const { requestBody } = data;
 
+        let apiobj;
+        try {
+            apiobj = _parseDeeplink(
+                requestBody,
+                chain,
+                blockchain,
+                blockchainActions,
+                settingsRows
+            );
+        } catch (error) {
+            console.log(error);
+            return;
+        }
+
+        /*
         let request;
         try {
           request = JSON.parse(requestBody);
         } catch (error) {
           console.log(error);
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
         }
 
@@ -768,32 +712,27 @@ const createWindow = async () => {
           || request.payload.method === Actions.INJECTED_CALL && !request.payload.params
         ) {
           console.log('invalid request format');
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
         }
 
         let requestedChain = request.payload.chain;
         if (!requestedChain || chain !== requestedChain) {
           console.log("Incoming uploaded request for wrong chain");
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
         }
 
         if (!Object.keys(Actions).map(key => Actions[key]).includes(request.payload.method)) {
           console.log("Unsupported request type rejected");
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
         }
 
         if (!blockchainActions.includes(request.payload.method)) {
           console.log("Unsupported request type rejected");
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
         }
 
         if (!settingsRows.includes(request.payload.method)) {
           console.log("Unauthorized beet operation");
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
         }
 
@@ -803,7 +742,7 @@ const createWindow = async () => {
                 tr = blockchain._parseTransactionBuilder(request.payload.params);
             } catch (error) {
                 console.log(error);
-                mainWindow.webContents.send(`blockchainResponse:${location}:error`);
+                
                 return;
             }
 
@@ -817,8 +756,8 @@ const createWindow = async () => {
             }
 
             if (!authorizedUse) {
-                console.log(`Unauthorized use of local ${chain.value} blockchain operation`);              
-                mainWindow.webContents.send(`blockchainResponse:${location}:error`);
+                console.log(`Unauthorized use of local ${chain} blockchain operation`);              
+                
                 return;
             }
             console.log("Authorized use of local json upload")
@@ -829,6 +768,7 @@ const createWindow = async () => {
             type: request.payload.method,
             payload: request.payload
         };
+        */
 
         let status;
         try {
@@ -841,13 +781,13 @@ const createWindow = async () => {
             }
         } catch (error) {
             console.log(error || "No status")
-            mainWindow.webContents.send(`blockchainResponse:${location}:error`);
+            
             return;
         }
 
         if (!status || !status.result || status.result.isError || status.result.canceled) {
             console.log("Issue occurred in approved prompt");
-            mainWindow.webContents.send(`blockchainResponse:${location}:error`);
+            
             return;
         }
 
@@ -864,13 +804,11 @@ const createWindow = async () => {
             : JSON.parse(qrData);
       } catch (error) {
           console.log(error);
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
       }
 
       if (!qrTX) {
           console.log("Couldn't process scanned QR code, sorry.")
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
       }
 
@@ -897,7 +835,6 @@ const createWindow = async () => {
 
       if (!authorizedUse) {
           console.log(`Unauthorized QR use of ${chain} blockchain operation`);
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
       }
 
@@ -922,13 +859,11 @@ const createWindow = async () => {
           status = await injectedCall(apiobj, blockchain);
       } catch (error) {
           console.log(error);
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
       }
 
       if (!status || !status.result || status.result.isError || status.result.canceled) {
           console.log("Issue occurred in approved prompt");
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
       }
 
@@ -942,13 +877,11 @@ const createWindow = async () => {
           account = await blockchain.verifyAccount(accountname, authorities, chain);
       } catch (error) {
           console.log(error);
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
       }
 
       if (!account) {
           console.log("Couldn't verify account, sorry.")
-          mainWindow.webContents.send(`blockchainResponse:${location}:error`);
           return;
       }
 
@@ -977,7 +910,7 @@ const createWindow = async () => {
                 };
         } catch (error) {
             console.log(error);
-            mainWindow.webContents.send(`blockchainResponse:${location}:error`);
+            
             return;
         }
 
@@ -986,13 +919,13 @@ const createWindow = async () => {
             account = await blockchain.verifyAccount(accountname, authorities);
         } catch (error) {
             console.log(error);
-            mainWindow.webContents.send(`blockchainResponse:${location}:error`);
+            
             return;
         }
 
         if (!account) {
             console.log("Couldn't verify account, sorry.")
-            mainWindow.webContents.send(`blockchainResponse:${location}:error`);
+            
             return;
         }
 
@@ -1004,7 +937,7 @@ const createWindow = async () => {
         fs.readFile(filePath, async (err, data) => {
             if (err) {
                 console.log({err});
-                mainWindow.webContents.send(`blockchainResponse:${location}:error`);
+                
                 return;
             }
     
@@ -1014,13 +947,13 @@ const createWindow = async () => {
                 unlocked = await wh.unlock(pass);
             } catch (error) {
                 console.log({error});
-                mainWindow.webContents.send(`blockchainResponse:${location}:error`);
+                
                 return;
             }
 
             if (!unlocked) {
                 console.log("Wallet could not be unlocked");
-                mainWindow.webContents.send(`blockchainResponse:${location}:error`);
+                
                 return;
             }
     
@@ -1029,7 +962,7 @@ const createWindow = async () => {
                 retrievedAccounts = await wh.lookupAccounts();
             } catch (error) {
                 console.log({error});
-                mainWindow.webContents.send(`blockchainResponse:${location}:error`);
+                
                 return;
             }
 
@@ -1037,7 +970,8 @@ const createWindow = async () => {
         });
     }
 
-    mainWindow.webContents.send(`blockchainResponse:${location}`, responses);
+    return responses;
+    //mainWindow.webContents.send(`blockchainResponse:${location}`, responses);
   });
 
   /*

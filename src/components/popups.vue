@@ -1,6 +1,5 @@
 <script setup>
     import { computed, watchEffect, ref } from "vue";
-    import { ipcRenderer } from 'electron';
     import queryString from "query-string";
     import { useI18n } from 'vue-i18n';
 
@@ -102,6 +101,7 @@
         });
     })
 
+    let types = ref();
     watchEffect(() => {
         let thisType = type.value ?? payload.value?.type;
         if (thisType !== Actions.REQUEST_LINK) {
@@ -110,21 +110,21 @@
 
         let thisChain = chain.value ?? request.value.chain;
 
-        ipcRenderer.send('blockchainRequest', {
-            methods: ["getOperationTypes"],
-            account: null,
-            chain: thisChain,
-            location: 'popups'
-        });
-    })
-
-    let types = ref();
-    ipcRenderer.on('blockchainResponse:popups', (event, data) => {
-        const { getOperationTypes } = data;
-        if (getOperationTypes) {
-            types.value = getOperationTypes;
+        let requestContents;
+        try {
+            requestContents = window.electron.blockchainRequest({
+                methods: ["getOperationTypes"],
+                chain: thisChain
+            });
+        } catch (error) {
+            console.log(error);
+            return;
         }
-    });
+
+        if (requestContents && requestContents.getOperationTypes) {
+            types.value = requestContents.getOperationTypes;
+        }
+    })
 
     let chainOperations = computed(() => {
         let thisType = type.value ?? payload.value?.type;

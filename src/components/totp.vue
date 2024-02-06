@@ -1,7 +1,6 @@
 <script setup>
     import { watchEffect, ref, computed, inject } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import { ipcRenderer } from "electron";
 
     import AccountSelect from "./account-select";
     import Operations from "./blockchains/operations";
@@ -29,27 +28,39 @@
         return rememberedRows;
     });
     
-    watchEffect(() => {
-        if (chain.value) {
-            ipcRenderer.send("blockchainRequest", {
-                methods: ["supportsTOTP", "getOperationTypes"],
-                location: 'totpInit',
-                chain: chain.value
-            })
-        }
-    })
-
     let compatible = ref(false);
     let operationTypes = ref([]);
-    ipcRenderer.on("blockchainResponse:totpInit", (event, data) => {
-        const { supportsTOTP, getOperationTypes } = data;
-        if (supportsTOTP) {
-            compatible.value = supportsTOTP;
+    watchEffect(() => {
+        async function initialize() {
+            let blockchainResponse;
+            try {
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ["supportsTOTP", "getOperationTypes"],
+                    chain: chain.value
+                });
+            } catch (error) {
+                console.log(error);
+                return;
+            }
+
+            if (!blockchainResponse) {
+                console.log("No blockchain response");
+                return;
+            }
+
+            const { supportsTOTP, getOperationTypes } = blockchainResponse;
+            if (supportsTOTP) {
+                compatible.value = supportsTOTP;
+            }
+            if (getOperationTypes) {
+                operationTypes.value = getOperationTypes;
+            }
         }
-        if (getOperationTypes) {
-            operationTypes.value = getOperationTypes;
+
+        if (chain.value) {
+            initialize();
         }
-    });
+    })
 
     let selectedRows = ref();
     emitter.on('selectedRows', (data) => {
@@ -120,31 +131,41 @@
     let currentCode = ref();
     let copyContents = ref();
     watchEffect(() => {
+        async function getNewCode() {
+            let blockchainResponse;
+            try {
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ["totpCode"],
+                    chain: chain.value,
+                    timestamp: timestamp.value
+                });
+            } catch (error) {
+                console.log(error);
+                return;
+            }
+
+            if (!blockchainResponse || !blockchainResponse.totpCode) {
+                console.log("No blockchain response");
+                return;
+            }
+
+            const { totpCode } = blockchainResponse;
+            if (totpCode) {
+                currentCode.value = totpCode;
+                copyContents.value = {text: totpCode, success: () => {console.log('copied code')}};
+            }
+        }
+
         if (timestamp && timestamp.value) {
-            ipcRenderer.send("blockchainRequest", {
-                methods: ["totpCode"],
-                chain: chain.value,
-                location: "totpCode",
-                timestamp: timestamp.value
-            });
+            getNewCode();
         }
     });
-
-    ipcRenderer.on("blockchainResponse:totpCode", (event, args) => {
-        const {code} = args;
-        if (!code) {
-            console.log("No code generated");
-            return;
-        }
-        currentCode.value = code;
-        copyContents.value = {text: code, success: () => {console.log('copied code')}};
-    })
 
     let deepLinkInProgress = ref(false);
     ipcRenderer.on('deeplink', async (event, args) => {
         if (!store.state.WalletStore.isUnlocked || router.currentRoute.value.path != "/totp") {
             console.log("Wallet must be unlocked for deeplinks to work.");
-            ipcRenderer.send("notify", t("common.totp.promptFailure"));
+            window.electron.notify(t("common.totp.promptFailure"));
             return;
         }
 
@@ -155,36 +176,45 @@
         }
 
         deepLinkInProgress.value = true;
-        ipcRenderer.send(
-            "blockchainRequest",
-            {
+        let blockchainResponse;
+        try {
+            blockchainResponse = await window.electron.blockchainRequest({
                 methods: ["totpDeeplink"],
                 chain: chain.value,
-                location: "totpDeeplink",
                 currentCode: currentCode.value,
                 settingsRows: settingsRows.value,
                 requestContent: args.request
-            }
-        );
-    });
+            });
+        } catch (error) {
+            console.log(error);
+            deepLinkInProgress.value = false;
+            return;
+        }
 
-    ipcRenderer.on('blockchainResponse:totpDeeplink', (event, args) => {
-        const { totpDeeplink } = args;
+        if (!blockchainResponse || !blockchainResponse.totpDeeplink) {
+            console.log("No blockchain response");
+            deepLinkInProgress.value = false;
+            return;
+        }
+
+        const { totpDeeplink } = blockchainResponse;
         if (totpDeeplink) {
             console.log({totpDeeplink})
         }
         deepLinkInProgress.value = false;
     });
 
+    /*
     ipcRenderer.on('blockchainResponse:totpDeeplink:error', (event, args) => {
         deepLinkInProgress.value = false;
-        ipcRenderer.send("notify", t("common.totp.promptFailure"));
+        window.electron.notify(t("common.totp.promptFailure"));
     });
 
     ipcRenderer.on('blockchainResponse:totpDeeplink:fail', (event, args) => {
         deepLinkInProgress.value = false;
-        ipcRenderer.send("notify", t("common.totp.failed"));
+        window.electron.notify(t("common.totp.failed"));
     });
+    */
 </script>
 
 <template>

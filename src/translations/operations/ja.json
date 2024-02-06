@@ -1539,6 +1539,22 @@
       }
     },
     "EOS": {
+      "transfer": {
+        "method": "移行",
+        "title": "転送依頼",
+        "result": "転送結果",
+        "headers": {
+          "request": "次の転送リクエストを承認しますか?",
+          "result": "次の転送リクエストが承認されました:"
+        },
+        "rows": {
+          "from": "差出人: {from}",
+          "to": "宛先: {to}",
+          "quantity": "数量: {quantity}",
+          "memo": "メモ: {memo}"
+        },
+        "tooltip": "あるアカウントから別のアカウントにアセットを送信する"
+      },
       "setalimits": {
         "method": "アカウント制限を設定する",
         "title": "アカウント制限の設定リクエスト",

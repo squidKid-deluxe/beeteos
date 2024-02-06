@@ -101,6 +101,22 @@
     },
     "injected": {
         "EOS": {
+            "transfer": {
+                "method": "Transfer",
+                "title": "Transfer Request",
+                "result": "Transfer result",
+                "headers": {
+                    "request": "Do you want to approve the following transfer request?",
+                    "result": "The following transfer request was approved:"
+                },
+                "rows": {
+                    "from": "From: {from}",
+                    "to": "To: {to}",
+                    "quantity": "Quantity: {quantity}",
+                    "memo": "Memo: {memo}"
+                },
+                "tooltip": "Send assets from one account to another"
+            },
             "setalimits": {
                 "method": "Set account limits",
                 "title": "Set account limits request",

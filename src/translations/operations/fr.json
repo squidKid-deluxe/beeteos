@@ -1539,6 +1539,22 @@
       }
     },
     "EOS": {
+      "transfer": {
+        "method": "Transfert",
+        "title": "Demande de transfert",
+        "result": "Résultat du transfert",
+        "headers": {
+          "request": "Souhaitez-vous approuver la demande de transfert suivante ?",
+          "result": "La demande de transfert suivante a été approuvée :"
+        },
+        "rows": {
+          "from": "De : {from}",
+          "to": "À : {to}",
+          "quantity": "Quantité : {quantity}",
+          "memo": "Mémo : {memo}"
+        },
+        "tooltip": "Envoyer des actifs d'un compte à un autre"
+      },
       "setalimits": {
         "method": "Définir les limites du compte",
         "title": "Demande de définition de limites de compte",

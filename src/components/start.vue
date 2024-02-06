@@ -1,6 +1,5 @@
 <script setup>
     import { ref, onMounted, computed } from 'vue';
-    import {ipcRenderer} from 'electron';
 
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n({ useScope: 'global' });
@@ -55,10 +54,7 @@
             })
             .catch(() => {
                 passincorrect.value = "is-invalid";
-                ipcRenderer.send(
-                    "notify",
-                    t('common.start.invalid_password')
-                );
+                window.electron.notify(t('common.start.invalid_password'));
             });
     }
 </script>

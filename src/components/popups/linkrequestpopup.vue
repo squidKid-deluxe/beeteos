@@ -1,5 +1,4 @@
 <script setup>
-    import { ipcRenderer } from 'electron';
     import { ref, computed } from "vue";
     import {formatChain, formatAccount} from "../../lib/formatter";
 
@@ -71,29 +70,21 @@
     function _clickedAllow() {
         let approvedAccount = props.accounts[chosenAccount.value];
 
-        ipcRenderer.send(
-            "clickedAllow",
-            {
-                result: {
-                    name: approvedAccount.accountName,
-                    chain: approvedAccount.chain,
-                    id: approvedAccount.accountID
-                },
-                request: {
-                    id: props.request.id
-                }
-            }
-        );
+        window.electron.clickedAllow({
+            result: {
+                name: approvedAccount.accountName,
+                chain: approvedAccount.chain,
+                id: approvedAccount.accountID
+            },
+            request: {id: props.request.id}
+        });
     }
 
     function _clickedDeny() {
-        ipcRenderer.send(
-            "clickedDeny",
-            {
-                result: {canceled: true},
-                request: {id: props.request.id}
-            }
-        );
+        window.electron.clickedDeny({
+            result: {canceled: true},
+            request: {id: props.request.id}
+        });
     }
 </script>
 

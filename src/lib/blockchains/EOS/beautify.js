@@ -70,7 +70,29 @@ export default async function beautify (operation) {
         operation: operation,
     };
 
-    if (opType === "setalimits") {
+    if (opType === "transfer") {
+        /**
+         * Transferring tokens action.
+         * 
+         * @details Transfer tokens from account to account.
+         * 
+         * @param from - the account to transfer from,
+         * @param to - the account to be transferred to,
+         * @param quantity - the quantity of tokens to be transferred,
+         * @param memo - the memo for the transfer (optional)
+         */
+        const from = operation.data.from;
+        const to = operation.data.to;
+        const quantity = operation.data.quantity;
+        const memo = operation.data.memo;
+        currentOperation["rows"] = [
+            { key: "from", params: { from: from } },
+            { key: "to", params: { to: to } },
+            { key: "quantity", params: { quantity: quantity } },
+            { key: "memo", params: { memo: memo ?? "" } },
+        ];
+        
+    } else if (opType === "setalimits") {
         /**
          * Set account limits action.
          *

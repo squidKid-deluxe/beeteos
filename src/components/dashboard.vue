@@ -1,5 +1,5 @@
 <script setup>
-    import { computed, inject, onMounted, watchEffect, ref, ipcRenderer } from "vue";
+    import { computed, inject, onMounted, watchEffect, ref } from "vue";
 
     import Balances from "./balances";
     import AccountDetails from "./account-details";
@@ -21,65 +21,63 @@
     let lastBlockchain = ref(null);
     let fetchQty = ref(1);
 
-    watchEffect(() => {
-        console.log(`Fetching blockchain data #${fetchQty.value}`);
-        if (selectedAccount.value) {
+    let _explorer = ref(null);
+    let _accessType = ref(null);
+    let _balances = ref(null);
+    let _chain = ref(null);
+
+    watchEffect(async () => {
+        async function lookupBlockchain() {
             isConnecting.value = true;
             isConnected.value = false;
-            if (
-                !lastBlockchain.value ||
-                (lastBlockchain.value && lastBlockchain.value !== selectedAccount.value.chain)
-            ) {
+            let selectedDifferentChain = !lastBlockchain.value || (lastBlockchain.value && lastBlockchain.value !== selectedAccount.value.chain);
+            if (selectedDifferentChain) {
                 lastBlockchain.value = selectedAccount.value.chain;
-                ipcRenderer.send(
-                    'blockchainRequest',
-                    { 
-                        methods: ['getExplorer', 'getAccessType', 'getBalances'],
-                        account: selectedAccount.value,
-                        chain: selectedAccount.value.chain,
-                        location: 'dashboard'
-                    }
-                );
-            } else {
-                ipcRenderer.send(
-                    'blockchainRequest',
-                    {
-                        methods: ['getBalances'],
-                        account: selectedAccount.value,
-                        chain: selectedAccount.value.chain,
-                        location: 'dashboard'
-                    }
-                );
             }
+
+            let blockchainRequest;
+            try { 
+                blockchainRequest = await window.electron.blockchainRequest({
+                    methods: selectedDifferentChain
+                        ? ['getExplorer', 'getAccessType', 'getBalances']
+                        : ['getBalances'],
+                    account: selectedAccount.value,
+                    chain: selectedAccount.value.chain,
+                })
+            } catch (error) {
+                console.log({error});
+            }
+
+            if (!blockchainRequest) {
+                console.log("No blockchain request");
+                isConnecting.value = false;
+                isConnected.value = false;
+                return;
+            }
+
+            if (blockchainRequest.getExplorer) {
+                _explorer.value = blockchainRequest.getExplorer;
+            }
+            if (blockchainRequest.getAccessType) {
+                _accessType.value = blockchainRequest.getAccessType;
+            }
+            if (blockchainRequest.getBalances) {
+                _balances.value = blockchainRequest.getBalances;
+            }
+
+            isConnecting.value = false;
+            isConnected.value = true;
+        }
+
+        if (selectedAccount.value && fetchQty.value) {
+            console.log(`Fetching blockchain data #${fetchQty.value}`);
+            lookupBlockchain();
         }
     })
 
     emitter.on('refreshBalances', () => {
         console.log("Refreshing balances")
         fetchQty.value++;
-    });
-
-    const _explorer = ref(null);
-    const _accessType = ref(null);
-    const _balances = ref(null);
-    const _chain = ref(null);
-    
-    ipcRenderer.on(`blockchainResponse:dashboard`, (event, data) => {
-        const { getExplorer, getAccessType, getBalances, chain } = data;
-        if (getExplorer) {
-            _explorer.value = getExplorer;
-        }
-        if (getAccessType) {
-            _accessType.value = getAccessType;
-        }
-        if (getBalances) {
-            _balances.value = getBalances;
-        }
-        if (chain) {
-            _chain.value = chain;
-        }
-        isConnecting.value = false;
-        isConnected.value = true;
     });
 
     /**

@@ -1,20 +1,23 @@
 import { createApp } from 'vue';
-import { createI18n } from 'vue-i18n';
-import mitt from 'mitt';
+//import mitt from 'mitt/dist/mitt.mjs';
 
+//import BalmUI from 'balm-ui/dist/balm-ui.d.ts'; // Official Google Material Components
+//import BalmUI from 'balm-ui/dist/balm-ui.esm.js'; // Official Google Material Components
+//import BalmUI from 'balm-ui/dist/balm-ui.js'; // Official Google Material Components
 import BalmUI from 'balm-ui'; // Official Google Material Components
 import BalmUIPlus from 'balm-ui/dist/balm-ui-plus'; // BalmJS Team Material Components
-import 'balm-ui-css';
-
-import {i18n} from './lib/i18n';
-import RendererLogger from './lib/RendererLogger';
-import Popups from './components/popups';
+import 'balm-ui/dist/balm-ui.css';
 
 import 'typeface-roboto';
 import 'typeface-rajdhani';
 
 import './css/style.css';
 import './scss/beet.scss';
+
+import {i18n} from './lib/i18n';
+import RendererLogger from './lib/RendererLogger';
+import Popups from './components/popups';
+
 
 const logger = new RendererLogger;
 
@@ -29,9 +32,9 @@ process.on('unhandledRejection', (reason, p) => {
   // application specific logging, throwing an error, or other logic here
 });
 
-const emitter = mitt();
+//const emitter = mitt();
 const app = createApp({});
-app.provide('emitter', emitter);
+//app.provide('emitter', emitter);
 
 app.config.errorHandler = function (err, vm, info) {
   logger.error(err, vm, info);
@@ -53,6 +56,6 @@ app.use(BalmUI, {
 app.use(BalmUIPlus);
 app.mount('#modal');
 
-emitter.on('i18n', (data) => {
-    i18n.global.locale.value = data
-});  
+//emitter.on('i18n', (data) => {
+//    i18n.global.locale.value = data
+//});  
