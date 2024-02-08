@@ -1,17 +1,15 @@
 <script setup>
+/*
     import { ref, onMounted, computed, watchEffect } from 'vue';
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n({ useScope: 'global' });
     import aes from "crypto-js/aes.js";
     import ENC from 'crypto-js/enc-utf8.js';
     import fs from 'fs';
-    import path from 'path';
     import sha512 from "crypto-js/sha512.js";
 
-    import store from '../store/index';
+    import store from '../store/index.js';
     import router from '../router/index.js';
-    import RendererLogger from "../lib/RendererLogger";
-    const logger = new RendererLogger();
 
     let backupPass = ref("");
     let fileError = ref(false);
@@ -21,10 +19,6 @@
     let walletlist = computed(() => {
         return store.getters['WalletStore/getWalletList'];
     })
-
-    onMounted(() => {
-        logger.debug("Restore wizard Mounted");
-    });
 
     watchEffect(async () => {
         if (fileError.value === false) {
@@ -130,9 +124,9 @@
             }
         });
     }
-</script>
+    */
 
-<template>
+   /*
     <div class="bottom p-0">
         <div class="content px-3">
             <h4 class="h4 mt-3 font-weight-bold">
@@ -194,4 +188,8 @@
             </ui-grid>
         </div>
     </div>
+   */
+</script>
+
+<template>
 </template>

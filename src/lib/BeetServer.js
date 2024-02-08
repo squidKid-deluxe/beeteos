@@ -24,10 +24,8 @@ import {
 import getBlockchainAPI from "./blockchains/blockchainFactory.js";
 
 import store from '../store/index.js';
-import * as Actions from './Actions';
+import * as Actions from './Actions.js';
 import BeetDB from './BeetDB.js';
-import RendererLogger from "./RendererLogger";
-const logger = new RendererLogger();
 
 /**
  * Create beet link
@@ -326,7 +324,6 @@ export default class BeetServer {
         }
       } catch (error) {
         console.log(error || "No status")
-        logger.debug("incoming api req fail", error);
         socket.emit("api", {id: data.id, error: true, payload: {code: 4, message: "Negative user response"}})
         return;
       }
@@ -389,7 +386,6 @@ export default class BeetServer {
         });
       } catch (error) {
         console.log(error)
-        logger.debug("incoming relink req fail", error);
         socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful"}});
         return;
       }
@@ -528,7 +524,6 @@ export default class BeetServer {
            * Wallet handshake with client.
            */
           socket.on("authenticate", async (data) => {
-            logger.debug("incoming authenticate request", data);
             if (!store.state.WalletStore.isUnlocked) {
               socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "Beet wallet authentication error."}});
               return;
@@ -543,7 +538,6 @@ export default class BeetServer {
               });
             } catch (error) {
               console.log(error)
-              logger.debug("incoming auth req fail", error);
             }
 
             status.id = data.id; // necessary or not?
@@ -607,11 +601,9 @@ export default class BeetServer {
            */
           socket.on("linkRequest", async (data) => {
             if (!socket.isAuthenticated || !store.state.WalletStore.isUnlocked) {
-              logger.debug("Rejected link: locked wallet");
               socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
               return;
             }
-            logger.debug("processing link");
             try {
               await this.respondLink("link", socket, data);
             } catch (error) {
@@ -630,7 +622,6 @@ export default class BeetServer {
               socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
               return;
             }
-            logger.debug("processing relink");
             try {
               await this.respondLink("relink", socket, data);
             } catch (error) {

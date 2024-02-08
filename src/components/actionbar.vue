@@ -2,7 +2,7 @@
     import { inject, ref, watchEffect, computed } from "vue";
     import { useI18n } from 'vue-i18n';
     import router from '../router/index.js';
-    import store from '../store/index';
+    import store from '../store/index.js';
     
     const emitter = inject('emitter');
     const { t } = useI18n({ useScope: 'global' });

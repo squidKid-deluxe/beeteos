@@ -9,6 +9,11 @@
   "homepage": "https://github.com/beetapp/beeteos",
   "repository": "github:beetapp/beeteos",
   "main": "app/background.js",
+  "browser": {
+    "app": "app/app.js",
+    "modal": "app/modal.js",
+    "receipt": "app/receipt.js"
+  },
   "build": {
     "appId": "io.get-beet.beet",
     "productName": "BeetEOS Blockchain Companion",
@@ -38,9 +43,9 @@
   },
   "scripts": {
     "start": "node build/start.js",
-    "compile": "webpack --config=build/webpack.app.config.js --env=production",
-    "build": "webpack --config=build/webpack.app.config.js --env=production && electron-builder --publish never",
-    "release": "webpack --config=build/webpack.app.config.js --env=production && electron-builder --publish never",
+    "compile": "webpack --config=build/webpack.main.config.js --config=build/webpack.renderer.config.js --config=build/webpack.preload.config.js --env=production",
+    "build": "npm run compile && electron-builder --publish never",
+    "release": "npm run compile && electron-builder --publish never",
     "dist:macos-latest": "npm run-script compile && electron-builder -m --publish never",
     "dist:windows-latest": "npm run-script compile && electron-builder -w --publish never",
     "dist:ubuntu-latest": "npm run-script compile && electron-builder -l --publish never",

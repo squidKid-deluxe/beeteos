@@ -2,9 +2,6 @@ import {
     defaultLocale
 } from '../../config/i18n.js'
 
-import BeetDB from '../../lib/BeetDB.js';
-import RendererLogger from "../../lib/RendererLogger";
-const logger = new RendererLogger();
 const LOAD_SETTINGS = 'LOAD_SETTINGS';
 
 const mutations = {

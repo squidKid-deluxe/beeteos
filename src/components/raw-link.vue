@@ -1,12 +1,11 @@
 <script setup>
     import { ref, computed, inject, watchEffect } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import { ipcMain, ipcRenderer } from "electron";
 
     import AccountSelect from "./account-select";
     import Operations from "./blockchains/operations";
     
-    import store from '../store/index';
+    import store from '../store/index.js';
     import router from '../router/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
@@ -91,10 +90,8 @@
     });
 
     let deepLinkInProgress = ref(false);
+    /*
     ipcRenderer.on('rawdeeplink', async (event, args) => {
-        /**
-         * Raw Deeplink
-         */
         if (!store.state.WalletStore.isUnlocked || router.currentRoute.value.path != "/raw-link") {
             console.log("Wallet must be unlocked for raw deeplinks to work.");
             window.electron.notify(t("common.raw.promptFailure"));
@@ -135,6 +132,7 @@
         
         deepLinkInProgress.value = false;
     });
+    */
 </script>
 
 <template>

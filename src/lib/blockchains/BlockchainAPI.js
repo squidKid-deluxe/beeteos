@@ -1,9 +1,9 @@
-import store from "../../store";
-import {formatAsset, humanReadableFloat} from "../assetUtils";
-import RendererLogger from "../RendererLogger";
-import * as Actions from '../Actions';
+import store from "../../store/index.js"
 
-const logger = new RendererLogger();
+//import store from "../../store/index.js";
+import {formatAsset, humanReadableFloat} from "../assetUtils.js";
+import * as Actions from '../Actions.js';
+
 
 export default class BlockchainAPI {
 
@@ -90,7 +90,6 @@ export default class BlockchainAPI {
      * @returns {String} node
      */
     _connectionFailed(resolveCallback, node, error) {
-        logger.debug(this._config.name + " Failed to connect to " + node, error);
         console.log(this._config.name + " Failed to connect to " + node, error);
         this._tempBanned.push(node);
         this._isConnected = false;

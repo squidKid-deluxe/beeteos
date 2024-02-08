@@ -1,17 +1,11 @@
 <script setup>
-    import { onMounted, watchEffect, ref, computed } from 'vue';
+    import { watchEffect, ref, computed } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import store from '../store/index';
-    import RendererLogger from "../lib/RendererLogger";
-    import {formatAccount} from "../lib/formatter";
+    import store from '../store/index.js';
+    import {formatAccount} from "../lib/formatter.js";
 
     const { t } = useI18n({ useScope: 'global' });
-    const logger = new RendererLogger();
     let tableData = ref();
-
-    onMounted(() => {
-        logger.debug("Settings Mounted");
-    });
 
     function fetchDapps() {
         let storedDapps = [];

@@ -8,7 +8,7 @@
     import QRScan from "./qr/Scan";
     import QRUpload from "./qr/Upload";
 
-    import store from '../store/index';
+    import store from '../store/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
     const emitter = inject('emitter');

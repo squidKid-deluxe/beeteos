@@ -1,8 +1,3 @@
-import aes from "crypto-js/aes.js";
-import RendererLogger from "../../lib/RendererLogger";
-import sha512 from "crypto-js/sha512.js";
-
-const logger = new RendererLogger();
 const LOAD_ACCOUNTS = 'LOAD_ACCOUNTS';
 const CHOOSE_ACCOUNT = 'CHOOSE_ACCOUNT';
 const ADD_ACCOUNT = 'ADD_ACCOUNT';
@@ -39,11 +34,12 @@ const actions = {
             );
 
             if (!existingAccount) {
+                let _hash = window.electron.sha512(payload.password);
                 for (let keytype in payload.account.keys) {
-                    payload.account.keys[keytype] = aes.encrypt(
+                    payload.account.keys[keytype] = window.electron.aesEncrypt(
                         payload.account.keys[keytype],
-                        sha512(payload.password).toString()
-                    ).toString();
+                        _hash
+                    );
                 }
 
                 dispatch('WalletStore/saveAccountToWallet', payload, {root: true})

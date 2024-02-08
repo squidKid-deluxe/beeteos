@@ -5,7 +5,7 @@
     import AccountDetails from "./account-details";
     import AccountSelect from "./account-select";
 
-    import store from '../store/index';
+    import store from '../store/index.js';
 
     const emitter = inject('emitter');
 

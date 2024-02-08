@@ -1,12 +1,12 @@
 import { blockchains } from "../../config/config.js";
 
-import store from "../../store";
+import store from "../../store/index.js";
 
-import BitShares from "./BitShares";
-import TUSC from "./TUSC";
-import EOSmainnet from "./EOSmainnet";
-import TLOS from "./TLOS";
-import BEOS from "./BEOS";
+import BitShares from "./BitShares.js";
+import TUSC from "./TUSC.js";
+import EOSmainnet from "./EOSmainnet.js";
+import TLOS from "./TLOS.js";
+import BEOS from "./BEOS.js";
 
 let storedChain;
 let lastChain;

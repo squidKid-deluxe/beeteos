@@ -1,6 +1,4 @@
-import BlockchainAPI from "./BlockchainAPI";
-import RendererLogger from "../RendererLogger";
-const logger = new RendererLogger();
+import BlockchainAPI from "./BlockchainAPI.js";
 
 import { Api, JsonRpc, RpcError } from 'eosjs';
 import { JsSignatureProvider } from "eosjs/dist/eosjs-jssig";
@@ -8,8 +6,8 @@ import { JsSignatureProvider } from "eosjs/dist/eosjs-jssig";
 import * as ecc from "eosjs-ecc";
 import { TextEncoder, TextDecoder } from "util";
 
-import beautify from "./EOS/beautify";
-import * as Actions from '../Actions';
+import beautify from "./EOS/beautify.js";
+import * as Actions from '../Actions.js';
 
 const operations = [
     Actions.GET_ACCOUNT,

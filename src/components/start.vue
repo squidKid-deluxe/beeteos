@@ -4,10 +4,8 @@
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n({ useScope: 'global' });
 
-    import store from '../store/index';
+    import store from '../store/index.js';
     import router from '../router/index.js';
-    import RendererLogger from "../lib/RendererLogger";
-    const logger = new RendererLogger();
 
     let hasWallet = computed(() => {
         return store.getters['WalletStore/getHasWallet'];
@@ -31,7 +29,6 @@
     let legacy = ref(false);
 
     onMounted(() => {
-        logger.debug("Start screen mounted");
         store.dispatch("WalletStore/loadWallets", {}).catch(() => {});
         store.dispatch("OriginStore/loadApps");
     });

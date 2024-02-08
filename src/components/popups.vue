@@ -55,6 +55,7 @@
     watchEffect(() => {
         const id = handleProp('id');
 
+        /*
         ipcRenderer.send(`get:prompt:${id}`);
 
         ipcRenderer.on(`respond:prompt:${id}`, (event, data) => {
@@ -99,6 +100,7 @@
                 existingLinks.value = JSON.parse(data.existingLinks);
             }
         });
+        */
     })
 
     let types = ref();

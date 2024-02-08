@@ -1,6 +1,4 @@
 import BeetDB from '../../lib/BeetDB.js';
-import RendererLogger from "../../lib/RendererLogger";
-const logger = new RendererLogger();
 const LOAD_APPS = 'LOAD_APPS';
 const ADD_APP = 'ADD_APP';
 const UPDATE_APP = 'UPDATE_APP';

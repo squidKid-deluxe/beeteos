@@ -7,7 +7,7 @@
     import ImportMemo from "./blockchains/bitshares/ImportMemo";
     import ImportKeys from "./blockchains/ImportKeys";
 
-    import store from '../store/index';
+    import store from '../store/index.js';
     import router from '../router/index.js';
     import { blockchains } from "../config/config.js";
     import { watchEffect } from "vue";

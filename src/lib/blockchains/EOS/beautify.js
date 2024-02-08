@@ -1,4 +1,4 @@
-//import { humanReadableFloat } from "../../assetUtils";
+//import { humanReadableFloat } from "../../assetUtils.js";
 
 const allowedOperations = [
     "setalimits",

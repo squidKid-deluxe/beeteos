@@ -3,7 +3,7 @@
     import { useI18n } from 'vue-i18n';
 
     import router from '../router/index.js';
-    import store from '../store/index';
+    import store from '../store/index.js';
     import langSelect from "./lang-select.vue";
     const emitter = inject('emitter');
 

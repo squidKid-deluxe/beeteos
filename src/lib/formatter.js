@@ -1,4 +1,4 @@
-import { blockchains } from "../config/config";
+import { blockchains } from "../config/config.js";
 
 export function formatAccount(account, withTooltip=false) {
     let accountString = account.accountName;

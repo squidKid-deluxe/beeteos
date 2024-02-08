@@ -5,8 +5,8 @@
     import AccountSelect from "./account-select";
     import Operations from "./blockchains/operations";
 
-    import store from '../store/index';
-    import router from '../router/index.js';
+    import store from '../store/index.js';
+    //import router from '../router/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
     const emitter = inject('emitter');
@@ -162,6 +162,7 @@
     });
 
     let deepLinkInProgress = ref(false);
+    /*
     ipcRenderer.on('deeplink', async (event, args) => {
         if (!store.state.WalletStore.isUnlocked || router.currentRoute.value.path != "/totp") {
             console.log("Wallet must be unlocked for deeplinks to work.");
@@ -203,6 +204,7 @@
         }
         deepLinkInProgress.value = false;
     });
+    */
 
     /*
     ipcRenderer.on('blockchainResponse:totpDeeplink:error', (event, args) => {

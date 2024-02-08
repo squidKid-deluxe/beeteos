@@ -1,7 +1,7 @@
 <script setup>
     import { onMounted, watchEffect, ref, computed, inject } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import store from '../../store/index';
+    import store from '../../store/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
     const emitter = inject('emitter');

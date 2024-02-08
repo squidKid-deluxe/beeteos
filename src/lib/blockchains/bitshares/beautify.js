@@ -1,4 +1,4 @@
-import { formatAsset, humanReadableFloat } from "../../assetUtils";
+import { formatAsset, humanReadableFloat } from "../../assetUtils.js";
 
 const permission_flags = {
     charge_market_fee: 0x01 /**< an issuer-specified percentage of all market trades in this asset is paid to the issuer */,

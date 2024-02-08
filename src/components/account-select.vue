@@ -2,8 +2,8 @@
     import { watch, ref, computed } from "vue";
     import { useI18n } from 'vue-i18n';
 
-    import store from '../store/index';
-    import {formatChain, formatAccount} from "../lib/formatter";
+    import store from '../store/index.js';
+    import {formatChain, formatAccount} from "../lib/formatter.js";
     const { t } = useI18n({ useScope: 'global' });
 
     let chosenAccount = ref(store.getters["AccountStore/getCurrentIndex"]);

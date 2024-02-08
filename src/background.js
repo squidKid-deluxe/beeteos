@@ -6,7 +6,7 @@ import path from "path";
 import url from "url";
 import fs from 'fs';
 import os from 'os';
-import { argv } from 'node:process';
+//import { argv } from 'node:process';
 import queryString from "query-string";
 import {PrivateKey} from "bitsharesjs";
 
@@ -27,12 +27,12 @@ import {
   Notification
 } from 'electron';
 
-import Logger from '~/lib/Logger';
-import {initApplicationMenu} from '~/lib/applicationMenu';
-import { getSignature } from "./lib/SecureRemote";
-import * as Actions from './lib/Actions';
-import getBlockchainAPI from "./lib/blockchains/blockchainFactory";
-import BTSWalletHandler from "./lib/blockchains/bitshares/BTSWalletHandler";
+import Logger from './lib/Logger.js';
+import {initApplicationMenu} from './lib/applicationMenu.js';
+import { getSignature } from "./lib/SecureRemote.js";
+import * as Actions from './lib/Actions.js';
+import getBlockchainAPI from "./lib/blockchains/blockchainFactory.js";
+import BTSWalletHandler from "./lib/blockchains/bitshares/BTSWalletHandler.js";
 
 import { injectedCall, voteFor, transfer } from './lib/apiUtils.js';
 
@@ -971,7 +971,6 @@ const createWindow = async () => {
     }
 
     return responses;
-    //mainWindow.webContents.send(`blockchainResponse:${location}`, responses);
   });
 
   /*
@@ -1028,6 +1027,57 @@ const createWindow = async () => {
       }
       clearTimeout(timeout);
   }
+
+  ipcMain.on('aesEncrypt', async (event, arg) => {
+    const { data, seed } = arg;
+
+    let encryptedData;
+    try {
+        encryptedData = aes.encrypt(data, seed).toString();
+    } catch (error) {
+        console.log(error);
+        return;
+    }
+
+    return encryptedData;
+  });
+
+    ipcMain.on('aesDecrypt', async (event, arg) => {
+        const { data, seed } = arg;
+
+        let decryptedData;
+        try {
+            decryptedData = aes.decrypt(data, seed).toString(ENC);
+        } catch (error) {
+            console.log(error);
+            return;
+        }
+    
+        return decryptedData;
+    });
+
+  ipcMain.on('sha512', async (event, arg) => {
+    const { data } = arg;
+
+    let hash;
+    try {
+        hash = sha512(data).toString();
+    } catch (error) {
+        console.log(error);
+        return;
+    }
+
+    return hash;
+  });
+
+  ipcMain.on('id', (event, arg) => {
+    const id = uuidv4();
+    event.sender.send('id', id);
+  });
+
+  ipcMain.on('encParse', (event, arg) => {
+    return JSON.parse(arg.toString(ENC))
+  });
 
   ipcMain.on('seeding', (event, arg) => {
       if (timeout) {
@@ -1191,7 +1241,7 @@ if (currentOS == 'win32') {
     
         let defaultPath;
         try {
-            defaultPath = path.resolve(argv[1]);
+            defaultPath = path.resolve(process.argv[1]);
         } catch (error) {
             console.log(error)
         }

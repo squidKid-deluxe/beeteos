@@ -2,12 +2,11 @@ import { createApp } from 'vue';
 //import { createI18n } from 'vue-i18n';
 //import mitt from 'mitt';
 
-//import BalmUI from 'balm-ui/dist/balm-ui.d.ts'; // Official Google Material Components
-//import BalmUI from 'balm-ui/dist/balm-ui.esm.js'; // Official Google Material Components
-//import BalmUI from 'balm-ui/dist/balm-ui.js'; // Official Google Material Components
+//import BalmUI from 'balm-ui/dist/balm-ui.esm.js';
+
 import BalmUI from 'balm-ui'; // Official Google Material Components
 import BalmUIPlus from 'balm-ui/dist/balm-ui-plus'; // BalmJS Team Material Components
-import 'balm-ui/dist/balm-ui.css';
+import 'balm-ui-css';
 
 import 'typeface-roboto';
 import 'typeface-rajdhani';
@@ -15,14 +14,10 @@ import 'typeface-rajdhani';
 import './css/style.css';
 import './scss/beet.scss';
 
-import {i18n} from './lib/i18n';
-import RendererLogger from './lib/RendererLogger';
-import Receipt from './components/receipt';
-
-const logger = new RendererLogger;
+import {i18n} from './lib/i18n.js';
+import Receipt from './components/receipt.vue';
 
 window.onerror = function (msg, url, lineNo, columnNo, error) {
-  logger.error(error);
   console.log(error);
   return false;
 };
@@ -37,7 +32,6 @@ const app = createApp({});
 //app.provide('emitter', emitter);
 
 app.config.errorHandler = function (err, vm, info) {
-  logger.error(err, vm, info);
   console.log("error:" + err);
 };
 
@@ -53,6 +47,8 @@ app.use(BalmUI, {
         primary: '#C7088E'
     }
 });
+
+//app.use(UiTable);
 app.use(BalmUIPlus);
 app.mount('#receipt');
 

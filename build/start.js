@@ -1,20 +1,60 @@
-const childProcess = require("child_process");
-const electron = require("electron");
-const webpack = require("webpack");
-const config = require("./webpack.app.config");
+/*
+import childProcess from 'child_process';
+import electron from 'electron';
+import webpack from 'webpack';
+import mainConfig from './webpack.main.config.mjs';
+import rendererConfig from './webpack.renderer.config.mjs';
+import preloadConfig from './webpack.preload.config.mjs';
+*/
+
+const childProcess = require('child_process');
+const electron = require('electron');
+const webpack = require('webpack');
+const mainConfig = require('./webpack.main.config.js');
+const rendererConfig = require('./webpack.renderer.config.js');
+const preloadConfig = require('./webpack.preload.config.js');
 
 const env = "development";
-const compiler = webpack(config(env));
-let electronStarted = false;
+const mainCompiler = webpack(mainConfig(env));
+const rendererCompiler = webpack(rendererConfig(env));
+const preloadCompiler = webpack(preloadConfig(env));
 
-const watching = compiler.watch({}, (err, stats) => {
-  if (!err && !stats.hasErrors() && !electronStarted) {
+let electronStarted = false;
+let mainDone = false;
+let rendererDone = false;
+let preloadDone = false;
+
+const startElectron = () => {
+  if (!electronStarted && mainDone && rendererDone && preloadDone) {
     electronStarted = true;
 
     childProcess
       .spawn(electron, ["."], { stdio: "inherit" })
       .on("close", () => {
-        watching.close();
+        mainWatching.close();
+        rendererWatching.close();
+        preloadWatching.close();
       });
+  }
+};
+
+const mainWatching = mainCompiler.watch({}, (err, stats) => {
+  if (!err && !stats.hasErrors()) {
+    mainDone = true;
+    startElectron();
+  }
+});
+
+const rendererWatching = rendererCompiler.watch({}, (err, stats) => {
+  if (!err && !stats.hasErrors()) {
+    rendererDone = true;
+    startElectron();
+  }
+});
+
+const preloadWatching = preloadCompiler.watch({}, (err, stats) => {
+  if (!err && !stats.hasErrors()) {
+    preloadDone = true;
+    startElectron();
   }
 });

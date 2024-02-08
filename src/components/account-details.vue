@@ -1,6 +1,6 @@
 <script setup>
     import { computed } from 'vue';
-    import {formatChain} from "../lib/formatter";
+    import {formatChain} from "../lib/formatter.js";
     import { shell } from 'electron';
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n({ useScope: 'global' });

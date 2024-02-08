@@ -1,4 +1,4 @@
-import BitShares from "./BitShares";
+import BitShares from "./BitShares.js";
 //import {Apis} from "bitsharesjs-ws";
 
 export default class TUSC extends BitShares {

@@ -1,4 +1,4 @@
-import BlockchainAPI from "./BlockchainAPI";
+import BlockchainAPI from "./BlockchainAPI.js";
 import { Apis } from "bitsharesjs-ws";
 import {
     Aes,
@@ -10,12 +10,10 @@ import {
 } from "bitsharesjs";
 import * as Socket from "simple-websocket";
 
-import * as Actions from "../Actions";
+import * as Actions from "../Actions.js";
 
-import beautify from "./bitshares/beautify";
-import RendererLogger from "../RendererLogger";
-import { humanReadableFloat } from "../assetUtils";
-const logger = new RendererLogger();
+import beautify from "./bitshares/beautify.js";
+import { humanReadableFloat } from "../assetUtils.js";
 
 /**
  * Returns the value of a nested property within an object, given a string path.

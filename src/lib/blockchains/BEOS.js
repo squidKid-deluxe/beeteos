@@ -1,4 +1,4 @@
-import EOSmainnet from "./EOSmainnet";
+import EOSmainnet from "./EOSmainnet.js";
 
 export default class BEOS extends EOSmainnet {
 

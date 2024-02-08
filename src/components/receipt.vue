@@ -1,5 +1,5 @@
 <script setup>
-    import { computed, ref, watchEffect } from "vue";
+    import { ref, watchEffect } from "vue";
     import queryString from "query-string";
     import { useI18n } from 'vue-i18n';
 
@@ -48,7 +48,7 @@
 
     watchEffect(() => {
         const id = handleProp('id');
-
+        /*
         ipcRenderer.send(`get:receipt:${id}`);
 
         ipcRenderer.on(`respond:receipt:${id}`, (event, data) => {
@@ -97,6 +97,7 @@
                 notifyTXT.value = data.notifyTXT;
             }
         });
+        */
     })
 
     let openOPReq = ref(false);
