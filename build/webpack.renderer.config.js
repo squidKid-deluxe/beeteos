@@ -27,10 +27,10 @@ module.exports = function(env) {
         output: {
             filename: "[name].js",
             path: path.resolve(__dirname, "../app"),
-            chunkFormat: 'commonjs',
+            //chunkFormat: 'commonjs',
         },
-        target: "web",
-        //target: 'electron-renderer',
+        target: "electron-renderer",
+        //target: "web",
         mode: env === "production" ? "production" : "development",
 
         externals: [nodeExternals({
@@ -39,7 +39,13 @@ module.exports = function(env) {
                 'vuex',
                 'vue-router',
                 'vue-i18n',
+                'vue-qrcode-reader',
                 'dexie',
+                'query-string',
+                'strict-uri-encode',
+                'decode-uri-component',
+                'split-on-first',
+                'filter-obj',
                 '@intlify/shared',
                 '@intlify/core-base',
                 '@intlify/message-compiler',

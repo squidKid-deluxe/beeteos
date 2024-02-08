@@ -22,10 +22,12 @@ window.onerror = function (msg, url, lineNo, columnNo, error) {
   return false;
 };
 
+/*
 process.on('unhandledRejection', (reason, p) => {
   console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
   // application specific logging, throwing an error, or other logic here
 });
+*/
 
 store.dispatch("SettingsStore/loadSettings");
 store.dispatch("WhitelistStore/loadWhitelist");

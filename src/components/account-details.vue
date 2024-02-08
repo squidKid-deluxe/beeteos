@@ -1,7 +1,7 @@
 <script setup>
     import { computed } from 'vue';
     import {formatChain} from "../lib/formatter.js";
-    import { shell } from 'electron';
+    //import { shell } from 'electron';
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n({ useScope: 'global' });
 
@@ -40,7 +40,7 @@
 
     function openExplorer() {
         // TODO: Copy/Paste link for external browser instead?
-        shell.openExternal(props.explorer);
+        //shell.openExternal(props.explorer);
     }
 
 </script>
