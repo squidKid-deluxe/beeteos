@@ -524,7 +524,9 @@ const createWindow = async () => {
   * Handling front end blockchain requests
   */
   ipcMain.handle('blockchainRequest', async (event, arg) => {
-    const { method, account, chain } = arg;
+    const { methods, account, chain } = arg;
+
+    console.log({methods, account, chain});
 
     let blockchain;
     try {
@@ -548,7 +550,7 @@ const createWindow = async () => {
       chain
     };
 
-    if (method.includes("getBalances")) {
+    if (methods.includes("getBalances")) {
         blockchain.getBalances(account.name)
         .then(result => {
             responses['getBalances'] = result;
@@ -559,35 +561,35 @@ const createWindow = async () => {
         });
     }
 
-    if (method.includes("verifyMessage")) {
+    if (methods.includes("verifyMessage")) {
         const { request } = arg;
         responses['verifyMessage'] = await blockchain.verifyMessage(request);
     }
 
-    if (method.includes("getExplorer")) {
+    if (methods.includes("getExplorer")) {
         responses['getExplorer'] = blockchain.getExplorer(account.name);
     }
 
-    if (method.includes("getAccessType")) {
+    if (methods.includes("getAccessType")) {
         responses['getAccessType'] = blockchain.getAccessType();
     }
 
-    if (method.includes("getImportOptions")) {
+    if (methods.includes("getImportOptions")) {
         responses['getImportOptions'] = blockchain.getImportOptions();
     }
 
-    if (method.includes("getOperationTypes")) {
+    if (methods.includes("getOperationTypes")) {
         responses['getOperationTypes'] = blockchain.getOperationTypes();
     }
 
-    if (method.includes("totpCode")) {
+    if (methods.includes("totpCode")) {
       const { timestamp } = arg;
       const msg = uuidv4();
       let shaMSG = sha512(msg + timestamp).toString().substring(0, 15);
       responses['code'] = shaMSG;
     }
 
-    if (method.includes("totpDeeplink")) {
+    if (methods.includes("totpDeeplink")) {
       const { requestContent, currentCode, settingsRows } = arg;
 
       let apiobj;
@@ -631,7 +633,7 @@ const createWindow = async () => {
       responses['getRawLink'] = status;
     }
 
-    if (method.includes("getRawLink")) {
+    if (methods.includes("getRawLink")) {
         const { requestBody, settingsRows } = arg;
 
         let apiobj;
@@ -670,7 +672,7 @@ const createWindow = async () => {
         responses['getRawLink'] = status;
     }
 
-    if (method.includes("localFileUpload")) {
+    if (methods.includes("localFileUpload")) {
       const {settingsRows, filePath} = arg;
       fs.readFile(filePath, 'utf-8', async (error, data) => {
         if (error) {
@@ -795,7 +797,7 @@ const createWindow = async () => {
       });
     }
 
-    if (method.includes("processQR")) {
+    if (methods.includes("processQR")) {
       const { qrChoice, qrData, settingsRows } = arg;
       let qrTX;
       try {
@@ -870,7 +872,7 @@ const createWindow = async () => {
       responses['qrData'] = status;
     }
 
-    if (method.includes("verifyAccount")) {
+    if (methods.includes("verifyAccount")) {
       const { accountname, authorities } = arg;
       let account;
       try {
@@ -888,7 +890,7 @@ const createWindow = async () => {
       responses['verifyAccount'] = {account, authorities};
     }
 
-    if (method.includes("verifyCloudAccount")) {
+    if (methods.includes("verifyCloudAccount")) {
         const { accountname, pass, legacy } = arg;
 
         const active_seed = accountname + 'active' + pass;
@@ -932,7 +934,7 @@ const createWindow = async () => {
         responses['verifyCloudAccount'] = {account, authorities};
     }
 
-    if (method.includes("decryptBackup")) {
+    if (methods.includes("decryptBackup")) {
         const { filePath, pass } = arg;
         fs.readFile(filePath, async (err, data) => {
             if (err) {
@@ -1028,7 +1030,7 @@ const createWindow = async () => {
       clearTimeout(timeout);
   }
 
-  ipcMain.on('aesEncrypt', async (event, arg) => {
+  ipcMain.handle('aesEncrypt', async (event, arg) => {
     const { data, seed } = arg;
 
     let encryptedData;
@@ -1042,21 +1044,29 @@ const createWindow = async () => {
     return encryptedData;
   });
 
-    ipcMain.on('aesDecrypt', async (event, arg) => {
+    ipcMain.handle('aesDecrypt', async (event, arg) => {
         const { data, seed } = arg;
 
         let decryptedData;
         try {
-            decryptedData = aes.decrypt(data, seed).toString(ENC);
+            decryptedData = await aes.decrypt(data, seed);
+        } catch (error) {
+            console.log(error);
+            return;
+        }
+
+        let decryptedString;
+        try {
+            decryptedString = JSON.parse(decryptedData.toString(ENC));
         } catch (error) {
             console.log(error);
             return;
         }
     
-        return decryptedData;
+        return decryptedString;
     });
 
-  ipcMain.on('sha512', async (event, arg) => {
+  ipcMain.handle('sha512', async (event, arg) => {
     const { data } = arg;
 
     let hash;
@@ -1070,13 +1080,15 @@ const createWindow = async () => {
     return hash;
   });
 
-  ipcMain.on('id', (event, arg) => {
+  ipcMain.handle('id', (event, arg) => {
     const id = uuidv4();
-    event.sender.send('id', id);
+    return id;
   });
 
-  ipcMain.on('encParse', (event, arg) => {
-    return JSON.parse(arg.toString(ENC))
+  ipcMain.handle('encParse', (event, arg) => {
+    const {data} = arg;
+    console.log({data});
+    return JSON.parse(data.toString(ENC))
   });
 
   ipcMain.on('seeding', (event, arg) => {

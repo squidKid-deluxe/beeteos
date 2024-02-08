@@ -22,7 +22,7 @@
         async function initialize() {
             let blockchainRequest;
             try {
-                blockchainRequest = window.electron.blockchainRequest({
+                blockchainRequest = await window.electron.blockchainRequest({
                     methods: ["getAccessType", "getSignUpInput"],
                     chain: props.chain
                 });

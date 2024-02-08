@@ -1,22 +1,9 @@
-/*
-import { fileURLToPath } from 'url';
-import path from 'path';
-import nodeExternals from 'webpack-node-externals';
-import FriendlyErrorsWebpackPlugin from '@soda/friendly-errors-webpack-plugin';
-import { VueLoaderPlugin } from 'vue-loader';
-import * as sass from 'sass';
-*/
-
-const { fileURLToPath } = require('url');
 const path = require('path');
 const nodeExternals = require('webpack-node-externals');
 const FriendlyErrorsWebpackPlugin = require('@soda/friendly-errors-webpack-plugin');
 const { VueLoaderPlugin } = require('vue-loader');
 const sass = require('sass');
 
-//const _directory = path.dirname(fileURLToPath(import.meta.url));
-
-//export default env => {
 module.exports = function(env) {
     return {
         entry: {
@@ -27,10 +14,8 @@ module.exports = function(env) {
         output: {
             filename: "[name].js",
             path: path.resolve(__dirname, "../app"),
-            //chunkFormat: 'commonjs',
         },
         target: "electron-renderer",
-        //target: "web",
         mode: env === "production" ? "production" : "development",
 
         externals: [nodeExternals({
@@ -52,7 +37,8 @@ module.exports = function(env) {
                 '@vue/devtools-api',
                 'typeface-roboto',
                 'typeface-rajdhani',
-                '@babel/runtime'
+                '@babel/runtime',
+                'mitt'
             ]
         })],
         

@@ -117,8 +117,9 @@ const actions = {
                     BTS: [],
                     BTS_TEST: [],
                     TUSC: [],
-                    BTC: [],
-                    BTC_TEST: []
+                    EOS: [],
+                    BEOS: [],
+                    TLOS: []
                 }
             }
             settings.chainPermissions[payload.chain] = payload.rows;

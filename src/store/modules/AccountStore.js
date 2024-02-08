@@ -27,19 +27,19 @@ const actions = {
         commit,
         state
     }, payload) {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             let existingAccount = state.accountlist.find(
                 x => x.chain == payload.account.chain &&
                 (x.accountID == payload.account.accountName || x.accountName === payload.account.accountName)
             );
 
             if (!existingAccount) {
-                let _hash = window.electron.sha512(payload.password);
+                let _hash = await window.electron.sha512({data: payload.password});
                 for (let keytype in payload.account.keys) {
-                    payload.account.keys[keytype] = window.electron.aesEncrypt(
-                        payload.account.keys[keytype],
-                        _hash
-                    );
+                    payload.account.keys[keytype] = await window.electron.aesEncrypt({
+                        data: payload.account.keys[keytype],
+                        seed: _hash
+                    });
                 }
 
                 dispatch('WalletStore/saveAccountToWallet', payload, {root: true})

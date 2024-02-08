@@ -64,7 +64,7 @@
         async function initialize() {
             let blockchainRequest;
             try {
-                blockchainRequest = window.electron.blockchainRequest(
+                blockchainRequest = await window.electron.blockchainRequest(
                     { 
                         methods: ['supportsTOTP', 'getOperationTypes'],
                         chain: chain.value
@@ -109,7 +109,7 @@
 
         let blockchainRequest;
         try {
-            blockchainRequest = window.electron.blockchainRequest(
+            blockchainRequest = await window.electron.blockchainRequest(
                 { 
                     methods: ['getRawLink'],
                     chain: account.chain,

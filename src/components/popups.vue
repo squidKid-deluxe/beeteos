@@ -105,27 +105,31 @@
 
     let types = ref();
     watchEffect(() => {
-        let thisType = type.value ?? payload.value?.type;
-        if (thisType !== Actions.REQUEST_LINK) {
-            return;
+        async function initialize() {
+            let thisType = type.value ?? payload.value?.type;
+            if (thisType !== Actions.REQUEST_LINK) {
+                return;
+            }
+
+            let thisChain = chain.value ?? request.value.chain;
+
+            let requestContents;
+            try {
+                requestContents = await window.electron.blockchainRequest({
+                    methods: ["getOperationTypes"],
+                    chain: thisChain
+                });
+            } catch (error) {
+                console.log(error);
+                return;
+            }
+
+            if (requestContents && requestContents.getOperationTypes) {
+                types.value = requestContents.getOperationTypes;
+            }
         }
 
-        let thisChain = chain.value ?? request.value.chain;
-
-        let requestContents;
-        try {
-            requestContents = window.electron.blockchainRequest({
-                methods: ["getOperationTypes"],
-                chain: thisChain
-            });
-        } catch (error) {
-            console.log(error);
-            return;
-        }
-
-        if (requestContents && requestContents.getOperationTypes) {
-            types.value = requestContents.getOperationTypes;
-        }
+        initialize();
     })
 
     let chainOperations = computed(() => {

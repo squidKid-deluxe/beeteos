@@ -53,10 +53,10 @@ const actions = {
         return new Promise((resolve, reject) => {
             BeetDB.wallets_encrypted.get({
                 id: payload.wallet_id
-            }).then((wallet) => {
+            }).then(async (wallet) => {
                 let _hash;
                 try {
-                    _hash = window.electron.sha512(payload.wallet_pass).toString();
+                    _hash = await window.electron.sha512({data: payload.wallet_pass});
                 } catch (error) {
                     console.log({error});
                     reject('hash_failure');
@@ -64,18 +64,15 @@ const actions = {
 
                 let bytes;
                 try {
-                    bytes = window.electron.aesDecrypt(wallet.data, _hash);
+                    bytes = await window.electron.aesDecrypt({data: wallet.data, seed: _hash});
                 } catch (error) {
                     console.log({error});
-                    reject('decrypt_failure');
+                    throw error;
                 }
 
-                let decrypted_wallet;
-                try {
-                    decrypted_wallet = window.electron.encParse(bytes);
-                } catch (error) {
-                    console.log({error});
-                    reject('parse_failure');
+                if (!bytes) {
+                    console.log("No decrypted data")
+                    throw 'decrypt_failure';
                 }
 
                 let public_wallets = state.walletlist.filter((x) => {
@@ -83,7 +80,7 @@ const actions = {
                 });
 
                 commit(GET_WALLET, public_wallets[0]);
-                let accountlist = decrypted_wallet;
+                let accountlist = bytes;
                 window.electron.seeding(_hash);
                 dispatch('AccountStore/loadAccounts', accountlist, {
                     root: true
@@ -104,12 +101,10 @@ const actions = {
         commit,
         dispatch
     }, payload) {
-        return new Promise((resolve, reject) => {
-
-            //let wallets = localStorage.getItem("wallets");
+        return new Promise(async (resolve, reject) => {
             let walletid;
             try {
-                walletid = window.electron.id();
+                walletid = await window.electron.id();
             } catch (error) {
                 console.log({error});
                 reject('uuid_failure');
@@ -136,7 +131,7 @@ const actions = {
 
                     let _hash;
                     try {
-                        _hash = window.electron.sha512(payload.password).toString();
+                        _hash = await window.electron.sha512({data: payload.password});
                     } catch (error) {
                         console.log({error});
                         return;
@@ -144,10 +139,10 @@ const actions = {
 
                     let _encrypted;
                     try {
-                        _encrypted = await window.electron.aesEncrypt(
-                            JSON.stringify(payload.backup.walletdata),
-                            _hash
-                        );
+                        _encrypted = await window.electron.aesEncrypt({
+                            data: JSON.stringify(payload.backup.walletdata),
+                            seed: _hash
+                        });
                     } catch (error) {
                         console.log({error});
                         return;
@@ -177,12 +172,10 @@ const actions = {
         commit,
         dispatch
     }, payload) {
-        return new Promise((resolve, reject) => {
-
-            //let wallets = localStorage.getItem("wallets");
+        return new Promise(async (resolve, reject) => {
             let walletid;
             try {
-                walletid = window.electron.id();
+                walletid = await window.electron.id();
             } catch (error) {
                 console.log({error});
                 reject('uuid_failure');
@@ -193,7 +186,7 @@ const actions = {
                 accounts: [{ accountID: payload.walletdata.accountID, chain: payload.walletdata.chain}]
             };
             BeetDB.wallets_public.put(newwallet).then(() => {
-                BeetDB.wallets_public.toArray().then((wallets) => {
+                BeetDB.wallets_public.toArray().then(async (wallets) => {
                     let unlock;
                     let unlocked = new Promise(function (resolve) {
                         unlock = resolve
@@ -207,7 +200,7 @@ const actions = {
 
                     let _hash;
                     try {
-                        _hash = window.electron.sha512(payload.password).toString();
+                        _hash = await window.electron.sha512({data: payload.password});
                     } catch (error) {
                         console.log({error});   
                         return;
@@ -216,10 +209,10 @@ const actions = {
                     for (let keytype in payload.walletdata.keys) {
                         let _encrypted;
                         try {
-                            _encrypted = window.electron.aesEncrypt(
-                                payload.walletdata.keys[keytype],
-                                _hash
-                            );
+                            _encrypted = await window.electron.aesEncrypt({
+                                data: payload.walletdata.keys[keytype],
+                                seed: _hash
+                            });
                         } catch (error) {
                             console.log({error});
                             reject('AES encryption failure');
@@ -228,10 +221,10 @@ const actions = {
                     
                     let _encryptedWalletData;
                     try {
-                        _encryptedWalletData = window.electron.aesEncrypt(
-                            JSON.stringify(payload.walletdata),
-                            _hash
-                        );
+                        _encryptedWalletData = await window.electron.aesEncrypt({
+                            data: JSON.stringify(payload.walletdata),
+                            seed: _hash
+                        });
                     } catch (error) {
                         console.log({error});
                         reject('AES encryption failure');
@@ -270,7 +263,7 @@ const actions = {
             }).then(async (wallet) => {
                 let _hash;
                 try {
-                    _hash = window.electron.sha512(payload.password).toString();
+                    _hash = await window.electron.sha512({data: payload.password});
                 } catch (error) {
                     console.log({error});
                     throw ('hash_failure');
@@ -278,7 +271,7 @@ const actions = {
 
                 let bytes;
                 try {
-                    bytes = window.electron.aesDecrypt(wallet.data, _hash);
+                    bytes = await window.electron.aesDecrypt({data: wallet.data, seed: _hash});
                 } catch (error) {
                     console.log({error});
                     throw ('decrypt_failure');
@@ -286,7 +279,7 @@ const actions = {
 
                 let decrypted_wallet;
                 try {
-                    decrypted_wallet = window.electron.encParse(bytes);
+                    decrypted_wallet = await window.electron.encParse({data: bytes});
                 } catch (error) {
                     console.log({error});
                     throw ('invalid');
@@ -294,10 +287,10 @@ const actions = {
 
                 let encwalletdata;
                 try {
-                    encwalletdata = window.electron.aesEncrypt(
-                        JSON.stringify(newwalletdata),
-                        _hash
-                    );
+                    encwalletdata = await window.electron.aesEncrypt({
+                        data: JSON.stringify(newwalletdata),
+                        seed: _hash
+                    });
                 } catch (error) {
                     console.log(error)
                     throw ('encrypt_failure');

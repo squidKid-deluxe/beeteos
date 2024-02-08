@@ -1,9 +1,7 @@
 import { createApp } from 'vue';
-//import VueRouter from 'vue-router/dist/vue-router.global.js';
-//import mitt from 'mitt/dist/mitt.mjs';
+import mitt from 'mitt';
 
-import BalmUI from 'balm-gui'; // Official Google Material Components
-//import BalmUIPlus from 'balm-ui/dist/balm-ui-plus'; // BalmJS Team Material Components
+import BalmUI from 'balm-gui';
 import BalmUIPlus from 'balm-ui-plus';
 import 'balm-ui-css';
 
@@ -32,9 +30,9 @@ process.on('unhandledRejection', (reason, p) => {
 store.dispatch("SettingsStore/loadSettings");
 store.dispatch("WhitelistStore/loadWhitelist");
 
-//const emitter = mitt();
+const emitter = mitt();
 const app = createApp({});
-//app.provide('emitter', emitter);
+app.provide('emitter', emitter);
 
 app.config.errorHandler = function (err, vm, info) {
   console.log(err);
@@ -46,17 +44,12 @@ window.t = (key, params) => {
     return i18n.global.t(key, params)
 }
 
-//app.use(VueRouter);
-
 app.use(BalmUI, {
     $theme: {
         primary: '#C7088E',
         secondary: '#960069'
     }
 });
-
-//app.use(UiTable);
-
 app.use(BalmUIPlus);
 
 app.use(router);
@@ -65,6 +58,6 @@ app.mount('#app');
 
 //BeetServer.initialize(60554, 60555);
 
-//emitter.on('i18n', (data) => {
-//  i18n.global.locale.value = data
-//});
+emitter.on('i18n', (data) => {
+  i18n.global.locale.value = data
+});
