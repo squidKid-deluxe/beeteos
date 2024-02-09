@@ -24,7 +24,8 @@ import {
   Tray,
   dialog,
   ipcMain,
-  Notification
+  Notification,
+  shell
 } from 'electron';
 
 import Logger from './lib/Logger.js';
@@ -551,14 +552,16 @@ const createWindow = async () => {
     };
 
     if (methods.includes("getBalances")) {
-        blockchain.getBalances(account.name)
-        .then(result => {
-            responses['getBalances'] = result;
-            return result;
-        })
-        .catch(error => {
-            console.log(error);
-        });
+        let _balances;
+        try {
+            _balances = await blockchain.getBalances(account.name ? account.name : account.accountName);
+        } catch (error) {
+            console.log({error, location: "getBalances"});
+        }
+
+        if (_balances) {
+            responses['getBalances'] = JSON.stringify(_balances);
+        }
     }
 
     if (methods.includes("verifyMessage")) {
@@ -567,7 +570,9 @@ const createWindow = async () => {
     }
 
     if (methods.includes("getExplorer")) {
-        responses['getExplorer'] = blockchain.getExplorer(account.name);
+        responses['getExplorer'] = blockchain.getExplorer({
+            accountName: account.name ? account.name : account.accountName
+        });
     }
 
     if (methods.includes("getAccessType")) {
@@ -973,6 +978,27 @@ const createWindow = async () => {
     }
 
     return responses;
+  });
+
+  const safeDomains = [
+    "bloks.io",
+    "explore.beos.world",
+    "blocksights.info",
+    "telos.eosx.io",
+    "wallet.tusc.network",
+  ];
+  ipcMain.on('openURL', (event, arg) => {
+    try {
+      const parsedUrl = new url.URL(arg);
+      const domain = parsedUrl.hostname;
+      if (safeDomains.includes(domain)) {
+        shell.openExternal(arg);
+      } else {
+        console.error(`Rejected opening URL with unsafe domain: ${domain}`);
+      }
+    } catch (err) {
+      console.error(`Failed to open URL: ${err.message}`);
+    }
   });
 
   /*

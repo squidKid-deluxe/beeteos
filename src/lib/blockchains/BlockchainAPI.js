@@ -80,7 +80,9 @@ export default class BlockchainAPI {
             chain: this._config.identifier,
             node: node
         });
-        resolveCallback(node);
+        if (resolveCallback) {
+            resolveCallback(node);
+        }
     }
 
     /*

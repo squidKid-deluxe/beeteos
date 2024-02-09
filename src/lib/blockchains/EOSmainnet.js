@@ -71,17 +71,15 @@ export default class EOS extends BlockchainAPI {
      * @param {Promise} reject
      * @returns {String}
      */
-    async _establishConnection(nodeToConnect, resolve, reject) {
-        if (!nodeToConnect) {
-            this._connectionFailed(reject, '', 'No node url')
-        }
-    
-        this.rpc = new JsonRpc(nodeToConnect ?? this.getNodes()[0].url, {fetch});
+    async _establishConnection(nodeToConnect, resolve, reject) {   
+        let chosenNode = nodeToConnect ? nodeToConnect : this.getNodes()[0].url;
+
+        this.rpc = new JsonRpc(chosenNode, {fetch});
         try {
             await this.rpc.get_info();
-            this._connectionEstablished(resolve, nodeToConnect);
+            this._connectionEstablished(resolve, chosenNode);
         } catch (error) {
-            this._connectionFailed(reject, nodeToConnect, error.message);
+            this._connectionFailed(reject, chosenNode, error.message);
         }
     }
 

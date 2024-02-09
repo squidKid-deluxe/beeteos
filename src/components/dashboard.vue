@@ -21,10 +21,10 @@
     let lastBlockchain = ref(null);
     let fetchQty = ref(1);
 
-    let _explorer = ref(null);
-    let _accessType = ref(null);
-    let _balances = ref(null);
-    let _chain = ref(null);
+    let _explorer = ref("");
+    let _accessType = ref("");
+    let _balances = ref([]);
+    let _chain = ref("");
 
     watchEffect(async () => {
         async function lookupBlockchain() {
@@ -40,7 +40,7 @@
                 blockchainRequest = await window.electron.blockchainRequest({
                     methods: selectedDifferentChain
                         ? ['getExplorer', 'getAccessType', 'getBalances']
-                        : ['getBalances'],
+                        : ['getExplorer', 'getBalances'],
                     account: selectedAccount.value,
                     chain: selectedAccount.value.chain,
                 })
@@ -62,7 +62,7 @@
                 _accessType.value = blockchainRequest.getAccessType;
             }
             if (blockchainRequest.getBalances) {
-                _balances.value = blockchainRequest.getBalances;
+                _balances.value = JSON.parse(blockchainRequest.getBalances);
             }
 
             isConnecting.value = false;
