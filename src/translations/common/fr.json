@@ -227,5 +227,7 @@
   "backup_btn": "Télécharger la sauvegarde",
   "backup_txt": "Cliquez sur le bouton \"Télécharger la sauvegarde\" ci-dessous pour enregistrer un fichier crypté avec toutes les clés de votre portefeuille. ",
   "tooltip_lock": "Cliquez pour verrouiller ce portefeuille/déconnexion et revenir à l'écran de sélection du portefeuille.",
-  "tooltip_refresh": "Reconnectez-vous à la blockchain et actualisez le solde du compte"
+  "tooltip_refresh": "Reconnectez-vous à la blockchain et actualisez le solde du compte",
+  "invalidFile": "Type de fichier invalide, veuillez sélectionner un autre fichier.",
+  "invalidPass": "Mot de passe invalide, réessayez."
 }

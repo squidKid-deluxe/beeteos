@@ -35,6 +35,8 @@
                 lastBlockchain.value = selectedAccount.value.chain;
             }
 
+            _chain.value = selectedAccount.value.chain;
+
             let blockchainRequest;
             try { 
                 blockchainRequest = await window.electron.blockchainRequest({

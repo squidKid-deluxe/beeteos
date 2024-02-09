@@ -64,18 +64,6 @@
         }
     }
 
-    /*
-    watchEffect(async () => {
-        if (
-            selectedChain.value && selectedChain.value !== '' &&
-            accountName.value && accountName.value !== ''  &&
-            props.chain === selectedChain.value
-        ) {
-            loadBalances();
-        }
-    });
-    */
-
     watchEffect(() => {
         if (balances.value && balances.value.length) {
             tableData.value = {

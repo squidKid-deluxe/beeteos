@@ -227,5 +227,7 @@
   "backup_btn": "Baixar backup",
   "backup_txt": "Clique no botão 'Baixar backup' abaixo para salvar um arquivo criptografado com todas as chaves da sua carteira. ",
   "tooltip_lock": "Clique para bloquear esta carteira/logout e retornar à tela de seleção de carteira.",
-  "tooltip_refresh": "Reconecte-se ao blockchain e atualize o saldo da conta"
+  "tooltip_refresh": "Reconecte-se ao blockchain e atualize o saldo da conta",
+  "invalidFile": "Tipo de arquivo inválido. Selecione outro arquivo.",
+  "invalidPass": "Senha inválida, por favor tente novamente."
 }

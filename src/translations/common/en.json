@@ -227,5 +227,7 @@
     "backup_btn": "Download Backup",
     "backup_txt": "Click the 'Download Backup' button below to save an encrypted file with all your wallet keys. The backup file will be encrypted with your wallet password and you will need your password to import the backup to a new wallet installation.",
     "tooltip_lock": "Click to lock this wallet / logout and return to the wallet selection screen.",
-    "tooltip_refresh": "Reconnect to the blockchain and refresh the account balance"
+    "tooltip_refresh": "Reconnect to the blockchain and refresh the account balance",
+    "invalidFile": "Invalid file type, please select another file.",
+    "invalidPass": "Invalid password, please try again."
 }

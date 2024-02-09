@@ -316,8 +316,8 @@ export default class EOS extends BlockchainAPI {
 
     getAccount(accountname) {
         return new Promise((resolve, reject) => {
-            this._establishConnection().then(result => {
-                this.rpc.get_account(accountname).then(account => {
+            this._establishConnection().then((result) => {
+                this.rpc.get_account(accountname).then((account) => {
                     account.active = {}
                     account.owner = {}
                     account.active.public_keys = account.permissions.find(
@@ -327,8 +327,14 @@ export default class EOS extends BlockchainAPI {
                     account.memo = {public_key: account.active.public_keys[0][0]};
                     account.id = account.account_name;
                     resolve(account);
-                }).catch(reject);
-            }).catch(reject);
+                }).catch((error) => {
+                    console.error(error);
+                    reject(error);
+                });
+            }).catch((error) => {
+                console.error(error);
+                reject(error);
+            });
         });
     }
 
@@ -339,6 +345,7 @@ export default class EOS extends BlockchainAPI {
     getBalances(accountName) {
         return new Promise((resolve, reject) => {
             this.getAccount(accountName).then((account) => {
+                console.log("GOT ACCOUNT")
                 let balances = [];
                 balances.push({
                     asset_type: "Core",
@@ -369,6 +376,9 @@ export default class EOS extends BlockchainAPI {
                     prefix: ""
                 })
                 resolve(balances);
+            }).catch(error => {
+                console.error(error);
+                reject(error);
             });
         });
     }

@@ -227,5 +227,7 @@
     "backup_btn": "Laadige alla Backup",
     "backup_txt": "Kõigi rahakotivõtmetega krüptitud faili salvestamiseks klõpsake alloleval nupul „Laadi varukoopia alla”. ",
     "tooltip_lock": "Klõpsake selle rahakoti lukustamiseks / väljalogimiseks ja naasmiseks rahakoti valikukuvale.",
-    "tooltip_refresh": "Ühendage uuesti plokiahelaga ja värskendage konto saldot"
+    "tooltip_refresh": "Ühendage uuesti plokiahelaga ja värskendage konto saldot",
+    "invalidFile": "Vale failitüüp, palun valige mõni muu fail.",
+    "invalidPass": "Vale parool, proovige uuesti."
   }

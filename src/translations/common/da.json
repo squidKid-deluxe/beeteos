@@ -227,5 +227,7 @@
     "backup_btn": "Download sikkerhedskopi",
     "backup_txt": "Klik på knappen 'Download Backup' nedenfor for at gemme en krypteret fil med alle dine tegnebogsnøgler. ",
     "tooltip_lock": "Klik for at låse denne tegnebog/log ud og vende tilbage til skærmen til valg af tegnebog.",
-    "tooltip_refresh": "Genopret forbindelse til blockchain og opdater kontosaldoen"
+    "tooltip_refresh": "Genopret forbindelse til blockchain og opdater kontosaldoen",
+    "invalidFile": "Ugyldig filtype, vælg venligst en anden fil.",
+    "invalidPass": "Ugyldig adgangskode, prøv venligst igen."
   }

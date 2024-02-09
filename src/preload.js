@@ -24,4 +24,5 @@ contextBridge.exposeInMainWorld('electron', {
   aesDecrypt: async (args) => await ipcRenderer.invoke('aesDecrypt', args),
   encParse: async (args) => await ipcRenderer.invoke('encParse', args),
   sha512: async (args) => await ipcRenderer.invoke('sha512', args),
+  restore: async (args) => await ipcRenderer.invoke('restore', args),
 });

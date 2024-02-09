@@ -227,5 +227,7 @@
   "backup_btn": "Scarica Sostegno",
   "backup_txt": "Fai clic sul pulsante \"Scarica backup\" in basso per salvare un file crittografato con tutte le chiavi del tuo portafoglio. ",
   "tooltip_lock": "Fare clic per bloccare questo portafoglio/disconnettersi e tornare alla schermata di selezione del portafoglio.",
-  "tooltip_refresh": "Riconnettiti alla blockchain e aggiorna il saldo del conto"
+  "tooltip_refresh": "Riconnettiti alla blockchain e aggiorna il saldo del conto",
+  "invalidFile": "Tipo di file non valido, seleziona un altro file.",
+  "invalidPass": "Password non valida, riprova."
 }

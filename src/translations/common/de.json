@@ -227,5 +227,7 @@
   "backup_btn": "Laden Sie Backup herunter",
   "backup_txt": "Klicken Sie unten auf die Schaltfläche „Backup herunterladen“, um eine verschlüsselte Datei mit allen Ihren Wallet-Schlüsseln zu speichern. ",
   "tooltip_lock": "Klicken Sie hier, um dieses Wallet zu sperren/abzumelden und zum Wallet-Auswahlbildschirm zurückzukehren.",
-  "tooltip_refresh": "Stellen Sie erneut eine Verbindung zur Blockchain her und aktualisieren Sie den Kontostand"
+  "tooltip_refresh": "Stellen Sie erneut eine Verbindung zur Blockchain her und aktualisieren Sie den Kontostand",
+  "invalidFile": "Ungültiger Dateityp. Bitte wählen Sie eine andere Datei aus.",
+  "invalidPass": "Falsche Kennwort. Bitte versuchen Sie es erneut."
 }

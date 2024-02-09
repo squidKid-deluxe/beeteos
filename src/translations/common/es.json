@@ -227,5 +227,7 @@
   "backup_btn": "Descargar copia de seguridad",
   "backup_txt": "Haga clic en el botón 'Descargar copia de seguridad' a continuación para guardar un archivo encriptado con todas las claves de su billetera. ",
   "tooltip_lock": "Haga clic para bloquear esta billetera/cerrar sesión y volver a la pantalla de selección de billetera.",
-  "tooltip_refresh": "Vuelva a conectarse a la cadena de bloques y actualice el saldo de la cuenta"
+  "tooltip_refresh": "Vuelva a conectarse a la cadena de bloques y actualice el saldo de la cuenta",
+  "invalidFile": "Tipo de archivo no válido, seleccione otro archivo.",
+  "invalidPass": "Contraseña no válida, por favor vuelva a intentarlo."
 }

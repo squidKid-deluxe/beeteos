@@ -566,13 +566,30 @@ const createWindow = async () => {
 
     if (methods.includes("verifyMessage")) {
         const { request } = arg;
-        responses['verifyMessage'] = await blockchain.verifyMessage(request);
+        let _verifyMessage;
+        try {
+            _verifyMessage = await blockchain.verifyMessage(request);
+        } catch (error) {
+            console.log({error, location: "verifyMessage"});
+        }
+        if (_verifyMessage) {
+            responses['verifyMessage'] = _verifyMessage;
+        }
     }
 
     if (methods.includes("getExplorer")) {
-        responses['getExplorer'] = blockchain.getExplorer({
-            accountName: account.name ? account.name : account.accountName
-        });
+        let _explorer;
+        try {
+            _explorer = await blockchain.getExplorer({
+                accountName: account.name ? account.name : account.accountName
+            });
+        } catch (error) {
+            console.log({error, location: "getExplorer"});
+        }
+
+        if (_explorer) {
+            responses['getExplorer'] = _explorer;
+        }
     }
 
     if (methods.includes("getAccessType")) {
@@ -701,82 +718,6 @@ const createWindow = async () => {
             return;
         }
 
-        /*
-        let request;
-        try {
-          request = JSON.parse(requestBody);
-        } catch (error) {
-          console.log(error);
-          return;
-        }
-
-        if (
-          !request
-          || !request.id
-          || !request.payload
-          || !request.payload.chain
-          || !request.payload.method
-          || request.payload.method === Actions.INJECTED_CALL && !request.payload.params
-        ) {
-          console.log('invalid request format');
-          return;
-        }
-
-        let requestedChain = request.payload.chain;
-        if (!requestedChain || chain !== requestedChain) {
-          console.log("Incoming uploaded request for wrong chain");
-          return;
-        }
-
-        if (!Object.keys(Actions).map(key => Actions[key]).includes(request.payload.method)) {
-          console.log("Unsupported request type rejected");
-          return;
-        }
-
-        if (!blockchainActions.includes(request.payload.method)) {
-          console.log("Unsupported request type rejected");
-          return;
-        }
-
-        if (!settingsRows.includes(request.payload.method)) {
-          console.log("Unauthorized beet operation");
-          return;
-        }
-
-        if (request.payload.method === Actions.INJECTED_CALL) {
-            let tr;
-            try {
-                tr = blockchain._parseTransactionBuilder(request.payload.params);
-            } catch (error) {
-                console.log(error);
-                
-                return;
-            }
-
-            let authorizedUse = false;
-            for (let i = 0; i < tr.operations.length; i++) {
-                let operation = tr.operations[i];
-                if (settingsRows && settingsRows.includes(operation[0])) {
-                    authorizedUse = true;
-                    break;
-                }
-            }
-
-            if (!authorizedUse) {
-                console.log(`Unauthorized use of local ${chain} blockchain operation`);              
-                
-                return;
-            }
-            console.log("Authorized use of local json upload")
-        }
-
-        let apiobj = {
-            id: request.id,
-            type: request.payload.method,
-            payload: request.payload
-        };
-        */
-
         let status;
         try {
             if (apiobj.type === Actions.INJECTED_CALL) {
@@ -788,13 +729,11 @@ const createWindow = async () => {
             }
         } catch (error) {
             console.log(error || "No status")
-            
             return;
         }
 
         if (!status || !status.result || status.result.isError || status.result.canceled) {
             console.log("Issue occurred in approved prompt");
-            
             return;
         }
 
@@ -917,7 +856,6 @@ const createWindow = async () => {
                 };
         } catch (error) {
             console.log(error);
-            
             return;
         }
 
@@ -926,13 +864,11 @@ const createWindow = async () => {
             account = await blockchain.verifyAccount(accountname, authorities);
         } catch (error) {
             console.log(error);
-            
             return;
         }
 
         if (!account) {
             console.log("Couldn't verify account, sorry.")
-            
             return;
         }
 
@@ -944,7 +880,6 @@ const createWindow = async () => {
         fs.readFile(filePath, async (err, data) => {
             if (err) {
                 console.log({err});
-                
                 return;
             }
     
@@ -954,13 +889,11 @@ const createWindow = async () => {
                 unlocked = await wh.unlock(pass);
             } catch (error) {
                 console.log({error});
-                
                 return;
             }
 
             if (!unlocked) {
                 console.log("Wallet could not be unlocked");
-                
                 return;
             }
     
@@ -969,7 +902,6 @@ const createWindow = async () => {
                 retrievedAccounts = await wh.lookupAccounts();
             } catch (error) {
                 console.log({error});
-                
                 return;
             }
 
@@ -978,6 +910,33 @@ const createWindow = async () => {
     }
 
     return responses;
+  });
+
+  ipcMain.handle('restore', async (event, arg) => {
+    const { file, seed } = arg;
+
+    fs.readFile(file, 'utf-8', async (error, data) => {
+        if (error) {
+            console.log("Error reading file");
+            return;
+        }
+
+        let decryptedData;
+        try {
+            decryptedData = await aes.decrypt(data, seed);
+        } catch (error) {
+            console.log(error);
+            return;
+        }
+
+        if (!decryptedData) {
+            console.log("Wallet restore failed");
+            return;
+        }
+
+        return decryptedData;
+    });
+
   });
 
   const safeDomains = [
