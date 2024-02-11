@@ -35,8 +35,18 @@
         "duplicate": "A wallet with the same name already exists, aborting wallet restoration" 
     },
     "raw": {
-        "label": "Raw deep link page",
-        "promptFailure": "A Raw deeplink was rejected. If intended, navigate to the Raw link page and try again."
+        "label": "Raw deeplink page",
+        "promptFailure": "A Raw deeplink was rejected. If intended, navigate to the Raw link page and try again.",
+        "exit": "Exit deeplink page"
+    },
+    "www": {
+        "label": "Web request page",
+        "description": "This page processes incoming web requests via locally hosted websocket services. Internet service provider compatibility may vary.",
+        "chosen": "operations chosen",
+        "ready": "Ready for web requests!",
+        "loading": "Loading socket services...",
+        "exit": "Exit web request page",
+        "unsupported": "Web requests are not yet supported for this chain, sorry."
     },
     "totp": {
         "label": "Time-based one-time passwords",
@@ -58,7 +68,8 @@
             "local": "Do you wish to configure the scope of scannable JSON files?",
             "qr": "Do you wish to configure the scope of scannable QR codes?",
             "rawLink": "Do you wish to configure the scope of incoming raw deeplinks?",
-            "totp": "Do you wish to configure the scope of incoming deeplinks?"
+            "totp": "Do you wish to configure the scope of incoming deeplinks?",
+            "www": "Do you wish to configure the scope of incoming web requests?"
         },
         "yes": "Yes - customize scope",
         "no": "No - allow all operations"
@@ -101,6 +112,7 @@
     "actionBar": {
         "Home": "Home",
         "New": "New",
+        "WWW": "Web request",
         "TOTP": "TOTP",
         "Local": "Local",
         "RAW": "Raw Link",

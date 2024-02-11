@@ -12,6 +12,7 @@
     const { t } = useI18n({ useScope: 'global' });
 
     emitter.on('setMenuItem', response => {
+        console.log({response});
         currentSelection.value = response;
     });
 
@@ -30,44 +31,50 @@
                 url: "/add-account"
             },
             {
-                text: t("common.actionBar.TOTP"),
+                text: t("common.actionBar.WWW"),
                 index: 2,
+                icon: "web",
+                url: "/www"
+            },
+            {
+                text: t("common.actionBar.TOTP"),
+                index: 3,
                 icon: "generating_tokens",
                 url: "/totp"
             },
             {
                 text: t("common.actionBar.Local"),
-                index: 3,
+                index: 4,
                 icon: "upload",
                 url: "/local"
             },
             {
                 text: t("common.actionBar.RAW"),
-                index: 4,
+                index: 5,
                 icon: "raw_on",
                 url: "/raw-link"
             },
             {
                 text: t("common.actionBar.QR"),
-                index: 5,
+                index: 6,
                 icon: "qr_code_2",
                 url: "/qr"
             },
             {
                 text: t("common.actionBar.dapps"),
-                index: 6,
+                index: 7,
                 icon: "app_registration",
                 url: "/dapps"
             },
             {
                 text: t("common.actionBar.Backup"),
-                index: 7,
+                index: 8,
                 icon: "download",
                 url: "/backup"
             },
             {
                 text: t("common.actionBar.Logout"),
-                index: 8,
+                index: 9,
                 icon: "logout",
                 url: "/"
             }
@@ -77,7 +84,7 @@
     function onChange(data) {
         currentSelection.value = data.index;
 
-        if (data.index === 8) {
+        if (data.index === 9) {
             console.log('logout')
             store.dispatch("WalletStore/logout");
             router.replace("/");
@@ -91,14 +98,6 @@
         store.dispatch("WalletStore/logout");
         router.replace("/");
     }});
-
-    /*
-    ipcRenderer.on('timeout', async (event, args) => {
-        console.log('wallet timed logout')
-        store.dispatch("WalletStore/logout");
-        router.replace("/");
-    })
-    */
 </script>
 
 <template>

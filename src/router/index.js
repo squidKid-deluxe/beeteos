@@ -10,6 +10,7 @@ import Dapps from "../components/dapps.vue";
 import Backup from "../components/backup.vue";
 import Totp from "../components/totp.vue";
 import RawLink from "../components/raw-link.vue";
+import Web from "../components/web.vue";
 import Qr from "../components/qr.vue";
 import Popups from "../components/popups.vue";
 import Receipt from "../components/receipt.vue";
@@ -22,6 +23,13 @@ const router = createRouter({
         default: Start,
         header: HeaderGuest
       }
+    },
+    {
+        path: '/www',
+        components: {
+            default: Web,
+            header: HeaderSmall
+        }
     },
     {
       path: '/backup',

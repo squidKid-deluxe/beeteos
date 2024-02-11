@@ -7,10 +7,12 @@
     
     import store from '../store/index.js';
     import router from '../router/index.js';
+    import BeetDB from '../lib/BeetDB.js';
 
     const { t } = useI18n({ useScope: 'global' });
     const emitter = inject('emitter');
-
+    
+    let serverOnline = ref(false);
     let selectedRows = ref();
     let opPermissions = ref();
     emitter.on('selectedRows', (data) => {
@@ -18,11 +20,15 @@
     });
 
     emitter.on('exitOperations', () => {
+        window.electron.closeServer();
+        serverOnline.value = false;
         opPermissions.value = null;
         selectedRows.value = null;
     });
 
     function goBack() {
+        window.electron.closeServer();
+        serverOnline.value = false;
         opPermissions.value = null;
         selectedRows.value = null;
     }
@@ -58,6 +64,50 @@
         return rememberedRows;
     });
 
+    const sslCert = ref();
+    watchEffect(() => {
+        async function lookupSSL() {
+            let db = BeetDB.ssl_data;
+            let ssl_data;
+            try {
+                ssl_data = await db.toArray();
+            } catch (error) {
+                console.log(error);                
+            }
+
+            if (
+                !ssl_data ||
+                !ssl_data.length ||
+                (ssl_data[0].timestamp < Date.now() - 30 * 24 * 60 * 60 * 1000)
+            ) {
+                let retrievedSSL;
+                try {
+                    retrievedSSL = await window.electron.fetchSSL();
+                } catch (error) {
+                    console.error(error);
+                }
+
+                if (retrievedSSL) {
+                    const { key, cert } = retrievedSSL;
+                    db.toArray().then((res) => {
+                        if (res.length == 0) {
+                            db.add({key: key, cert: cert, timestamp: Date.now()});
+                        } else {
+                            db.update(res[0].id, {key: key, cert: cert, timestamp: Date.now()});
+                        }
+                    });
+                    sslCert.value = { key, cert };
+                }
+            } else {
+                sslCert.value = ssl_data[0];
+            }
+        }
+
+        if (chain.value) {
+            lookupSSL();
+        }
+    });
+    
     let compatibleChain = ref(false);
     let chainTypes = ref([]);
     watchEffect(() => {
@@ -66,7 +116,7 @@
             try {
                 blockchainRequest = await window.electron.blockchainRequest(
                     { 
-                        methods: ['supportsTOTP', 'getOperationTypes'],
+                        methods: ['supportsWeb', 'getOperationTypes'],
                         chain: chain.value
                     }
                 );
@@ -75,10 +125,11 @@
             }
 
             if (blockchainRequest) {
-                const { supportsTOTP, getOperationTypes } = blockchainRequest;
-                if (supportsTOTP) {
-                    compatibleChain.value = supportsTOTP;
+                const { supportsWeb, getOperationTypes } = blockchainRequest;
+                if (supportsWeb) {
+                    compatibleChain.value = true;
                 }
+
                 if (getOperationTypes) {
                     chainTypes.value = getOperationTypes;
                 }
@@ -89,47 +140,37 @@
         }
     });
 
-    let deepLinkInProgress = ref(false);
-    window.electron.onRawDeepLink(async (args) => {
-        if (!store.state.WalletStore.isUnlocked || router.currentRoute.value.path != "/raw-link") {
-            console.log("Wallet must be unlocked for raw deeplinks to work.");
-            window.electron.notify(t("common.raw.promptFailure"));
-            return;
-        }
-
-        let account = store.getters['AccountStore/getCurrentSafeAccount']();
-        if (!account) {
-            console.log('No account')
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        deepLinkInProgress.value = true;
-
-        let blockchainRequest;
-        try {
-            blockchainRequest = await window.electron.blockchainRequest(
-                { 
-                    methods: ['getRawLink'],
-                    chain: account.chain,
-                    requestBody: args.request
+    watchEffect(() => {
+        async function launchServer() {
+            if (selectedRows.value) {     
+                if (
+                    !store.state.WalletStore.isUnlocked ||
+                    router.currentRoute.value.path !== "/www"
+                ) {
+                    console.log("Wallet must be unlocked for web requests to work.");
+                    return;
                 }
-            );
-        } catch (error) {
-            console.error(error);
-            deepLinkInProgress.value = false;
-            window.electron.notify(t("common.raw.promptFailure"));
-            return;
-        }
 
-        if (blockchainRequest) {
-            const { success } = blockchainRequest;
-            if (success) {
-                console.log({success})
+                let launchedServers;
+                try {
+                    launchedServers = sslCert.value
+                        ? await window.electron.launchServer({cert: sslCert.value.cert, key: sslCert.value.key})
+                        : await window.electron.launchServer({cert: null, key: null});
+                } catch (error) {
+                    console.error(error);
+                }
+
+                if (launchedServers) {
+                    serverOnline.value = true;
+                    console.log({launchedServers});
+                    return;
+                }
+                serverOnline.value = false;
             }
         }
-        
-        deepLinkInProgress.value = false;
+        if (selectedRows.value) {
+            launchServer();
+        }
     });
 </script>
 
@@ -140,23 +181,12 @@
     >
         <span v-if="compatibleChain">
             <AccountSelect />
-            <span v-if="deepLinkInProgress">
-                <p style="marginBottom:0px;">
-                    {{ t('common.totp.inProgress') }}
+            <span>
+                <p>
+                    {{ t('common.www.label') }}
                 </p>
-                <ui-card
-                    v-shadow="3"
-                    outlined
-                    style="marginTop: 5px;"
-                >
-                    <br>
-                    <ui-progress indeterminate />
-                    <br>
-                </ui-card>
-            </span>
-            <span v-else>
-                <p style="marginBottom:0px;">
-                    {{ t('common.raw.label') }}
+                <p v-if="!selectedRows">
+                    {{ t('common.www.description') }}
                 </p>
                 <ui-card
                     v-shadow="3"
@@ -165,7 +195,7 @@
                 >
                     <span v-if="!opPermissions">
                         <p>
-                            {{ t('common.opPermissions.title.rawLink') }}
+                            {{ t('common.opPermissions.title.www') }}
                         </p>
                         <ui-button
                             raised
@@ -195,12 +225,12 @@
                                 icon="security"
                                 style="margin-left:30px;"
                             >
-                                {{ settingsRows ? settingsRows.length : 0 }} {{ t('common.totp.chosen') }}
+                                {{ settingsRows ? settingsRows.length : 0 }} {{ t('common.www.chosen') }}
                             </ui-chip>
                             <ui-chip
                                 icon="thumb_up"
                             >
-                                Ready for raw links!
+                                {{ serverOnline ? t('common.www.ready') : t('common.www.loading') }}
                             </ui-chip>
                         </ui-chips>
                     </span>
@@ -221,13 +251,15 @@
                 <ui-button
                     outlined
                     class="step_btn"
+                    @click="goBack"
                 >
-                    {{ t('common.raw.exit') }}
+                    {{ t('common.www.exit') }}
                 </ui-button>
             </router-link>
         </span>
         <span v-else>
-            {{ t('common.raw.unsupported') }}
+            {{ t('common.www.unsupported') }}
         </span>
     </div>
 </template>
+

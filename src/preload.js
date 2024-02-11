@@ -25,4 +25,33 @@ contextBridge.exposeInMainWorld('electron', {
   encParse: async (args) => await ipcRenderer.invoke('encParse', args),
   sha512: async (args) => await ipcRenderer.invoke('sha512', args),
   restore: async (args) => await ipcRenderer.invoke('restore', args),
+  onRawDeepLink: (func) => {
+    ipcRenderer.on('rawdeeplink', (event, args) => {
+      func(args);
+    });
+  },
+  onDeepLink: (func) => {
+    ipcRenderer.on('deeplink', (event, args) => {
+      func(args);
+    });
+  },
+  getPrompt: (id) => {
+    ipcRenderer.send(`get:prompt:${id}`);
+  },
+  onPrompt: (id, func) => {
+    ipcRenderer.on(`respond:prompt:${id}`, (event, data) => {
+      func(data);
+    });
+  },
+  getReceipt: (id) => {
+    ipcRenderer.send(`get:receipt:${id}`);
+  },
+  onReceipt: (id, func) => {
+    ipcRenderer.on(`respond:receipt:${id}`, (event, data) => {
+      func(data);
+    });
+  },
+  launchServer: async (args) => await ipcRenderer.invoke('launchServer', args),
+  closeServer: async () => await ipcRenderer.send('closeServer'),
+  fetchSSL: async (args) => await ipcRenderer.invoke('fetchSSL', args),
 });

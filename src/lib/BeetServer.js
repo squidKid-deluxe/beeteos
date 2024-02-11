@@ -7,6 +7,9 @@ import * as ed from '@noble/ed25519';
 
 import https from 'node:https';
 import http from 'node:http';
+import {
+  createHttpTerminator,
+} from 'http-terminator';
 import { Server } from "socket.io";
 
 import {
@@ -25,7 +28,6 @@ import getBlockchainAPI from "./blockchains/blockchainFactory.js";
 
 import store from '../store/index.js';
 import * as Actions from './Actions.js';
-import BeetDB from './BeetDB.js';
 
 /**
  * Create beet link
@@ -201,6 +203,10 @@ const authHandler = function (req) {
 };
 
 export default class BeetServer {
+    static httpServer;
+    static httpsServer;
+    static httpSocket;
+    static httpsSocket;
 
     /**
      * Responding to multiple API query types
@@ -406,276 +412,256 @@ export default class BeetServer {
     }
 
     /**
-     * Fetch/store SSL certs. Return HTTPS or HTTP instance.
-     * @param {Number} httpsPort
-     * @param {Number} httpPort
-     * @returns {Object} server instances
-     */
-    static async _getServer(httpsPort, httpPort) {
-        return new Promise(async (resolve, reject) => {
-            const httpServer = http.createServer()
-                                    .listen(httpPort, () => {
-                                        console.log(`HTTP server listening on port: ${httpPort}`);
-                                    });
-
-            let db = BeetDB.ssl_data;
-            let ssl;
-            try {
-                ssl = await db.toArray();
-            } catch (error) {
-                console.log(error);                
-            }
-
-            if (ssl && ssl.length > 0) {
-                let httpsServer;
-                try {
-                    httpsServer = https.createServer({
-                                        key: ssl[0].key,
-                                        cert: ssl[0].cert,
-                                        rejectUnauthorized: false
-                                    })
-                                    .listen(httpsPort, () => {
-                                        console.log(`HTTPS server listening on port: ${httpsPort}`);
-                                    });
-                } catch (error) {
-                    console.log(error);
-                }
-
-                if (httpsServer) {
-                    return resolve({http: httpServer, https: httpsServer});
-                }
-            }
-
-            let key;
-            try {
-                key = await fetch('https://raw.githubusercontent.com/beetapp/beet-certs/master/beet.key')
-                            .then(res => res.text());
-            } catch (error) {
-                console.log(error);
-            }
-
-            let cert;
-            try {
-                cert = await fetch('https://raw.githubusercontent.com/beetapp/beet-certs/master/beet.cert')
-                             .then(res => res.text());
-            } catch (error) {
-                console.log(error);
-            }
-
-            if (!key || !cert) {
-                return resolve({http: httpServer});
-            }
-
-            db.toArray().then((res) => {
-                if (res.length == 0) {
-                    db.add({key: key, cert: cert});
-                } else {
-                    db.update(res[0].id, {key: key, cert: cert});
-                }
-            });
-
-            let httpsServer;
-            try {
-                httpsServer = https.createServer({
-                                    key: key,
-                                    cert: cert,
-                                    rejectUnauthorized: false
-                                })
-                                .listen(httpsPort, ()=>{
-                                    console.log(`HTTPS server listening on port: ${httpsPort}`);
-                                });
-            } catch (error) {
-                console.log(error);
-                return resolve({http: httpServer});
-            } 
-
-            return resolve({http: httpServer, https: httpsServer});
-        });   
-    }
-
-    /**
      * Use a http|https server to create a new socketio server instance 
      * @param {Server} chosenServer 
      */
     static async newSocket(chosenServer) {
-        const io = new Server(
-            chosenServer,
-            {cors: {origin: "*", methods: ["GET", "POST"]}}
-        );
-
-        io.on("connection_error", (error) => {
-            console.log(`io connection_error: ${error}`);
-            io.close();
-        });
-
-        io.on("connection", async (socket) => {
-          socket.isAuthenticated = false;
-
-          socket.on("ping", (data) => {
-            socket.emit("pong", chosenServer.cert ? 'HTTPS' : 'HTTP');
-          });
-
-          socket.on("connection_error", (error) => {
-            console.log(`socket connection_error: ${error}`)
-            socket.disconnect();
-          });
-
-          /*
-           * Wallet handshake with client.
-           */
-          socket.on("authenticate", async (data) => {
-            if (!store.state.WalletStore.isUnlocked) {
-              socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "Beet wallet authentication error."}});
-              return;
-            }
-           
-            let status;
+        return new Promise((resolve, reject) => {
+            let io;
             try {
-              status = await authHandler({
-                id: data.id,
-                client: socket.id,
-                payload: data.payload
-              });
+                io = new Server(
+                    chosenServer,
+                    {cors: {origin: "*", methods: ["GET", "POST"]}}
+                );
             } catch (error) {
-              console.log(error)
+                console.log(error);
+                return reject(error);
             }
-
-            status.id = data.id; // necessary or not?
-
-            if (!status.authenticate) {
-              socket.emit(
-                "api",
-                {
-                    id: status.id,
-                    error: true,
-                    payload: {
-                        code: 7,
-                        message: "Could not authenticate"
-                    }
-                }
-              );
+    
+            io.on("connection_error", (error) => {
+                console.log(`io connection_error: ${error}`);
+                io.close();
+            });
+    
+            io.on("connection", async (socket) => {
               socket.isAuthenticated = false;
-              return;
-            }
-
-            socket.isAuthenticated = true;
-            socket.origin = status.origin;
-            socket.appName = status.appName;
-            socket.browser = status.browser;
-
-            if (status.link == true) { 
-              await _establishLink(socket, status);
-              let linkResponse = _getLinkResponse(status);
-              console.log("Existing link");
-              socket.emit('authenticated', linkResponse);
-              return;
-            }
-
-            const privk = ed.utils.randomPrivateKey();
-            socket.keypair = privk;
-
-            let pubk;
-            try {
-              pubk = await ed.getPublicKey(privk);
-            } catch (error) {
-              console.error(error);
-              return;
-            }
-
-            socket.emit(
-                'authenticated',
-                {
-                    id: status.id,
-                    error: false,
-                    payload: {
-                        authenticate: true,
-                        link: false,
-                        pub_key: ed.utils.bytesToHex(pubk),
-                    }
+    
+              socket.on("ping", (data) => {
+                socket.emit("pong", chosenServer.cert ? 'HTTPS' : 'HTTP');
+              });
+    
+              socket.on("connection_error", (error) => {
+                console.log(`socket connection_error: ${error}`)
+                socket.disconnect();
+              });
+    
+              /*
+               * Wallet handshake with client.
+               */
+              socket.on("authenticate", async (data) => {
+                let status;
+                try {
+                  status = await authHandler({
+                    id: data.id,
+                    client: socket.id,
+                    payload: data.payload
+                  });
+                } catch (error) {
+                  console.log(error)
                 }
-            )
-          });
+    
+                status.id = data.id; // necessary or not?
+    
+                if (!status.authenticate) {
+                  socket.emit(
+                    "api",
+                    {
+                        id: status.id,
+                        error: true,
+                        payload: {
+                            code: 7,
+                            message: "Could not authenticate"
+                        }
+                    }
+                  );
+                  socket.isAuthenticated = false;
+                  return;
+                }
+    
+                socket.isAuthenticated = true;
+                socket.origin = status.origin;
+                socket.appName = status.appName;
+                socket.browser = status.browser;
+    
+                if (status.link == true) { 
+                  await _establishLink(socket, status);
+                  let linkResponse = _getLinkResponse(status);
+                  console.log("Existing link");
+                  socket.emit('authenticated', linkResponse);
+                  return;
+                }
+    
+                const privk = ed.utils.randomPrivateKey();
+                socket.keypair = privk;
+    
+                let pubk;
+                try {
+                  pubk = await ed.getPublicKey(privk);
+                } catch (error) {
+                  console.error(error);
+                  return;
+                }
+    
+                socket.emit(
+                    'authenticated',
+                    {
+                        id: status.id,
+                        error: false,
+                        payload: {
+                            authenticate: true,
+                            link: false,
+                            pub_key: ed.utils.bytesToHex(pubk),
+                        }
+                    }
+                )
+              });
+    
+              /*
+               * An authenticated client requests to link with Beet wallet.
+               */
+              socket.on("linkRequest", async (data) => {
+                if (!socket.isAuthenticated || !store.state.WalletStore.isUnlocked) {
+                  socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
+                  return;
+                }
+                try {
+                  await this.respondLink("link", socket, data);
+                } catch (error) {
+                  console.log(error);
+                  if (socket) {
+                    socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "Link request unsuccessful."}});
+                  }
+                }
+              });
+    
+              /*
+               * An authenticated client requests to relink with Beet wallet.
+               */
+              socket.on("relinkRequest", async (data) => {
+                if (!socket.isAuthenticated || !store.state.WalletStore.isUnlocked) {
+                  socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
+                  return;
+                }
+                try {
+                  await this.respondLink("relink", socket, data);
+                } catch (error) {
+                  console.log(error);
+                  if (socket) {
+                    socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "Relink request unsuccessful."}});
+                  }
+                }
+              });
+    
+              /*
+               * An authenticated & linked client requests an api call.
+               */
+              socket.on("api", async (data) => {
+                if (!socket.isAuthenticated || !store.state.WalletStore.isUnlocked) {
+                  socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
+                  return;
+                }
+    
+                if (!socket.isLinked) {
+                  socket.emit("api", {id: data.id, error: true, payload: {code: 4, message: "This app is not yet linked. Link then try again."}})
+                  return;
+                }
+    
+                try {
+                  await this.respondAPI(socket, data);
+                } catch (error) {
+                  console.log(error);
+                  if (socket) {
+                    socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful."}});
+                  }
+                }
+              });
+    
+            });
 
-          /*
-           * An authenticated client requests to link with Beet wallet.
-           */
-          socket.on("linkRequest", async (data) => {
-            if (!socket.isAuthenticated || !store.state.WalletStore.isUnlocked) {
-              socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
-              return;
-            }
-            try {
-              await this.respondLink("link", socket, data);
-            } catch (error) {
-              console.log(error);
-              if (socket) {
-                socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "Link request unsuccessful."}});
-              }
-            }
-          });
-
-          /*
-           * An authenticated client requests to relink with Beet wallet.
-           */
-          socket.on("relinkRequest", async (data) => {
-            if (!socket.isAuthenticated || !store.state.WalletStore.isUnlocked) {
-              socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
-              return;
-            }
-            try {
-              await this.respondLink("relink", socket, data);
-            } catch (error) {
-              console.log(error);
-              if (socket) {
-                socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "Relink request unsuccessful."}});
-              }
-            }
-          });
-
-          /*
-           * An authenticated & linked client requests an api call.
-           */
-          socket.on("api", async (data) => {
-            if (!socket.isAuthenticated || !store.state.WalletStore.isUnlocked) {
-              socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
-              return;
-            }
-
-            if (!socket.isLinked) {
-              socket.emit("api", {id: data.id, error: true, payload: {code: 4, message: "This app is not yet linked. Link then try again."}})
-              return;
-            }
-
-            try {
-              await this.respondAPI(socket, data);
-            } catch (error) {
-              console.log(error);
-              if (socket) {
-                socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful."}});
-              }
-            }
-          });
-
+            return resolve(io);
         });
     }
 
     /**
      * @parameter {number} httpPort
      * @parameter {number} httpsPort
+     * @parameter {string} key
+     * @parameter {string} cert
      * @returns {BeetServer}
      */
-    static async initialize(httpPort, httpsPort) {
-        let servers = await this._getServer(60554, 60555);
-        
-        let httpsSocket;
-        if (servers.https) {
-            httpsSocket = await this.newSocket(servers.https);
+    static async initialize(
+        httpsPort = 60554,
+        httpPort = 60555,
+        key,
+        cert
+    ) {
+        let httpServer;
+        try {
+            httpServer = await http.createServer();
+        } catch (error) {
+            console.log(error);
         }
 
-        let httpSocket;
-        if (servers.http) { 
-            httpSocket = await this.newSocket(servers.http);
+        let httpTerminator = createHttpTerminator({
+            server: httpServer,
+        });
+
+        httpServer.listen(httpPort, () => {
+            console.log(`HTTP server listening on port: ${httpPort}`);
+        });
+
+        this.httpSocket = await this.newSocket(httpServer);
+        this.httpTerminator = httpTerminator;
+
+        let httpsServer;
+        let httpsTerminator;
+        if (key && cert) {
+            try {
+                httpsServer = https.createServer({
+                                    key: key,
+                                    cert: cert,
+                                    rejectUnauthorized: false
+                                })
+            } catch (error) {
+                console.log(error);
+            }
+
+            httpsTerminator = createHttpTerminator({
+                server: httpsServer,
+            });
+
+            httpsServer.listen(httpsPort, ()=> {
+                console.log(`HTTPS server listening on port: ${httpsPort}`);
+            });
+
+            this.httpsSocket = await this.newSocket(httpsServer);
+            this.httpsTerminator = httpsTerminator;
         }
     }
+    
+    static async close() {
+        return new Promise(async (resolve, reject) => {
+            if (this.httpTerminator) {
+                await this.httpTerminator.terminate();
+            }
 
+            if (this.httpSocket) {
+                this.httpSocket.close(() => {
+                    console.log('Socket.IO HTTP server has been shut down');
+                });
+            }
+    
+            if (this.httpsTerminator) {
+                await this.httpsTerminator.terminate();
+            }
+
+            if (this.httpsSocket) {
+                this.httpsSocket.close(() => {
+                    console.log('Socket.IO HTTPS server has been shut down');
+                });
+            }
+
+            return resolve("BeetServer has been shut down");
+        });
+    }
 }

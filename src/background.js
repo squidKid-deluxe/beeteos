@@ -34,6 +34,7 @@ import { getSignature } from "./lib/SecureRemote.js";
 import * as Actions from './lib/Actions.js';
 import getBlockchainAPI from "./lib/blockchains/blockchainFactory.js";
 import BTSWalletHandler from "./lib/blockchains/bitshares/BTSWalletHandler.js";
+import BeetServer from './lib/BeetServer.js';
 
 import { injectedCall, voteFor, transfer } from './lib/apiUtils.js';
 
@@ -519,7 +520,51 @@ const createWindow = async () => {
       tray.popUpContextMenu(contextMenu);
   });
 
+  ipcMain.handle('launchServer', async (event, arg) => {
+    const { key, cert } = arg;
+    try {
+        BeetServer.initialize(60554, 60555, key, cert);
+    } catch (error) {
+        console.log(error);
+    }
 
+    console.log("Initializing server")
+
+    return true;
+  });
+
+  ipcMain.on('closeServer', async (event, arg) => {
+    let _closure;
+    try {
+        _closure = await BeetServer.close();
+    } catch (error) {
+        console.log(error);
+    }
+
+    if (_closure) {
+        console.log(_closure)
+    }
+  });
+
+  ipcMain.handle('fetchSSL', async (event, arg) => {
+    let key;
+    try {
+        key = await fetch('https://raw.githubusercontent.com/beetapp/beet-certs/master/beet.key')
+                    .then(res => res.text());
+    } catch (error) {
+        console.log(error);
+    }
+
+    let cert;
+    try {
+        cert = await fetch('https://raw.githubusercontent.com/beetapp/beet-certs/master/beet.cert')
+                     .then(res => res.text());
+    } catch (error) {
+        console.log(error);
+    }
+
+    return {key, cert};
+  });
 
   /*
   * Handling front end blockchain requests
@@ -550,6 +595,22 @@ const createWindow = async () => {
     let responses = {
       chain
     };
+
+    if (methods.includes("supportsLocal")) {
+        responses['supportsLocal'] = blockchain.supportsLocal();
+    }
+
+    if (methods.includes("supportsTOTP")) {
+        responses['supportsTOTP'] = blockchain.supportsTOTP();
+    }
+
+    if (methods.includes("supportsQR")) {
+        responses['supportsQR'] = blockchain.supportsQR();
+    }
+
+    if (methods.includes("supportsWeb")) {
+        responses['supportsWeb'] = blockchain.supportsWeb();
+    }
 
     if (methods.includes("getBalances")) {
         let _balances;

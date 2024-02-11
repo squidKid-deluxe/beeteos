@@ -36,7 +36,17 @@
     },
     "raw": {
       "label": "Rå dybt link-side",
-      "promptFailure": "Et råt dybt link blev afvist. "
+      "promptFailure": "Et råt dybt link blev afvist. ",
+      "exit": "Afslut dyblink-siden"
+    },
+    "www": {
+      "label": "Webanmodningsside",
+      "description": "Denne side behandler indkommende webanmodninger via lokalt hostede websocket-tjenester. ",
+      "chosen": "operationer valgt",
+      "exit": "Afslut webanmodningssiden",
+      "unsupported": "Webanmodninger er endnu ikke understøttet for denne kæde, beklager.",
+      "ready": "Klar til webforespørgsler!",
+      "loading": "Indlæser stiktjenester..."
     },
     "totp": {
       "label": "Tidsbaserede engangsadgangskoder",
@@ -58,7 +68,8 @@
         "local": "Ønsker du at konfigurere omfanget af scanbare JSON-filer?",
         "qr": "Ønsker du at konfigurere omfanget af scanbare QR-koder?",
         "rawLink": "Ønsker du at konfigurere omfanget af indgående rå deeplinks?",
-        "totp": "Ønsker du at konfigurere omfanget af indgående dybe links?"
+        "totp": "Ønsker du at konfigurere omfanget af indgående dybe links?",
+        "www": "Ønsker du at konfigurere omfanget af indgående webanmodninger?"
       },
       "yes": "Ja - tilpas omfanget",
       "no": "Nej - tillad alle operationer"
@@ -101,6 +112,7 @@
     "actionBar": {
       "Home": "Hjem",
       "New": "Ny",
+      "WWW": "Webanmodning",
       "TOTP": "TOTP",
       "Local": "Lokal",
       "RAW": "Rå link",

@@ -36,7 +36,17 @@
     },
     "raw": {
       "label": "Toores sügava lingi leht",
-      "promptFailure": "Toores sügavlink lükati tagasi. "
+      "promptFailure": "Toores sügavlink lükati tagasi. ",
+      "exit": "Välju süvalingi lehelt"
+    },
+    "www": {
+      "label": "Veebipäringu leht",
+      "description": "See leht töötleb sissetulevaid veebipäringuid kohalikult hostitud veebipesateenuste kaudu. ",
+      "chosen": "valitud toimingud",
+      "exit": "Välju veebipäringu lehelt",
+      "unsupported": "Vabandust, selle ahela jaoks ei toetata veel veebipäringuid.",
+      "ready": "Valmis veebipäringuteks!",
+      "loading": "Pistikupesateenuste laadimine..."
     },
     "totp": {
       "label": "Ajapõhised ühekordsed paroolid",
@@ -58,7 +68,8 @@
         "local": "Kas soovite konfigureerida skannitavate JSON-failide ulatust?",
         "qr": "Kas soovite konfigureerida skannitavate QR-koodide ulatust?",
         "rawLink": "Kas soovite konfigureerida sissetulevate toores sügavlinkide ulatust?",
-        "totp": "Kas soovite konfigureerida sissetulevate süvalinkide ulatust?"
+        "totp": "Kas soovite konfigureerida sissetulevate süvalinkide ulatust?",
+        "www": "Kas soovite konfigureerida sissetulevate veebipäringute ulatust?"
       },
       "yes": "Jah – kohandage ulatust",
       "no": "Ei – lubage kõik toimingud"
@@ -101,6 +112,7 @@
     "actionBar": {
       "Home": "Kodu",
       "New": "Uus",
+      "WWW": "Veebipäring",
       "TOTP": "TOTP",
       "Local": "Kohalik",
       "RAW": "Toores link",

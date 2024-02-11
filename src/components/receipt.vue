@@ -48,10 +48,9 @@
 
     watchEffect(() => {
         const id = handleProp('id');
-        /*
-        ipcRenderer.send(`get:receipt:${id}`);
 
-        ipcRenderer.on(`respond:receipt:${id}`, (event, data) => {
+        window.electron.getReceipt(id);
+        window.electron.onReceipt(id, (data) => {
             if (data.type) {
                 type.value = data.type;
             }
@@ -97,7 +96,6 @@
                 notifyTXT.value = data.notifyTXT;
             }
         });
-        */
     })
 
     let openOPReq = ref(false);

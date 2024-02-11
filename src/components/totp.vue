@@ -6,7 +6,7 @@
     import Operations from "./blockchains/operations";
 
     import store from '../store/index.js';
-    //import router from '../router/index.js';
+    import router from '../router/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
     const emitter = inject('emitter');
@@ -162,8 +162,7 @@
     });
 
     let deepLinkInProgress = ref(false);
-    /*
-    ipcRenderer.on('deeplink', async (event, args) => {
+    window.electron.onDeepLink(async (args) => {
         if (!store.state.WalletStore.isUnlocked || router.currentRoute.value.path != "/totp") {
             console.log("Wallet must be unlocked for deeplinks to work.");
             window.electron.notify(t("common.totp.promptFailure"));
@@ -173,6 +172,7 @@
         let account = store.getters['AccountStore/getCurrentSafeAccount']();
         if (!account || !currentCode.value) {
             console.log('Insufficient state to proceed')
+            window.electron.notify(t("common.totp.promptFailure"));
             return;
         }
 
@@ -189,12 +189,14 @@
         } catch (error) {
             console.log(error);
             deepLinkInProgress.value = false;
+            window.electron.notify(t("common.totp.failed"));
             return;
         }
 
         if (!blockchainResponse || !blockchainResponse.totpDeeplink) {
             console.log("No blockchain response");
             deepLinkInProgress.value = false;
+            window.electron.notify(t("common.totp.failed"));
             return;
         }
 
@@ -204,19 +206,6 @@
         }
         deepLinkInProgress.value = false;
     });
-    */
-
-    /*
-    ipcRenderer.on('blockchainResponse:totpDeeplink:error', (event, args) => {
-        deepLinkInProgress.value = false;
-        window.electron.notify(t("common.totp.promptFailure"));
-    });
-
-    ipcRenderer.on('blockchainResponse:totpDeeplink:fail', (event, args) => {
-        deepLinkInProgress.value = false;
-        window.electron.notify(t("common.totp.failed"));
-    });
-    */
 </script>
 
 <template>

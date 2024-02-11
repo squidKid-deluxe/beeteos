@@ -35,8 +35,18 @@
     "duplicate": "Já existe uma carteira com o mesmo nome, abortando a restauração da carteira"
   },
   "raw": {
-    "label": "Página bruta de links diretos",
-    "promptFailure": "Um deeplink Raw foi rejeitado. "
+    "label": "Página de link direto bruto",
+    "promptFailure": "Um deeplink Raw foi rejeitado. ",
+    "exit": "Sair da página de deeplink"
+  },
+  "www": {
+    "label": "Página de solicitação da Web",
+    "description": "Esta página processa solicitações da web recebidas por meio de serviços de websocket hospedados localmente. ",
+    "chosen": "operações escolhidas",
+    "exit": "Sair da página de solicitação da web",
+    "unsupported": "As solicitações da Web ainda não são suportadas para esta cadeia, desculpe.",
+    "ready": "Pronto para solicitações da web!",
+    "loading": "Carregando serviços de soquete..."
   },
   "totp": {
     "label": "Senhas únicas baseadas em tempo",
@@ -58,7 +68,8 @@
       "local": "Deseja configurar o escopo dos arquivos JSON verificáveis?",
       "qr": "Deseja configurar o escopo dos códigos QR escaneáveis?",
       "rawLink": "Deseja configurar o escopo dos deeplinks brutos recebidos?",
-      "totp": "Deseja configurar o escopo dos deeplinks recebidos?"
+      "totp": "Deseja configurar o escopo dos deeplinks recebidos?",
+      "www": "Você deseja configurar o escopo das solicitações da web recebidas?"
     },
     "yes": "Sim - personalize o escopo",
     "no": "Não - permitir todas as operações"
@@ -101,6 +112,7 @@
   "actionBar": {
     "Home": "Lar",
     "New": "Novo",
+    "WWW": "Solicitação da Web",
     "TOTP": "TOTP",
     "Local": "Local",
     "RAW": "Link Bruto",

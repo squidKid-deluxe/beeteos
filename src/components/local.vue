@@ -68,7 +68,7 @@
                 window.electron.notify(t("common.local.promptFailure"));
                 return;
             }
-
+            
             if (blockchainResponse.supportsLocal) {
                 supportsLocal.value = blockchainResponse.supportsLocal;
             }
@@ -89,7 +89,7 @@
                 "SettingsStore/setChainPermissions",
                 {
                     chain: chain,
-                    rows: types.map(type => type.id)
+                    rows: chainOperationTypes.value.map(type => type.id)
                 }
             );
         }

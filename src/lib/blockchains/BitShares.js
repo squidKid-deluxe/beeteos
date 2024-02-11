@@ -1337,6 +1337,14 @@ export default class BitShares extends BlockchainAPI {
         return true;
     }
 
+    /**
+     * Placeholder for blockchain Web implementation
+     * @returns Boolean
+     */
+    supportsWeb() {
+        return true;
+    }
+
     /*
      * Parse incoming and return a readied transaction builder instance
      * @param {Class||Object} incoming

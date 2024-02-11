@@ -38,6 +38,35 @@
         return decoded;
     }
 
+    let types = ref();
+    watchEffect(() => {
+        async function initialize() {
+            let thisType = type.value ?? payload.value?.type;
+            if (thisType !== Actions.REQUEST_LINK) {
+                return;
+            }
+
+            let thisChain = chain.value ?? request.value.chain;
+
+            let requestContents;
+            try {
+                requestContents = await window.electron.blockchainRequest({
+                    methods: ["getOperationTypes"],
+                    chain: thisChain
+                });
+            } catch (error) {
+                console.log(error);
+                return;
+            }
+
+            if (requestContents && requestContents.getOperationTypes) {
+                types.value = requestContents.getOperationTypes;
+            }
+        }
+
+        initialize();
+    })
+
     let type = ref();
     let toSend = ref();
     let chain = ref();
@@ -55,10 +84,8 @@
     watchEffect(() => {
         const id = handleProp('id');
 
-        /*
-        ipcRenderer.send(`get:prompt:${id}`);
-
-        ipcRenderer.on(`respond:prompt:${id}`, (event, data) => {
+        window.electron.getPrompt(id);
+        window.electron.onPrompt(id, (data) => {
             if (data.type) {
                 type.value = data.type;
             }
@@ -100,36 +127,6 @@
                 existingLinks.value = JSON.parse(data.existingLinks);
             }
         });
-        */
-    })
-
-    let types = ref();
-    watchEffect(() => {
-        async function initialize() {
-            let thisType = type.value ?? payload.value?.type;
-            if (thisType !== Actions.REQUEST_LINK) {
-                return;
-            }
-
-            let thisChain = chain.value ?? request.value.chain;
-
-            let requestContents;
-            try {
-                requestContents = await window.electron.blockchainRequest({
-                    methods: ["getOperationTypes"],
-                    chain: thisChain
-                });
-            } catch (error) {
-                console.log(error);
-                return;
-            }
-
-            if (requestContents && requestContents.getOperationTypes) {
-                types.value = requestContents.getOperationTypes;
-            }
-        }
-
-        initialize();
     })
 
     let chainOperations = computed(() => {

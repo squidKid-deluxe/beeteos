@@ -36,7 +36,17 @@
   },
   "raw": {
     "label": "Page de liens profonds bruts",
-    "promptFailure": "Un lien profond brut a été rejeté. "
+    "promptFailure": "Un lien profond brut a été rejeté. ",
+    "exit": "Quitter la page de lien profond"
+  },
+  "www": {
+    "label": "Page de demande Web",
+    "description": "Cette page traite les requêtes Web entrantes via les services Websocket hébergés localement. ",
+    "chosen": "opérations choisies",
+    "exit": "Quitter la page de demande Web",
+    "unsupported": "Les requêtes Web ne sont pas encore prises en charge pour cette chaîne, désolé.",
+    "ready": "Prêt pour les requêtes Web !",
+    "loading": "Chargement des services de socket..."
   },
   "totp": {
     "label": "Mots de passe à usage unique basés sur le temps",
@@ -58,7 +68,8 @@
       "local": "Souhaitez-vous configurer la portée des fichiers JSON analysables ?",
       "qr": "Vous souhaitez paramétrer le périmètre des QR codes scannables ?",
       "rawLink": "Souhaitez-vous paramétrer la portée des deeplinks bruts entrants ?",
-      "totp": "Souhaitez-vous configurer la portée des liens profonds entrants ?"
+      "totp": "Souhaitez-vous configurer la portée des liens profonds entrants ?",
+      "www": "Souhaitez-vous configurer la portée des requêtes Web entrantes ?"
     },
     "yes": "Oui - personnaliser la portée",
     "no": "Non - autoriser toutes les opérations"
@@ -101,6 +112,7 @@
   "actionBar": {
     "Home": "Maison",
     "New": "Nouveau",
+    "WWW": "Demande Web",
     "TOTP": "TOTP",
     "Local": "Local",
     "RAW": "Lien brut",

@@ -36,7 +36,17 @@
   },
   "raw": {
     "label": "Rohe Deep-Link-Seite",
-    "promptFailure": "Ein Raw-Deeplink wurde abgelehnt. "
+    "promptFailure": "Ein Raw-Deeplink wurde abgelehnt. ",
+    "exit": "Deeplink-Seite verlassen"
+  },
+  "www": {
+    "label": "Webanforderungsseite",
+    "description": "Diese Seite verarbeitet eingehende Webanfragen über lokal gehostete Websocket-Dienste. ",
+    "chosen": "Operationen ausgewählt",
+    "exit": "Webanforderungsseite verlassen",
+    "unsupported": "Webanfragen werden für diese Kette leider noch nicht unterstützt.",
+    "ready": "Bereit für Webanfragen!",
+    "loading": "Socket-Dienste werden geladen..."
   },
   "totp": {
     "label": "Zeitbasierte Einmalpasswörter",
@@ -58,7 +68,8 @@
       "local": "Möchten Sie den Umfang scannbarer JSON-Dateien konfigurieren?",
       "qr": "Möchten Sie den Umfang der scannbaren QR-Codes konfigurieren?",
       "rawLink": "Möchten Sie den Umfang eingehender Raw-Deeplinks konfigurieren?",
-      "totp": "Möchten Sie den Umfang eingehender Deeplinks konfigurieren?"
+      "totp": "Möchten Sie den Umfang eingehender Deeplinks konfigurieren?",
+      "www": "Möchten Sie den Umfang eingehender Webanfragen konfigurieren?"
     },
     "yes": "Ja – Umfang anpassen",
     "no": "Nein – alle Vorgänge zulassen"
@@ -101,6 +112,7 @@
   "actionBar": {
     "Home": "Heim",
     "New": "Neu",
+    "WWW": "Webanfrage",
     "TOTP": "TOTP",
     "Local": "Lokal",
     "RAW": "Roher Link",

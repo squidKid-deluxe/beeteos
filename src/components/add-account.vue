@@ -1,5 +1,5 @@
 <script setup>
-    import { watch, ref, computed, onMounted, inject } from "vue";
+    import { watch, ref, computed } from "vue";
     import { useI18n } from 'vue-i18n';
 
     import ImportCloudPass from "./blockchains/bitshares/ImportCloudPass";

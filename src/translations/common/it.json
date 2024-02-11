@@ -36,7 +36,17 @@
   },
   "raw": {
     "label": "Pagina di collegamento diretto non elaborata",
-    "promptFailure": "Un deeplink Raw è stato rifiutato. "
+    "promptFailure": "Un collegamento diretto non elaborato è stato rifiutato. ",
+    "exit": "Esci dalla pagina del collegamento diretto"
+  },
+  "www": {
+    "label": "Pagina di richiesta web",
+    "description": "Questa pagina elabora le richieste web in entrata tramite servizi websocket ospitati localmente. ",
+    "chosen": "operazioni scelte",
+    "exit": "Esci dalla pagina di richiesta web",
+    "unsupported": "Le richieste web non sono ancora supportate per questa catena, siamo spiacenti.",
+    "ready": "Pronto per le richieste web!",
+    "loading": "Caricamento servizi socket..."
   },
   "totp": {
     "label": "Password monouso basate sul tempo",
@@ -58,7 +68,8 @@
       "local": "Desideri configurare l'ambito dei file JSON analizzabili?",
       "qr": "Desideri configurare l'ambito dei codici QR scansionabili?",
       "rawLink": "Desideri configurare l'ambito dei deeplink non elaborati in entrata?",
-      "totp": "Desideri configurare l'ambito dei deeplink in entrata?"
+      "totp": "Desideri configurare l'ambito dei deeplink in entrata?",
+      "www": "Desideri configurare l'ambito delle richieste web in entrata?"
     },
     "yes": "Sì, personalizza l'ambito",
     "no": "No - consenti tutte le operazioni"
@@ -101,6 +112,7 @@
   "actionBar": {
     "Home": "Casa",
     "New": "Nuovo",
+    "WWW": "Richiesta web",
     "TOTP": "TOP",
     "Local": "Locale",
     "RAW": "Collegamento grezzo",

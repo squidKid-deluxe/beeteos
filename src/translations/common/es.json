@@ -35,8 +35,18 @@
     "duplicate": "Ya existe una billetera con el mismo nombre, cancelando la restauración de la billetera"
   },
   "raw": {
-    "label": "Página de enlace profundo sin procesar",
-    "promptFailure": "Se rechazó un enlace profundo de Raw. "
+    "label": "Página de enlace profundo sin formato",
+    "promptFailure": "Se rechazó un enlace profundo de Raw. ",
+    "exit": "Salir de la página de enlace profundo"
+  },
+  "www": {
+    "label": "página de solicitud web",
+    "description": "Esta página procesa solicitudes web entrantes a través de servicios websocket alojados localmente. ",
+    "chosen": "operaciones elegidas",
+    "exit": "Salir de la página de solicitud web",
+    "unsupported": "Las solicitudes web aún no son compatibles con esta cadena, lo sentimos.",
+    "ready": "¡Listo para solicitudes web!",
+    "loading": "Cargando servicios de socket..."
   },
   "totp": {
     "label": "Contraseñas de un solo uso basadas en el tiempo",
@@ -58,7 +68,8 @@
       "local": "¿Desea configurar el alcance de los archivos JSON escaneables?",
       "qr": "¿Desea configurar el alcance de los códigos QR escaneables?",
       "rawLink": "¿Desea configurar el alcance de los enlaces profundos sin procesar entrantes?",
-      "totp": "¿Desea configurar el alcance de los enlaces profundos entrantes?"
+      "totp": "¿Desea configurar el alcance de los enlaces profundos entrantes?",
+      "www": "¿Desea configurar el alcance de las solicitudes web entrantes?"
     },
     "yes": "Sí, personalizar el alcance",
     "no": "No - permitir todas las operaciones"
@@ -101,6 +112,7 @@
   "actionBar": {
     "Home": "Hogar",
     "New": "Nuevo",
+    "WWW": "Solicitud web",
     "TOTP": "TOTP",
     "Local": "Local",
     "RAW": "Enlace sin procesar",
