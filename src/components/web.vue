@@ -64,6 +64,40 @@
         return rememberedRows;
     });
 
+    
+    let compatibleChain = ref(false);
+    let chainTypes = ref([]);
+    watchEffect(() => {
+        async function initialize() {
+            let blockchainRequest;
+            try {
+                blockchainRequest = await window.electron.blockchainRequest(
+                    { 
+                        methods: ['supportsWeb', 'getOperationTypes'],
+                        chain: chain.value
+                    }
+                );
+            } catch (error) {
+                console.error(error);
+            }
+
+            if (blockchainRequest) {
+                const { supportsWeb, getOperationTypes } = blockchainRequest;
+                if (supportsWeb) {
+                    compatibleChain.value = true;
+                }
+
+                if (getOperationTypes) {
+                    chainTypes.value = getOperationTypes;
+                }
+            }
+        }
+        if (chain.value) {
+            initialize();
+        }
+    });
+
+
     const sslCert = ref();
     watchEffect(() => {
         async function lookupSSL() {
@@ -103,73 +137,91 @@
             }
         }
 
-        if (chain.value) {
+        if (chain.value && compatibleChain.value) {
             lookupSSL();
-        }
-    });
-    
-    let compatibleChain = ref(false);
-    let chainTypes = ref([]);
-    watchEffect(() => {
-        async function initialize() {
-            let blockchainRequest;
-            try {
-                blockchainRequest = await window.electron.blockchainRequest(
-                    { 
-                        methods: ['supportsWeb', 'getOperationTypes'],
-                        chain: chain.value
-                    }
-                );
-            } catch (error) {
-                console.error(error);
-            }
-
-            if (blockchainRequest) {
-                const { supportsWeb, getOperationTypes } = blockchainRequest;
-                if (supportsWeb) {
-                    compatibleChain.value = true;
-                }
-
-                if (getOperationTypes) {
-                    chainTypes.value = getOperationTypes;
-                }
-            }
-        }
-        if (chain.value) {
-            initialize();
         }
     });
 
     watchEffect(() => {
         async function launchServer() {
-            if (selectedRows.value) {     
-                if (
-                    !store.state.WalletStore.isUnlocked ||
-                    router.currentRoute.value.path !== "/www"
-                ) {
-                    console.log("Wallet must be unlocked for web requests to work.");
-                    return;
-                }
-
-                let launchedServers;
-                try {
-                    launchedServers = sslCert.value
-                        ? await window.electron.launchServer({cert: sslCert.value.cert, key: sslCert.value.key})
-                        : await window.electron.launchServer({cert: null, key: null});
-                } catch (error) {
-                    console.error(error);
-                }
-
-                if (launchedServers) {
-                    serverOnline.value = true;
-                    console.log({launchedServers});
-                    return;
-                }
-                serverOnline.value = false;
+            if (
+                !store.state.WalletStore.isUnlocked ||
+                router.currentRoute.value.path !== "/www"
+            ) {
+                console.log("Wallet must be unlocked for web requests to work.");
+                return;
             }
+
+            let launchedServers;
+            try {
+                launchedServers = sslCert.value
+                    ? await window.electron.launchServer({cert: sslCert.value.cert, key: sslCert.value.key})
+                    : await window.electron.launchServer({cert: null, key: null});
+            } catch (error) {
+                console.error(error);
+            }
+
+            if (launchedServers) {
+                serverOnline.value = true;
+                console.log({launchedServers});
+                return;
+            }
+            serverOnline.value = false;
         }
-        if (selectedRows.value) {
+
+        if (selectedRows.value && compatibleChain.value) {
             launchServer();
+        }
+    });
+
+
+    watchEffect(async () => {
+        async function listen() {            
+            window.electron.addLinkApp(async (data) => {
+                let app;
+                let _error;
+                try {
+                    app = await store.dispatch('OriginStore/addApp', data);
+                } catch (error) {
+                    console.log(error)
+                    _error = error;
+                }
+
+                window.electron.sendLinkResponse({app, error: _error})
+            });
+            window.electron.getLinkApp((data) => {
+                let app;
+                let _error;
+                try {
+                    app = store.getters['OriginStore/getBeetApp'](data)
+                } catch (error) {
+                    console.log(error)
+                    _error = error;
+                }
+
+                window.electron.sendLinkResponse({app, error: _error})
+            });
+            
+            window.electron.getAuthApp((data) => {
+                let app;
+                let _error;
+                try {
+                    app = store.getters['OriginStore/getBeetApp'](data)
+                } catch (error) {
+                    console.log(error)
+                    _error = error;
+                }
+
+                window.electron.sendAuthResponse({app, error: _error})
+            });
+
+            window.electron.newRequest((data) => { // BeetServer.respondAPI
+                store.dispatch('OriginStore/newRequest', data);
+            });
+        }
+
+        if (serverOnline.value) {
+            listen();
         }
     });
 </script>

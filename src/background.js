@@ -523,7 +523,13 @@ const createWindow = async () => {
   ipcMain.handle('launchServer', async (event, arg) => {
     const { key, cert } = arg;
     try {
-        BeetServer.initialize(60554, 60555, key, cert);
+        BeetServer.initialize(
+            60554,
+            60555,
+            key,
+            cert,
+            mainWindow.webContents
+        );
     } catch (error) {
         console.log(error);
     }

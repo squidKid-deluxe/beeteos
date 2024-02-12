@@ -54,4 +54,26 @@ contextBridge.exposeInMainWorld('electron', {
   launchServer: async (args) => await ipcRenderer.invoke('launchServer', args),
   closeServer: async () => await ipcRenderer.send('closeServer'),
   fetchSSL: async (args) => await ipcRenderer.invoke('fetchSSL', args),
+  addLinkApp: async (func) => {
+    ipcRenderer.on("addLinkApp", (event, data) => {
+        func(data);
+    })
+  },
+  getLinkApp: async (func) => {
+    ipcRenderer.on("getLinkApp", (event, data) => {
+        func(data);
+    })
+  },
+  sendLinkResponse: async (args) => await ipcRenderer.send('getLinkResponse', args),
+  getAuthApp: async (func) => {
+    ipcRenderer.on("getAuthApp", (event, data) => {
+        func(data);
+    })
+  },
+  sendAuthResponse: async (args) => await ipcRenderer.send('getAuthResponse', args),
+  newRequest: async (func) => {
+    ipcRenderer.on("newRequest", (event, data) => {
+        func(data);
+    })
+  }
 });

@@ -2,7 +2,7 @@ import BeetDB from '../../lib/BeetDB.js';
 const LOAD_APPS = 'LOAD_APPS';
 const ADD_APP = 'ADD_APP';
 const UPDATE_APP = 'UPDATE_APP';
-const NEW_REQUEST = 'NEW_REQUEST';
+//const NEW_REQUEST = 'NEW_REQUEST';
 
 const mutations = {
     [LOAD_APPS](state, apps) {

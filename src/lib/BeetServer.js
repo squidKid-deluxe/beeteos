@@ -1,3 +1,4 @@
+import { ipcMain, webContents } from "electron";
 import * as OTPAuth from "otpauth";
 
 import sha256 from "crypto-js/sha256.js";
@@ -26,7 +27,6 @@ import {
 } from './apiUtils.js';
 import getBlockchainAPI from "./blockchains/blockchainFactory.js";
 
-import store from '../store/index.js';
 import * as Actions from './Actions.js';
 
 /**
@@ -89,12 +89,14 @@ function _getLinkResponse(result) {
         }
     };
 
+    /*
     // todo: analyze why the account name is not set and treat the cause not the sympton
     if (!response.payload.requested.account.name) {
         response.payload.requested.account.name = store.state.AccountStore.accountlist.find(
             x => x.accountID == response.payload.requested.account.id
         ).accountName;
     }
+    */
 
     return response;
 }
@@ -114,8 +116,7 @@ const rejectRequest = (req, error) => {
  * Show the link/relink modal
  * @returns {bool}
  */
-const linkHandler = async (req) => {
-    // todo: only forward fields that are actually used in handler
+const linkHandler = async (req, webContents) => {
     let userResponse;
     try {
       if (req.type == 'link') {
@@ -132,7 +133,6 @@ const linkHandler = async (req) => {
     }
 
     let identityhash;
-    let app;
     if (req.type == 'link') {
         let hashContents = `${req.browser} ${req.origin} ${req.appName} ${userResponse.result.chain} ${userResponse.result.id}`;
         try {
@@ -149,32 +149,34 @@ const linkHandler = async (req) => {
         }
         let secret = ed.utils.bytesToHex(tempSecret)
 
-        try {
-            app = await store.dispatch('OriginStore/addApp', {
-                appName: req.appName,
-                identityhash: identityhash,
-                origin: req.origin,
-                account_id: userResponse.result.id,
-                chain: userResponse.result.chain,
-                injectables: req.injectables ?? [],
-                secret: secret,
-                next_hash: req.payload.next_hash
-            });
-          } catch (error) {
-            return rejectRequest(req, error);
-          }
+        webContents.send('addLinkApp', {
+            appName: req.appName,
+            identityhash: identityhash,
+            origin: req.origin,
+            account_id: userResponse.result.id,
+            chain: userResponse.result.chain,
+            injectables: req.injectables ?? [],
+            secret: secret,
+            next_hash: req.payload.next_hash
+        });
     } else {
         identityhash = userResponse.result.identityhash
-        app = store.getters['OriginStore/getBeetApp']({payload: {identityhash: identityhash}});
+        webContents.send('getLinkApp', {payload: {identityhash: identityhash}});
     }
 
-    // todo: why copy content of request?
-    return Object.assign(req, {
-        isLinked: true, // todo: can this also be called link?
-        identityhash: identityhash,
-        app: app,
-        existing: false
-    });
+    ipcMain.once('getLinkResponse', (event, response) => {
+        const { app, error } = response;
+        if (error) {
+            return rejectRequest(req, error);
+        }
+        return Object.assign(req, {
+            isLinked: true,
+            identityhash: identityhash,
+            app: app,
+            existing: false
+        });
+    })
+
 };
 
 /**
@@ -189,16 +191,28 @@ const authHandler = function (req) {
       return Object.assign(req.payload, {authenticate: true, link: false});
     }
 
-    let app = store.getters['OriginStore/getBeetApp'](req);
-    if (!app || (!req.payload.origin == app.origin && !req.payload.appName == app.appName)) {
-      // Reject authentication!
-      return Object.assign(req.payload, {authenticate: false, link: false});
-    }
+    webContents.send('getAuthApp', {payload: {identityhash: req.payload.identityhash}});
 
-    return Object.assign(req.payload, {
-        authenticate: true,
-        link: true,
-        app: app
+    ipcMain.once('getAuthResponse', (event, response) => {
+        const { app, error } = response;
+        if (error) {
+            return rejectRequest(req, error);
+        }
+
+        if (
+            !app ||
+            !app.length ||
+            (!req.payload.origin === app.origin && !req.payload.appName === app.appName)
+        ) {
+          // Reject authentication!
+          return Object.assign(req.payload, {authenticate: false, link: false});
+        }
+
+        return Object.assign(req.payload, {
+            authenticate: true,
+            link: true,
+            app: app
+        });
     });
 };
 
@@ -207,6 +221,7 @@ export default class BeetServer {
     static httpsServer;
     static httpSocket;
     static httpsSocket;
+    static webContents;
 
     /**
      * Responding to multiple API query types
@@ -297,6 +312,8 @@ export default class BeetServer {
                 }
             }
 
+            // TODO: Support EOS based chains here
+
             if (!authorizedUse) {
                 socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Unauthorized blockchain operations detected."}});
                 return;
@@ -304,7 +321,7 @@ export default class BeetServer {
         }
     }
 
-        store.dispatch('OriginStore/newRequest', {
+        this.webContents.send('newRequest', {
             identityhash: apiobj.payload.identityhash,
             next_hash: apiobj.payload.next_hash
         });
@@ -520,7 +537,7 @@ export default class BeetServer {
                * An authenticated client requests to link with Beet wallet.
                */
               socket.on("linkRequest", async (data) => {
-                if (!socket.isAuthenticated || !store.state.WalletStore.isUnlocked) {
+                if (!socket.isAuthenticated) {
                   socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
                   return;
                 }
@@ -538,7 +555,7 @@ export default class BeetServer {
                * An authenticated client requests to relink with Beet wallet.
                */
               socket.on("relinkRequest", async (data) => {
-                if (!socket.isAuthenticated || !store.state.WalletStore.isUnlocked) {
+                if (!socket.isAuthenticated) {
                   socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
                   return;
                 }
@@ -556,7 +573,7 @@ export default class BeetServer {
                * An authenticated & linked client requests an api call.
                */
               socket.on("api", async (data) => {
-                if (!socket.isAuthenticated || !store.state.WalletStore.isUnlocked) {
+                if (!socket.isAuthenticated) {
                   socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
                   return;
                 }
@@ -587,14 +604,19 @@ export default class BeetServer {
      * @parameter {number} httpsPort
      * @parameter {string} key
      * @parameter {string} cert
+     * @parameter {WebContents} webContents
      * @returns {BeetServer}
      */
     static async initialize(
         httpsPort = 60554,
         httpPort = 60555,
         key,
-        cert
+        cert,
+        webContents
     ) {
+        this.webContents = webContents;
+        this.beetApps = beetApps;
+
         let httpServer;
         try {
             httpServer = await http.createServer();
