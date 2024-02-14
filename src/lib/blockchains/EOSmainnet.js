@@ -89,12 +89,13 @@ export default class EOS extends BlockchainAPI {
      */
     getOperationTypes() {
         // No virtual operations included
-        return operations.map((op) => {
+        const _ops = operations.map((op) => {
             return {
                 id: op,
                 method: op
             }
         });
+        return _ops;
     }
 
     /*

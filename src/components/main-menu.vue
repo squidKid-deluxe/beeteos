@@ -1,20 +1,14 @@
 <script setup>
-    import { ref, computed, inject } from 'vue';
+    import { ref, computed } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import router from '../router/index.js';
     import store from '../store/index.js';
     import langSelect from "./lang-select.vue";
-    const emitter = inject('emitter');
 
     let open = ref(false);
-    let currentSelection = ref();
+    let lastIndex = ref(0);
     const { t } = useI18n({ useScope: 'global' });
-
-    emitter.on('setMenuItem', response => {
-        console.log({response});
-        currentSelection.value = response;
-    });
 
     let items = computed(() => {
         return [
@@ -82,7 +76,16 @@
     });
 
     function onChange(data) {
-        currentSelection.value = data.index;
+        const newIndex = data.index;
+        if (
+            lastIndex.value &&
+            lastIndex.value === 2 && // WWW
+            newIndex !== 2 // leaving WWW
+        ) {
+            console.log("Automatically shutting down web services");
+            window.electron.closeServer();
+        }
+        lastIndex.value = newIndex;
 
         if (data.index === 9) {
             console.log('logout')
@@ -93,11 +96,14 @@
         router.replace(items.value[data.index].url);
     }
 
-    window.electron.timeout({callback: () => {
-        console.log('wallet timed logout')
+    window.electron.timeout(() => {
+        console.log('wallet timed logout');
+        if (lastIndex.value && lastIndex.value === 2) {
+            window.electron.closeServer();
+        }
         store.dispatch("WalletStore/logout");
         router.replace("/");
-    }});
+    });
 </script>
 
 <template>
@@ -126,7 +132,7 @@
                     nested
                 >
                     <ui-menuitem
-                        v-if="currentSelection === item.index"
+                        v-if="lastIndex === item.index"
                         selected
                     >
                         <ui-menuitem-icon dark>

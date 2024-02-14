@@ -217,8 +217,6 @@ const authHandler = function (req) {
 };
 
 export default class BeetServer {
-    static httpServer;
-    static httpsServer;
     static httpSocket;
     static httpsSocket;
     static webContents;
@@ -615,7 +613,6 @@ export default class BeetServer {
         webContents
     ) {
         this.webContents = webContents;
-        this.beetApps = beetApps;
 
         let httpServer;
         try {
@@ -624,47 +621,56 @@ export default class BeetServer {
             console.log(error);
         }
 
-        let httpTerminator = createHttpTerminator({
-            server: httpServer,
-        });
+        if (httpServer) {
+            let httpTerminator = createHttpTerminator({
+                server: httpServer,
+            });
+    
+            httpServer.listen(httpPort, () => {
+                console.log(`HTTP server listening on port: ${httpPort}`);
+            });
+    
+            this.httpSocket = await this.newSocket(httpServer);
+            this.httpTerminator = httpTerminator;
 
-        httpServer.listen(httpPort, () => {
-            console.log(`HTTP server listening on port: ${httpPort}`);
-        });
+        }
 
-        this.httpSocket = await this.newSocket(httpServer);
-        this.httpTerminator = httpTerminator;
-
-        let httpsServer;
-        let httpsTerminator;
         if (key && cert) {
+            let httpsServer;
+
             try {
                 httpsServer = https.createServer({
-                                    key: key,
-                                    cert: cert,
-                                    rejectUnauthorized: false
-                                })
+                                key: key,
+                                cert: cert,
+                                rejectUnauthorized: false
+                              })
             } catch (error) {
                 console.log(error);
             }
 
-            httpsTerminator = createHttpTerminator({
-                server: httpsServer,
-            });
-
-            httpsServer.listen(httpsPort, ()=> {
-                console.log(`HTTPS server listening on port: ${httpsPort}`);
-            });
-
-            this.httpsSocket = await this.newSocket(httpsServer);
-            this.httpsTerminator = httpsTerminator;
+            if (httpsServer) {
+                let httpsTerminator = createHttpTerminator({
+                    server: httpsServer,
+                });
+    
+                httpsServer.listen(httpsPort, ()=> {
+                    console.log(`HTTPS server listening on port: ${httpsPort}`);
+                });
+    
+                this.httpsSocket = await this.newSocket(httpsServer);
+                this.httpsTerminator = httpsTerminator;
+            }
         }
     }
     
     static async close() {
         return new Promise(async (resolve, reject) => {
             if (this.httpTerminator) {
-                await this.httpTerminator.terminate();
+                try {
+                    await this.httpTerminator.terminate();
+                } catch (error) {
+                    console.log(error);
+                }
             }
 
             if (this.httpSocket) {
@@ -674,7 +680,11 @@ export default class BeetServer {
             }
     
             if (this.httpsTerminator) {
-                await this.httpsTerminator.terminate();
+                try {
+                    await this.httpsTerminator.terminate();
+                } catch (error) {
+                    console.log(error);
+                }
             }
 
             if (this.httpsSocket) {

@@ -1,29 +1,53 @@
 <script setup>
-    import { onMounted, watchEffect, ref, computed, inject } from 'vue';
+    import { onMounted, watchEffect, ref } from 'vue';
     import { useI18n } from 'vue-i18n';
     import store from '../../store/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
+
+    const props = defineProps({
+        ops: {
+            type: Array,
+            required: true,
+            default() {
+                return []
+            }
+        },
+        stored: {
+            type: Array,
+            required: true,
+            default() {
+                return []
+            }
+        },
+        chain: {
+            type: String,
+            required: true,
+            default() {
+                return ''
+            }
+        }
+    });
+
+    const emit = defineEmits(['selected', 'exit']);
 
     function saveRows() {
-        if (selectedRows && selectedRows.value) {
+        if (selected && selected.value) {
             // save rows to account
-            let chain = store.getters['AccountStore/getChain'];
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
-                    chain: chain,
-                    rows: selectedRows.value
+                    chain: props.chain,
+                    rows: selected.value
                 }
             );
-            selectedRows.value = JSON.parse(JSON.stringify(settingsRows.value))
-            emitter.emit('selectedRows', true);
+            selected.value = JSON.parse(JSON.stringify(props.stored))
+            emit('selected', true);
         }
     }
 
     function goBack() {
-        emitter.emit('exitOperations', true);
+        emit('exit', true);
     }
 
     let thead = ref(['ID', 'Method', 'Info'])
@@ -37,74 +61,37 @@
         {
             field: 'method',
             fn: data => {
-                return t(`operations.injected.${chain.value}.${data.method}.method`)
+                return t(`operations.injected.${props.chain}.${data.method}.method`)
             }
         },
         {
             field: 'info',
             fn: data => {
-                return t(`operations.injected.${chain.value}.${data.method}.tooltip`)
+                return t(`operations.injected.${props.chain}.${data.method}.tooltip`)
             }
         }
     ]);
 
-    let chain = computed(() => {
-        return store.getters['AccountStore/getChain'];
-    });
-
-    let data = ref([]);
-    watchEffect(async () => {
-        async function initialize() {
-            let blockchainResponse;
-            try {
-                blockchainResponse = await window.electron.blockchainRequest({
-                    methods: ['getOperationTypes'],
-                    location: 'operations',
-                    chain: chain.value
-                });
-            } catch (error) {
-                console.log({error});
-            }
-
-            if (blockchainResponse && blockchainResponse.getOperationTypes) {
-                data.value = blockchainResponse.getOperationTypes;
-            }
-        }
-
-        if (chain.value) {
-            initialize();
-        }
-    });
-
-    let settingsRows = computed(() => {
-        // last approved TOTP rows for this chain
-        if (chain.value) {
-            let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain.value);
-            if (!rememberedRows || !rememberedRows.length) {
-                return [];
-            }
-
-            return rememberedRows;
-        }
-        return [];
-    });
-
     let hasSelectedNewRows = ref(false);
-    let selectedRows = ref([]);
+    let selected = ref([]);
     onMounted(() => {
-        selectedRows.value = settingsRows && settingsRows.value
-            ? JSON.parse(JSON.stringify(settingsRows.value))
+        selected.value = props.ops && props.stored
+            ? JSON.parse(JSON.stringify(props.stored))
             : []
     })
 
     watchEffect(() => {
-        if (selectedRows && settingsRows) {
+        if (selected && props.ops) {
+            const sorted = [...props.stored].sort().join('');
             if (
-                selectedRows.value && selectedRows.value.sort().join('') === settingsRows.value.sort().join('')
+                selected.value &&
+                selected.value.sort().join('') === sorted
             ) {
-                // initial setting of settingsrows
                 hasSelectedNewRows.value = false;
-            } else if (selectedRows.value && selectedRows.value.sort().join('') !== settingsRows.value.sort().join('')) {
+            } else if (
+                selected.value &&
+                selected.value.sort().join('') !== sorted
+            ) {
                 console.log('Selected a new row')
                 hasSelectedNewRows.value = true;
             }
@@ -122,7 +109,7 @@
                     {{ t('common.totp.prompt') }}
                 </p>
                 <p
-                    v-if="!data || !data.length"
+                    v-if="!props.ops || !props.ops.length"
                     outlined
                     style="marginTop: 5px;"
                 >
@@ -130,8 +117,8 @@
                 </p>
                 <ui-table
                     v-else 
-                    v-model="selectedRows"
-                    :data="data"
+                    v-model="selected"
+                    :data="props.ops"
                     :thead="thead"
                     :tbody="tbody"
                     :default-col-width="200"
@@ -158,7 +145,7 @@
                             {{ t('common.qr.back') }}
                         </ui-button>
                         <ui-button
-                            v-if="selectedRows && selectedRows.length"
+                            v-if="selected && selected.length"
                             raised
                             style="margin-right:5px"
                             icon="save"

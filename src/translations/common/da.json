@@ -40,14 +40,18 @@
       "exit": "Afslut dyblink-siden"
     },
     "www": {
-      "label": "Webanmodningsside",
-      "description": "Denne side behandler indkommende webanmodninger via lokalt hostede websocket-tjenester. ",
-      "chosen": "operationer valgt",
-      "exit": "Afslut webanmodningssiden",
-      "unsupported": "Webanmodninger er endnu ikke understøttet for denne kæde, beklager.",
-      "ready": "Klar til webforespørgsler!",
-      "loading": "Indlæser stiktjenester..."
-    },
+        "label": "Webanmodningsside",
+        "description": "Klar til at behandle eksterne webanmodninger. Tredjeparts apps er nu i stand til at starte prompter om at linke og derefter udsende operationer.",
+        "chosen": "operationer valgt",
+        "ready": "Klar til webforespørgsler!",
+        "loading": "Indlæser stiktjenester...",
+        "exit": "Afslut webanmodningssiden",
+        "unsupported": "Webanmodninger er endnu ikke understøttet for denne kæde, beklager.",
+        "init": "Denne side bruger lokalt hostede websockets til at behandle indgående webanmodninger. Internetudbyderens kompatibilitet kan variere. Vil du fortsætte?",
+        "yes": "Fortsæt",
+        "no": "Gå tilbage",
+        "prompt": "Klar til at behandle eksterne webanmodninger. Tredjeparts apps er nu i stand til at starte prompter om at linke og derefter udsende operationer."
+      },
     "totp": {
       "label": "Tidsbaserede engangsadgangskoder",
       "promptFailure": "Et TOTP-dybt link blev afvist. ",
@@ -63,7 +67,7 @@
       "warning": "Del ikke koden ovenfor med nogen",
       "inProgress": "Et dybt link behandles"
     },
-    "opPermissions": {
+    "chosenScope": {
       "title": {
         "local": "Ønsker du at konfigurere omfanget af scanbare JSON-filer?",
         "qr": "Ønsker du at konfigurere omfanget af scanbare QR-koder?",

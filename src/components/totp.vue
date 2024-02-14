@@ -1,5 +1,5 @@
 <script setup>
-    import { watchEffect, ref, computed, inject } from 'vue';
+    import { watchEffect, ref, computed } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -9,14 +9,13 @@
     import router from '../router/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
 
     let chain = computed(() => {
         return store.getters['AccountStore/getChain'];
     });
 
     let settingsRows = computed(() => { // last approved TOTP rows for this chain
-        if (!store.state.WalletStore.isUnlocked) {
+        if (!store.state.WalletStore.isUnlocked || !chain.value) {
             return;
         }
 
@@ -62,16 +61,12 @@
         }
     })
 
-    let selectedRows = ref();
-    emitter.on('selectedRows', (data) => {
-        selectedRows.value = data;
-    })
-
-    let opPermissions = ref();
+    let hasSelectedRows = ref();
+    let chosenScope = ref();
     function setScope(newValue) {
-        opPermissions.value = newValue;
+        chosenScope.value = newValue;
         if (newValue === 'AllowAll') {
-            selectedRows.value = true;
+            hasSelectedRows.value = true;
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
@@ -81,14 +76,10 @@
             );
         }
     }
-    emitter.on('exitOperations', () => {
-        opPermissions.value = null;
-        selectedRows.value = null;
-    })
 
     function goBack() {
-        opPermissions.value = null;
-        selectedRows.value = null;
+        chosenScope.value = null;
+        hasSelectedRows.value = null;
         //
         timestamp.value = null;
         newCodeRequested.value = null;
@@ -144,16 +135,14 @@
                 return;
             }
 
-            if (!blockchainResponse || !blockchainResponse.totpCode) {
+            if (!blockchainResponse || !blockchainResponse.code) {
                 console.log("No blockchain response");
                 return;
             }
 
-            const { totpCode } = blockchainResponse;
-            if (totpCode) {
-                currentCode.value = totpCode;
-                copyContents.value = {text: totpCode, success: () => {console.log('copied code')}};
-            }
+            const { code } = blockchainResponse;
+            currentCode.value = code;
+            copyContents.value = {text: code, success: () => {console.log('copied code')}};
         }
 
         if (timestamp && timestamp.value) {
@@ -238,30 +227,39 @@
                     outlined
                     style="marginTop: 5px;"
                 >
-                    <span v-if="!opPermissions">
+                    <span v-if="!chosenScope">
                         <p>
-                            {{ t('common.opPermissions.title.totp') }}
+                            {{ t('common.chosenScope.title.totp') }}
                         </p>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('Configure')"
                         >
-                            {{ t('common.opPermissions.yes') }}
+                            {{ t('common.chosenScope.yes') }}
                         </ui-button>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('AllowAll')"
                         >
-                            {{ t('common.opPermissions.no') }}
+                            {{ t('common.chosenScope.no') }}
                         </ui-button>
                     </span>
-                    <span v-else-if="opPermissions == 'Configure' && !selectedRows">
-                        <Operations />
+                    <span v-else-if="chosenScope == 'Configure' && !hasSelectedRows">
+                        <Operations
+                            :ops="operationTypes"
+                            :stored="settingsRows"
+                            :chain="chain"
+                            @selected="() => hasSelectedRows.value = true"
+                            @exit="() => {
+                                chosenScope.value = null;
+                                hasSelectedRows.value = null;
+                            }"
+                        />
                     </span>
 
-                    <span v-if="opPermissions && settingsRows && selectedRows">
+                    <span v-if="chosenScope && settingsRows && hasSelectedRows">
                         <ui-chips
                             id="input-chip-set"
                             type="input"
@@ -340,7 +338,7 @@
             </span>
 
             <ui-button
-                v-if="opPermissions && selectedRows"
+                v-if="chosenScope && hasSelectedRows"
                 style="margin-right:5px"
                 icon="arrow_back_ios"
                 @click="goBack"

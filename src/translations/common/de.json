@@ -41,12 +41,16 @@
   },
   "www": {
     "label": "Webanforderungsseite",
-    "description": "Diese Seite verarbeitet eingehende Webanfragen über lokal gehostete Websocket-Dienste. ",
+    "description": "Bereit zur Bearbeitung externer Webanfragen. Apps von Drittanbietern können jetzt Eingabeaufforderungen starten, um Vorgänge zu verknüpfen und dann zu übertragen.",
     "chosen": "Operationen ausgewählt",
+    "ready": "Bereit für Webanfragen!",
+    "loading": "Socket-Dienste werden geladen...",
     "exit": "Webanforderungsseite verlassen",
     "unsupported": "Webanfragen werden für diese Kette leider noch nicht unterstützt.",
-    "ready": "Bereit für Webanfragen!",
-    "loading": "Socket-Dienste werden geladen..."
+    "init": "Diese Seite verwendet lokal gehostete Websockets, um eingehende Webanfragen zu verarbeiten. Die Kompatibilität der Internetdienstanbieter kann variieren. Möchten Sie fortfahren?",
+    "yes": "Fortfahren",
+    "no": "Geh zurück",
+    "prompt": "Bereit zur Bearbeitung externer Webanfragen. Apps von Drittanbietern können jetzt Eingabeaufforderungen starten, um Vorgänge zu verknüpfen und dann zu übertragen."
   },
   "totp": {
     "label": "Zeitbasierte Einmalpasswörter",
@@ -63,7 +67,7 @@
     "warning": "Geben Sie den obigen Code nicht an Dritte weiter",
     "inProgress": "Ein Deeplink wird verarbeitet"
   },
-  "opPermissions": {
+  "chosenScope": {
     "title": {
       "local": "Möchten Sie den Umfang scannbarer JSON-Dateien konfigurieren?",
       "qr": "Möchten Sie den Umfang der scannbaren QR-Codes konfigurieren?",

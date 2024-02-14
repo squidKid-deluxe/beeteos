@@ -1,13 +1,11 @@
 <script setup>
-    import { computed, inject, onMounted, watchEffect, ref } from "vue";
+    import { computed, watchEffect, ref } from "vue";
 
     import Balances from "./balances";
     import AccountDetails from "./account-details";
     import AccountSelect from "./account-select";
 
     import store from '../store/index.js';
-
-    const emitter = inject('emitter');
 
     let selectedAccount = computed(() => {
         if (!store.state.WalletStore.isUnlocked) {
@@ -76,18 +74,6 @@
             lookupBlockchain();
         }
     })
-
-    emitter.on('refreshBalances', () => {
-        console.log("Refreshing balances")
-        fetchQty.value++;
-    });
-
-    /**
-     * Set the initial menu value
-     */
-    onMounted(() => {
-        emitter.emit('setMenuItem', 0);
-    });
 </script>
 
 <template>
@@ -108,6 +94,7 @@
                 :chain="_chain"
                 :is-connected="isConnected"
                 :is-connecting="isConnecting"
+                @refresh="() => fetchQty.value = fetchQty.value + 1"
             />
         </span>
     </span>

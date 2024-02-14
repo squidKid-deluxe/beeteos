@@ -40,14 +40,18 @@
       "exit": "Välju süvalingi lehelt"
     },
     "www": {
-      "label": "Veebipäringu leht",
-      "description": "See leht töötleb sissetulevaid veebipäringuid kohalikult hostitud veebipesateenuste kaudu. ",
-      "chosen": "valitud toimingud",
-      "exit": "Välju veebipäringu lehelt",
-      "unsupported": "Vabandust, selle ahela jaoks ei toetata veel veebipäringuid.",
-      "ready": "Valmis veebipäringuteks!",
-      "loading": "Pistikupesateenuste laadimine..."
-    },
+        "label": "Veebipäringu leht",
+        "description": "Valmis väliste veebipäringute töötlemiseks. Kolmanda osapoole rakendused saavad nüüd käivitada viipasid linkimiseks ja seejärel toimingute edastamiseks.",
+        "chosen": "valitud toimingud",
+        "ready": "Valmis veebipäringuteks!",
+        "loading": "Pistikupesateenuste laadimine...",
+        "exit": "Välju veebipäringu lehelt",
+        "unsupported": "Vabandust, selle ahela jaoks ei toetata veel veebipäringuid.",
+        "init": "See leht kasutab sissetulevate veebipäringute töötlemiseks kohapeal hostitud veebisokleid. Interneti-teenuse pakkuja ühilduvus võib erineda. Kas soovite jätkata?",
+        "yes": "Jätkake",
+        "no": "Mine tagasi",
+        "prompt": "Valmis väliste veebipäringute töötlemiseks. Kolmanda osapoole rakendused saavad nüüd käivitada viipasid linkimiseks ja seejärel toimingute edastamiseks."
+      },
     "totp": {
       "label": "Ajapõhised ühekordsed paroolid",
       "promptFailure": "TOTP süvalink lükati tagasi. ",
@@ -63,7 +67,7 @@
       "warning": "Ärge jagage ülaltoodud koodi kellegagi",
       "inProgress": "Süvalinki töödeldakse"
     },
-    "opPermissions": {
+    "chosenScope": {
       "title": {
         "local": "Kas soovite konfigureerida skannitavate JSON-failide ulatust?",
         "qr": "Kas soovite konfigureerida skannitavate QR-koodide ulatust?",

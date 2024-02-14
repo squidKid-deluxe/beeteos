@@ -1,8 +1,7 @@
 <script setup>
-    import { watchEffect, ref, computed, inject } from "vue";
+    import { watchEffect, ref, computed } from "vue";
     import { useI18n } from 'vue-i18n';
 
-    const emitter = inject('emitter');
     const { t } = useI18n({ useScope: 'global' });
 
     const props = defineProps({
@@ -37,6 +36,8 @@
         }
     });
 
+    const emit = defineEmits(['refresh']);
+
     let balances = computed(() => {
         return props.balances;
     });
@@ -58,7 +59,7 @@
             props.chain === selectedChain.value
         ) {
             tableData.value = null;
-            emitter.emit('refreshBalances');
+            emit('refresh', true);
         } else {
             console.log("Unable to reload balances, please try again later.")
         }

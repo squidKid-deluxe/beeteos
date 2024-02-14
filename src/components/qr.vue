@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed, inject, watchEffect } from 'vue';
+    import { ref, computed, watchEffect } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -11,25 +11,15 @@
     import store from '../store/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
 
-    let opPermissions = ref();
+    let chosenScope = ref();
     let qrInProgress = ref(false);
     let qrChoice = ref();
-    let selectedRows = ref();
-
-    emitter.on('selectedRows', (data) => {
-        selectedRows.value = data;
-    })
-
-    emitter.on('exitOperations', () => {
-        opPermissions.value = null;
-        selectedRows.value = null;
-    })
+    let hasSelectedRows = ref();
 
     function goBack() {
-        opPermissions.value = null;
-        selectedRows.value = null;
+        chosenScope.value = null;
+        hasSelectedRows.value = null;
     }
 
     function undoQRChoice () {
@@ -72,7 +62,7 @@
     });
 
     let settingsRows = computed(() => { // last approved operation rows for this chain
-        if (!store.state.WalletStore.isUnlocked) {
+        if (!store.state.WalletStore.isUnlocked || !chain.value) {
             return;
         }
 
@@ -92,9 +82,7 @@
             try {
                 blockchainResponse = await window.electron.blockchainRequest({
                     methods: ["supportsQR", "getOperationTypes"],
-                    chain: chain.value,
-                    location: 'qrInit',
-                    settingsRows: settingsRows.value
+                    chain: chain.value
                 });
             } catch (error) {
                 console.log({error});
@@ -106,19 +94,23 @@
             }
 
             const { supportsQR, getOperationTypes } = blockchainResponse;
-            compatible.value = supportsQR;
-            operationTypes.value = getOperationTypes;
+            if (supportsQR) {
+                compatible.value = supportsQR;
+            }
+            if (getOperationTypes) {
+                operationTypes.value = getOperationTypes;
+            }
         }
         
-        if (chain.value && chain.value) {
+        if (chain.value) {
             initialize();
         }
     });
 
     function setScope(newValue) {
-        opPermissions.value = newValue;
+        chosenScope.value = newValue;
         if (newValue === 'AllowAll') {
-            selectedRows.value = true;
+            hasSelectedRows.value = true;
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
@@ -145,44 +137,53 @@
             <span v-else>
                 <AccountSelect />
                 <p
-                    v-if="!opPermissions"
+                    v-if="!chosenScope"
                     style="marginBottom:0px;"
                 >
                     {{ t('common.qr.label') }}
                 </p>
                 <ui-card
-                    v-if="!selectedRows"
+                    v-if="!hasSelectedRows"
                     v-shadow="3"
                     outlined
                     style="marginTop: 5px;"
                 >
-                    <span v-if="!opPermissions">
+                    <span v-if="!chosenScope">
                         <p>
-                            {{ t('common.opPermissions.title.qr') }}
+                            {{ t('common.chosenScope.title.qr') }}
                         </p>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('Configure')"
                         >
-                            {{ t('common.opPermissions.yes') }}
+                            {{ t('common.chosenScope.yes') }}
                         </ui-button>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('AllowAll')"
                         >
-                            {{ t('common.opPermissions.no') }}
+                            {{ t('common.chosenScope.no') }}
                         </ui-button>
                     </span>
-                    <span v-else-if="opPermissions == 'Configure' && !selectedRows">
-                        <Operations />
+                    <span v-else-if="chosenScope == 'Configure' && !hasSelectedRows">
+                        <Operations
+                            :ops="operationTypes"
+                            :stored="settingsRows"
+                            :chain="chain"
+                            @selected="() => hasSelectedRows.value = true"
+                            @exit="() => {
+                                chosenScope.value = null;
+                                hasSelectedRows.value = null;
+                            }"
+                        />
                     </span>
                 </ui-card>
             </span>
 
             
-            <span v-if="opPermissions && settingsRows && selectedRows">
+            <span v-if="chosenScope && settingsRows && hasSelectedRows">
                 <span v-if="qrChoice && qrChoice === 'Scan'">
                     <QRScan />
                     <br>
@@ -237,7 +238,7 @@
 
             <br>
             <ui-button
-                v-if="opPermissions && selectedRows"
+                v-if="chosenScope && hasSelectedRows"
                 style="margin-right:5px"
                 icon="arrow_back_ios"
                 @click="goBack"

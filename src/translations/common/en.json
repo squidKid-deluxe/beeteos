@@ -46,7 +46,11 @@
         "ready": "Ready for web requests!",
         "loading": "Loading socket services...",
         "exit": "Exit web request page",
-        "unsupported": "Web requests are not yet supported for this chain, sorry."
+        "unsupported": "Web requests are not yet supported for this chain, sorry.",
+        "init": "This page uses locally hosted websockets to process incoming web requests. Internet service provider compatibility may vary. Do you want to proceed?",
+        "yes": "Proceed",
+        "no": "Go back",
+        "prompt": "Ready to process external web requests. Third party apps are now able to launch prompts to link and then broadcast operations."
     },
     "totp": {
         "label": "Time-based one-time passwords",
@@ -63,7 +67,7 @@
         "warning": "Do not share the code above with anyone",
         "inProgress": "A deeplink is being processed"
     },
-    "opPermissions": {
+    "chosenScope": {
         "title": {
             "local": "Do you wish to configure the scope of scannable JSON files?",
             "qr": "Do you wish to configure the scope of scannable QR codes?",

@@ -41,12 +41,16 @@
   },
   "www": {
     "label": "página de solicitud web",
-    "description": "Esta página procesa solicitudes web entrantes a través de servicios websocket alojados localmente. ",
+    "description": "Listo para procesar solicitudes web externas. Las aplicaciones de terceros ahora pueden iniciar mensajes para vincular y luego transmitir operaciones.",
     "chosen": "operaciones elegidas",
+    "ready": "¡Listo para solicitudes web!",
+    "loading": "Cargando servicios de socket...",
     "exit": "Salir de la página de solicitud web",
     "unsupported": "Las solicitudes web aún no son compatibles con esta cadena, lo sentimos.",
-    "ready": "¡Listo para solicitudes web!",
-    "loading": "Cargando servicios de socket..."
+    "init": "Esta página utiliza websockets alojados localmente para procesar las solicitudes web entrantes. La compatibilidad del proveedor de servicios de Internet puede variar. Quieres proceder?",
+    "yes": "Proceder",
+    "no": "Regresa",
+    "prompt": "Listo para procesar solicitudes web externas. Las aplicaciones de terceros ahora pueden iniciar mensajes para vincular y luego transmitir operaciones."
   },
   "totp": {
     "label": "Contraseñas de un solo uso basadas en el tiempo",
@@ -63,7 +67,7 @@
     "warning": "No comparta el código anterior con nadie.",
     "inProgress": "Se está procesando un enlace profundo"
   },
-  "opPermissions": {
+  "chosenScope": {
     "title": {
       "local": "¿Desea configurar el alcance de los archivos JSON escaneables?",
       "qr": "¿Desea configurar el alcance de los códigos QR escaneables?",

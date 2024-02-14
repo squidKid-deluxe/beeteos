@@ -1,12 +1,7 @@
-//const { ipcRenderer, contextBridge } = require("electron");
-
 import { ipcRenderer, contextBridge } from 'electron';
 
-async function _openURL(target) {
-  ipcRenderer.send('openURL', target);
-}
 contextBridge.exposeInMainWorld('electron', {
-  openURL: async (target) => _openURL(target),
+  openURL: async (target) => ipcRenderer.send('openURL', target),
   blockchainRequest: async (args) => await ipcRenderer.invoke('blockchainRequest', args),
   notify: async (msg) => ipcRenderer.send('notify', msg),
   createPopup: async (popupData) => ipcRenderer.send('createPopup', popupData),

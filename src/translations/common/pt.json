@@ -41,12 +41,16 @@
   },
   "www": {
     "label": "Página de solicitação da Web",
-    "description": "Esta página processa solicitações da web recebidas por meio de serviços de websocket hospedados localmente. ",
+    "description": "Pronto para processar solicitações externas da web. Aplicativos de terceiros agora são capazes de iniciar prompts para vincular e depois transmitir operações.",
     "chosen": "operações escolhidas",
+    "ready": "Pronto para solicitações da web!",
+    "loading": "Carregando serviços de soquete...",
     "exit": "Sair da página de solicitação da web",
     "unsupported": "As solicitações da Web ainda não são suportadas para esta cadeia, desculpe.",
-    "ready": "Pronto para solicitações da web!",
-    "loading": "Carregando serviços de soquete..."
+    "init": "Esta página usa websockets hospedados localmente para processar solicitações da web recebidas. A compatibilidade do provedor de serviços de Internet pode variar. Você quer prosseguir?",
+    "yes": "Continuar",
+    "no": "Volte",
+    "prompt": "Pronto para processar solicitações externas da web. Aplicativos de terceiros agora são capazes de iniciar prompts para vincular e depois transmitir operações."
   },
   "totp": {
     "label": "Senhas únicas baseadas em tempo",
@@ -63,7 +67,7 @@
     "warning": "Não compartilhe o código acima com ninguém",
     "inProgress": "Um link direto está sendo processado"
   },
-  "opPermissions": {
+  "chosenScope": {
     "title": {
       "local": "Deseja configurar o escopo dos arquivos JSON verificáveis?",
       "qr": "Deseja configurar o escopo dos códigos QR escaneáveis?",

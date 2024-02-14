@@ -107,13 +107,13 @@ module.exports = function(env) {
         },
     
         plugins: [
-        new VueLoaderPlugin(),
-        new FriendlyErrorsWebpackPlugin({
-            clearConsole: env === "development",
-            onErrors: function (severity, errors) {
-                console.log({severity, errors})
-            },
-        })
+            new VueLoaderPlugin(),
+            new FriendlyErrorsWebpackPlugin({
+                clearConsole: env === "development",
+                onErrors: function (severity, errors) {
+                    console.log({severity, errors})
+                },
+            })
         ]
     };
 };

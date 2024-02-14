@@ -41,12 +41,16 @@
   },
   "www": {
     "label": "Pagina di richiesta web",
-    "description": "Questa pagina elabora le richieste web in entrata tramite servizi websocket ospitati localmente. ",
+    "description": "Pronto per elaborare richieste web esterne. Le app di terze parti sono ora in grado di avviare richieste di collegamento e quindi di trasmissione di operazioni.",
     "chosen": "operazioni scelte",
+    "ready": "Pronto per le richieste web!",
+    "loading": "Caricamento servizi socket...",
     "exit": "Esci dalla pagina di richiesta web",
     "unsupported": "Le richieste web non sono ancora supportate per questa catena, siamo spiacenti.",
-    "ready": "Pronto per le richieste web!",
-    "loading": "Caricamento servizi socket..."
+    "init": "Questa pagina utilizza websocket ospitati localmente per elaborare le richieste web in entrata. La compatibilità del provider di servizi Internet può variare. Vuoi procedere?",
+    "yes": "Procedere",
+    "no": "Torna indietro",
+    "prompt": "Pronto per elaborare richieste web esterne. Le app di terze parti sono ora in grado di avviare richieste di collegamento e quindi di trasmissione di operazioni."
   },
   "totp": {
     "label": "Password monouso basate sul tempo",
@@ -63,7 +67,7 @@
     "warning": "Non condividere il codice sopra con nessuno",
     "inProgress": "Un collegamento diretto è in fase di elaborazione"
   },
-  "opPermissions": {
+  "chosenScope": {
     "title": {
       "local": "Desideri configurare l'ambito dei file JSON analizzabili?",
       "qr": "Desideri configurare l'ambito dei codici QR scansionabili?",

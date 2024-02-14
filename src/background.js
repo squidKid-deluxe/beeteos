@@ -522,21 +522,24 @@ const createWindow = async () => {
 
   ipcMain.handle('launchServer', async (event, arg) => {
     const { key, cert } = arg;
-    try {
-        BeetServer.initialize(
-            60554,
-            60555,
-            key,
-            cert,
-            mainWindow.webContents
-        );
-    } catch (error) {
+    return BeetServer.initialize(
+        60554,
+        60555,
+        key,
+        cert,
+        mainWindow.webContents
+    ).then(() => {
+        return {
+            http: BeetServer.httpTerminator ? true : false,
+            https: BeetServer.httpsTerminator ? true : false
+        };
+    }).catch((error) => {
         console.log(error);
-    }
-
-    console.log("Initializing server")
-
-    return true;
+        return {
+            http: false,
+            https: false
+        };
+    })
   });
 
   ipcMain.on('closeServer', async (event, arg) => {
@@ -577,8 +580,6 @@ const createWindow = async () => {
   */
   ipcMain.handle('blockchainRequest', async (event, arg) => {
     const { methods, account, chain } = arg;
-
-    console.log({methods, account, chain});
 
     let blockchain;
     try {
@@ -668,7 +669,13 @@ const createWindow = async () => {
     }
 
     if (methods.includes("getOperationTypes")) {
-        responses['getOperationTypes'] = blockchain.getOperationTypes();
+        let _opTypes;
+        try {
+            _opTypes = await blockchain.getOperationTypes();
+        } catch (error) {
+            console.log({error, location: "getOperationTypes"});
+        }
+        responses['getOperationTypes'] = _opTypes;
     }
 
     if (methods.includes("totpCode")) {

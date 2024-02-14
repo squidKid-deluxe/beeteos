@@ -41,12 +41,16 @@
   },
   "www": {
     "label": "Page de demande Web",
-    "description": "Cette page traite les requêtes Web entrantes via les services Websocket hébergés localement. ",
+    "description": "Prêt à traiter les demandes Web externes. Les applications tierces sont désormais capables de lancer des invites pour lier puis diffuser des opérations.",
     "chosen": "opérations choisies",
+    "ready": "Prêt pour les requêtes Web!",
+    "loading": "Chargement des services de socket...",
     "exit": "Quitter la page de demande Web",
     "unsupported": "Les requêtes Web ne sont pas encore prises en charge pour cette chaîne, désolé.",
-    "ready": "Prêt pour les requêtes Web !",
-    "loading": "Chargement des services de socket..."
+    "init": "Cette page utilise des websockets hébergés localement pour traiter les requêtes Web entrantes. La compatibilité des fournisseurs de services Internet peut varier. Voulez-vous poursuivre?",
+    "yes": "Procéder",
+    "no": "Retourner",
+    "prompt": "Prêt à traiter les demandes Web externes. Les applications tierces sont désormais capables de lancer des invites pour lier puis diffuser des opérations."
   },
   "totp": {
     "label": "Mots de passe à usage unique basés sur le temps",
@@ -63,7 +67,7 @@
     "warning": "Ne partagez le code ci-dessus avec personne",
     "inProgress": "Un lien profond est en cours de traitement"
   },
-  "opPermissions": {
+  "chosenScope": {
     "title": {
       "local": "Souhaitez-vous configurer la portée des fichiers JSON analysables ?",
       "qr": "Vous souhaitez paramétrer le périmètre des QR codes scannables ?",

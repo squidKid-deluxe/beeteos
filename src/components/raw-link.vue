@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed, inject, watchEffect } from 'vue';
+    import { ref, computed, watchEffect } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -9,33 +9,24 @@
     import router from '../router/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
 
-    let selectedRows = ref();
-    let opPermissions = ref();
-    emitter.on('selectedRows', (data) => {
-        selectedRows.value = data;
-    });
-
-    emitter.on('exitOperations', () => {
-        opPermissions.value = null;
-        selectedRows.value = null;
-    });
+    let hasSelectedRows = ref();
+    let chosenScope = ref();
 
     function goBack() {
-        opPermissions.value = null;
-        selectedRows.value = null;
+        chosenScope.value = null;
+        hasSelectedRows.value = null;
     }
 
     function setScope(newValue) {
-        opPermissions.value = newValue;
+        chosenScope.value = newValue;
         if (newValue === 'AllowAll') {
-            selectedRows.value = true;
+            hasSelectedRows.value = true;
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
                     chain: chain.value,
-                    rows: chainTypes.value.map(type => type.id)
+                    rows: operationTypes.value.map(type => type.id)
                 }
             );
         }
@@ -59,7 +50,7 @@
     });
 
     let compatibleChain = ref(false);
-    let chainTypes = ref([]);
+    let operationTypes = ref([]);
     watchEffect(() => {
         async function initialize() {
             let blockchainRequest;
@@ -80,7 +71,7 @@
                     compatibleChain.value = supportsTOTP;
                 }
                 if (getOperationTypes) {
-                    chainTypes.value = getOperationTypes;
+                    operationTypes.value = getOperationTypes;
                 }
             }
         }
@@ -163,30 +154,39 @@
                     outlined
                     style="marginTop: 5px;"
                 >
-                    <span v-if="!opPermissions">
+                    <span v-if="!chosenScope">
                         <p>
-                            {{ t('common.opPermissions.title.rawLink') }}
+                            {{ t('common.chosenScope.title.rawLink') }}
                         </p>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('Configure')"
                         >
-                            {{ t('common.opPermissions.yes') }}
+                            {{ t('common.chosenScope.yes') }}
                         </ui-button>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('AllowAll')"
                         >
-                            {{ t('common.opPermissions.no') }}
+                            {{ t('common.chosenScope.no') }}
                         </ui-button>
                     </span>
-                    <span v-else-if="opPermissions == 'Configure' && !selectedRows">
-                        <Operations />
+                    <span v-else-if="chosenScope == 'Configure' && !hasSelectedRows">
+                        <Operations
+                            :ops="operationTypes"
+                            :stored="settingsRows"
+                            :chain="chain"
+                            @selected="() => hasSelectedRows.value = true"
+                            @exit="() => {
+                                chosenScope.value = null;
+                                hasSelectedRows.value = null;
+                            }"
+                        />
                     </span>
 
-                    <span v-if="opPermissions && settingsRows && selectedRows">
+                    <span v-if="chosenScope && settingsRows && hasSelectedRows">
                         <ui-chips
                             id="input-chip-set"
                             type="input"
@@ -207,7 +207,7 @@
                 </ui-card>
             </span>
             <ui-button
-                v-if="opPermissions && selectedRows"
+                v-if="chosenScope && hasSelectedRows"
                 style="margin-right:5px"
                 icon="arrow_back_ios"
                 @click="goBack"
