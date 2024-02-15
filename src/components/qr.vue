@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed, watchEffect } from 'vue';
+    import { ref, computed, watchEffect, inject } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -34,6 +34,7 @@
         return store.getters['AccountStore/getChain'];
     });
 
+    const emitter = inject('emitter');
     emitter.on('detectedQR', async (data) => {
         qrInProgress.value = true;
 

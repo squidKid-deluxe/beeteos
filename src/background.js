@@ -43,9 +43,7 @@ import { injectedCall, voteFor, transfer } from './lib/apiUtils.js';
 let mainWindow;
 let modalWindows = {};
 let modalRequests = {};
-
 let receiptWindows = {};
-var timeout;
 
 var isDevMode = process.execPath.match(/[\\/]electron/);
 const logger = new Logger(isDevMode ? 3 : 0);
@@ -1078,17 +1076,6 @@ const createWindow = async () => {
       showNotification();
   });
 
-  let seed;
-  function timeoutHandler() {
-      seed = null;
-      try {
-        mainWindow.webContents.send('timeout', 'logout');
-      } catch (error) {
-        console.log(error);
-      }
-      clearTimeout(timeout);
-  }
-
   ipcMain.handle('aesEncrypt', async (event, arg) => {
     const { data, seed } = arg;
 
@@ -1150,27 +1137,12 @@ const createWindow = async () => {
     return JSON.parse(data.toString(ENC))
   });
 
-  ipcMain.on('seeding', (event, arg) => {
-      if (timeout) {
-          clearTimeout(timeout);
-      }
-      if (arg != '') {
-          timeout = setTimeout(timeoutHandler, 300000);
-      }
-      seed = arg;
-  });
-
   ipcMain.on('decrypt', async (event, arg) => {
-      if (timeout) {
-          clearTimeout(timeout);
-      }
-      timeout = setTimeout(timeoutHandler, 300000);
-
-      let dataToDecrypt = arg.data;
+      const {data, seed} = arg;
 
       let decryptedData;
       try {
-        decryptedData = await aes.decrypt(dataToDecrypt, seed).toString(ENC);
+        decryptedData = await aes.decrypt(data, seed).toString(ENC);
       } catch (error) {
         console.log(error);
       }
@@ -1186,8 +1158,7 @@ const createWindow = async () => {
   });
 
   ipcMain.on('downloadBackup', async (event, arg) => {
-    let walletName = arg.walletName;
-    let accounts = JSON.parse(arg.accounts);
+    const { walletName, accounts, seed } = arg;
     let toLocalPath = path.resolve(
       app.getPath("desktop"),
       `BeetBackup-${walletName}-${new Date().toISOString().slice(0,10)}.beet`
@@ -1225,7 +1196,10 @@ const createWindow = async () => {
             let encrypted;
             try {
               encrypted = await aes.encrypt(
-                JSON.stringify({wallet: walletName, accounts: accounts}),
+                JSON.stringify({
+                    wallet: walletName,
+                    accounts: JSON.parse(accounts)
+                }),
                 seed
               ).toString();
             } catch (error) {

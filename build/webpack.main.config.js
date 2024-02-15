@@ -19,7 +19,13 @@ module.exports = function(env) {
         },
             
         externals: [nodeExternals({
-            allowlist: ['@babel/runtime']
+            allowlist: [
+                '@babel/runtime',
+                'query-string',
+                'decode-uri-component',
+                'split-on-first',
+                'filter-obj'
+            ]
         })],
 
         resolve: {

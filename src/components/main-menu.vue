@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed } from 'vue';
+    import { ref, computed, watch } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import router from '../router/index.js';
@@ -96,14 +96,23 @@
         router.replace(items.value[data.index].url);
     }
 
-    window.electron.timeout(() => {
-        console.log('wallet timed logout');
-        if (lastIndex.value && lastIndex.value === 2) {
-            window.electron.closeServer();
+    let logoutTimer = null;
+    watch(lastIndex, (newValue, oldValue) => {
+        // Clear the previous timer
+        if (logoutTimer) {
+            clearTimeout(logoutTimer);
         }
-        store.dispatch("WalletStore/logout");
-        router.replace("/");
-    });
+
+        // Start a new timer
+        logoutTimer = setTimeout(() => {
+            console.log('wallet timed logout');
+            if (newValue === 2) {
+                window.electron.closeServer();
+            }
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+        }, 2 * 60 * 1000); // 2 minutes
+    }, { immediate: true });
 </script>
 
 <template>

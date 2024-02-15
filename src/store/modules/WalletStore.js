@@ -25,7 +25,6 @@ const mutations = {
         state.walletlist = [];
         state.unlocked = {};
         state.isUnlocked = false;
-        window.electron.seeding('');
     },
     [SET_WALLET_STATUS](state, status) {
         state.hasWallet = status;
@@ -81,7 +80,6 @@ const actions = {
 
                 commit(GET_WALLET, public_wallets[0]);
                 let accountlist = bytes;
-                window.electron.seeding(_hash);
                 dispatch('AccountStore/loadAccounts', accountlist, {
                     root: true
                 });
@@ -153,7 +151,6 @@ const actions = {
                         data: _encrypted
                     });
 
-                    window.electron.seeding(_hash);
                     commit(GET_WALLET, newwallet);
                     dispatch('AccountStore/loadAccounts', payload.backup.walletdata, {
                         root: true
@@ -234,7 +231,7 @@ const actions = {
                         id: walletid,
                         data: _encryptedWalletData
                     });
-                    window.electron.seeding(_hash);
+
                     commit(GET_WALLET, newwallet);
                     dispatch('AccountStore/loadAccounts', [payload.walletdata], {
                         root: true

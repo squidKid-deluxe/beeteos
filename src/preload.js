@@ -8,12 +8,6 @@ contextBridge.exposeInMainWorld('electron', {
   clickedAllow: async (allowData) => ipcRenderer.send('clickedAllow', allowData),
   clickedDeny: async (denyData) => ipcRenderer.send('clickedDeny', denyData),
   downloadBackup: async (backupData) => ipcRenderer.send('downloadBackup', backupData),
-  timeout: async (callbackFn) => ipcRenderer.on('timeout', async (event, args) => {
-    callbackFn();
-  }),
-  seeding: async (seedPhrase) => ipcRenderer.on('seeding', async (event, args) => {
-    ipcRenderer.send('seeding', seedPhrase);
-  }),
   id: async (args) => await ipcRenderer.invoke('id', args),
   aesEncrypt: async (args) => await ipcRenderer.invoke('aesEncrypt', args),
   aesDecrypt: async (args) => await ipcRenderer.invoke('aesDecrypt', args),
