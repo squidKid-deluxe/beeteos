@@ -618,11 +618,12 @@ const createWindow = async () => {
     }
 
     if (methods.includes("getBalances")) {
+        const _usr = account.name ? account.name : account.accountName;
         let _balances;
         try {
-            _balances = await blockchain.getBalances(account.name ? account.name : account.accountName);
+            _balances = await blockchain.getBalances(_usr);
         } catch (error) {
-            console.log({error, location: "getBalances"});
+            console.log({error, location: "getBalances", user: _usr});
         }
 
         if (_balances) {
@@ -684,7 +685,7 @@ const createWindow = async () => {
     }
 
     if (methods.includes("totpDeeplink")) {
-      const { requestContent, currentCode, settingsRows } = arg;
+      const { requestContent, currentCode, allowedOperations } = arg;
 
       let apiobj;
       try {
@@ -693,7 +694,7 @@ const createWindow = async () => {
             chain,
             blockchain,
             blockchainActions,
-            settingsRows,
+            allowedOperations,
             currentCode
         );
       } catch (error) {
@@ -728,7 +729,7 @@ const createWindow = async () => {
     }
 
     if (methods.includes("getRawLink")) {
-        const { requestBody, settingsRows } = arg;
+        const { requestBody, allowedOperations } = arg;
 
         let apiobj;
         try {
@@ -737,7 +738,7 @@ const createWindow = async () => {
                 chain,
                 blockchain,
                 blockchainActions,
-                settingsRows
+                allowedOperations
             );
         } catch (error) {
             console.log(error);
@@ -767,7 +768,7 @@ const createWindow = async () => {
     }
 
     if (methods.includes("localFileUpload")) {
-      const {settingsRows, filePath} = arg;
+      const {allowedOperations, filePath} = arg;
       fs.readFile(filePath, 'utf-8', async (error, data) => {
         if (error) {
           console.log({error})
@@ -783,7 +784,7 @@ const createWindow = async () => {
                 chain,
                 blockchain,
                 blockchainActions,
-                settingsRows
+                allowedOperations
             );
         } catch (error) {
             console.log(error);
@@ -814,7 +815,7 @@ const createWindow = async () => {
     }
 
     if (methods.includes("processQR")) {
-      const { qrChoice, qrData, settingsRows } = arg;
+      const { qrChoice, qrData, allowedOperations } = arg;
       let qrTX;
       try {
           qrTX = ["BTS", "BTS_TEST", "TUSC"].includes(chain)
@@ -834,7 +835,7 @@ const createWindow = async () => {
       if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
           for (let i = 0; i < qrTX.operations.length; i++) {
               let operation = qrTX.operations[i];
-              if (settingsRows && settingsRows.includes(operation[0])) {
+              if (allowedOperations && allowedOperations.includes(operation[0])) {
                   authorizedUse = true;
                   break;
               }
@@ -844,7 +845,7 @@ const createWindow = async () => {
       ) {
           for (let i = 0; i < qrTX.actions.length; i++) {
               let operation = qrTX.actions[i];
-              if (settingsRows && settingsRows.includes(operation.name)) {
+              if (allowedOperations && allowedOperations.includes(operation.name)) {
                   authorizedUse = true;
                   break;
               }

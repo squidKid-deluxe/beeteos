@@ -1,11 +1,11 @@
 <script setup>
-    import { ref, computed, watch } from 'vue';
+    import { ref, computed, watch, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import router from '../router/index.js';
     import store from '../store/index.js';
     import langSelect from "./lang-select.vue";
-
+        
     let open = ref(false);
     let lastIndex = ref(0);
     const { t } = useI18n({ useScope: 'global' });
@@ -97,13 +97,11 @@
     }
 
     let logoutTimer = null;
-    watch(lastIndex, (newValue, oldValue) => {
-        // Clear the previous timer
+    function startLogoutTimer(newValue) {
         if (logoutTimer) {
             clearTimeout(logoutTimer);
         }
 
-        // Start a new timer
         logoutTimer = setTimeout(() => {
             console.log('wallet timed logout');
             if (newValue === 2) {
@@ -111,8 +109,31 @@
             }
             store.dispatch("WalletStore/logout");
             router.replace("/");
-        }, 2 * 60 * 1000); // 2 minutes
+        }, 2 * 60 * 1000);
+    }
+
+    watch(lastIndex, (newValue, oldValue) => {
+        if (items.value[oldValue]) {
+            console.log(`User navigated from ${items.value[oldValue].text} to ${items.value[newValue].text}`);
+        } else if (newValue === oldValue) {
+            console.log(`Page ${items.value[newValue].text} is in use...`);
+        }
+        startLogoutTimer(newValue);
     }, { immediate: true });
+
+    watch(() => router.currentRoute.value, (newRoute) => {
+        const matchingItem = items.value.find(item => item.url === newRoute.path);
+        if (matchingItem) {
+            if (lastIndex.value === 2) {
+                window.electron.closeServer();
+            }
+            lastIndex.value = matchingItem.index;
+        }
+    });
+
+    onMounted(() => {
+        window.electron.timer(() => startLogoutTimer(lastIndex.value));
+    });
 </script>
 
 <template>

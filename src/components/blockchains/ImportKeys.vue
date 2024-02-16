@@ -72,6 +72,7 @@
             console.log("Account verified");
             privateKey.value = "";
 
+            window.electron.resetTimer();
             emit('continue');
             emit('imported', [{
                 account: {

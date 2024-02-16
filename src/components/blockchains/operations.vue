@@ -4,16 +4,8 @@
     import store from '../../store/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
-
     const props = defineProps({
         ops: {
-            type: Array,
-            required: true,
-            default() {
-                return []
-            }
-        },
-        stored: {
             type: Array,
             required: true,
             default() {
@@ -28,25 +20,33 @@
             }
         }
     });
-
     const emit = defineEmits(['selected', 'exit']);
 
-    function saveRows() {
-        if (selected && selected.value) {
-            // save rows to account
-            store.dispatch(
-                "SettingsStore/setChainPermissions",
-                {
-                    chain: props.chain,
-                    rows: selected.value
-                }
-            );
-            selected.value = JSON.parse(JSON.stringify(props.stored))
-            emit('selected', true);
+    let selected = ref([]);
+    onMounted(() => {
+        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](props.chain);
+        if (!rememberedRows || !rememberedRows.length) {
+            selected.value = [];
+            return;
         }
+
+        selected.value = rememberedRows;
+    })
+
+    function saveRows() {
+        window.electron.resetTimer();
+        store.dispatch(
+            "SettingsStore/setChainPermissions",
+            {
+                chain: props.chain,
+                rows: selected.value
+            }
+        );
+        emit('selected', selected.value);
     }
 
     function goBack() {
+        window.electron.resetTimer();
         emit('exit', true);
     }
 
@@ -71,34 +71,6 @@
             }
         }
     ]);
-
-    let hasSelectedNewRows = ref(false);
-    let selected = ref([]);
-    onMounted(() => {
-        selected.value = props.ops && props.stored
-            ? JSON.parse(JSON.stringify(props.stored))
-            : []
-    })
-
-    watchEffect(() => {
-        if (selected && props.ops) {
-            const sorted = [...props.stored].sort().join('');
-            if (
-                selected.value &&
-                selected.value.sort().join('') === sorted
-            ) {
-                hasSelectedNewRows.value = false;
-            } else if (
-                selected.value &&
-                selected.value.sort().join('') !== sorted
-            ) {
-                console.log('Selected a new row')
-                hasSelectedNewRows.value = true;
-            }
-        } else {
-            hasSelectedNewRows.value = false;
-        }
-    });
 </script>
 
 <template>
@@ -145,20 +117,10 @@
                             {{ t('common.qr.back') }}
                         </ui-button>
                         <ui-button
-                            v-if="selected && selected.length"
                             raised
                             style="margin-right:5px"
                             icon="save"
                             @click="saveRows"
-                        >
-                            {{ t('common.totp.save') }}
-                        </ui-button>
-                        <ui-button
-                            v-else
-                            raised
-                            style="margin-right:5px"
-                            icon="save"
-                            disabled
                         >
                             {{ t('common.totp.save') }}
                         </ui-button>

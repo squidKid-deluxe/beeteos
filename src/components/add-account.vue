@@ -22,6 +22,7 @@
 
     watch(step, async (newVal, oldVal) => {
         if (newVal !== oldVal) {
+            window.electron.resetTimer();
             stepMessage.value = t('common.step_counter', {step_no: newVal});
         }
     }, {immediate: true});
@@ -95,6 +96,7 @@
      */
     watch(selectedChain, async (newVal, oldVal) => {
         if (newVal !== oldVal) {
+            window.electron.resetTimer();
             selectedImport.value = 0;
         }
     }, {immediate: true});
@@ -181,7 +183,7 @@
             return;
         }
 
-        if (password.value == "") {
+        if (!password.value || password.value === "") {
             window.electron.notify(t(`common.confirm_pass_error`));
             return;
         }

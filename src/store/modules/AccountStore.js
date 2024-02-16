@@ -104,7 +104,6 @@ const actions = {
 }
 
 const getters = {
-    getAccount: state => state.accountlist[state.selectedIndex],
     getCurrentSafeAccount: state => () => {
         let currentAccount = state.accountlist[state.selectedIndex];
         return {

@@ -49,6 +49,7 @@
      */
     watch(chosenAccount, async (newVal, oldVal) => {
         if (newVal !== -1) {
+            window.electron.resetTimer();
             selectedAccount.value = accounts.value[newVal];
             store.dispatch(
                 "AccountStore/selectAccount",

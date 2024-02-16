@@ -86,6 +86,7 @@
 
         window.electron.getPrompt(id);
         window.electron.onPrompt(id, (data) => {
+            window.electron.resetTimer();
             if (data.type) {
                 type.value = data.type;
             }

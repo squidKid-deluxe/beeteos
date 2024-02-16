@@ -9,29 +9,17 @@
     const { t } = useI18n({ useScope: 'global' });
 
     let chosenScope = ref();
-    let hasSelectedRows = ref();
+    let selectedRows = ref();
     let inProgress = ref(false);
 
     function goBack() {
+        window.electron.resetTimer();
         chosenScope.value = null;
-        hasSelectedRows.value = null;
+        selectedRows.value = null;
     }
 
     let chain = computed(() => {
         return store.getters['AccountStore/getChain'];
-    });
-
-    let settingsRows = computed(() => { // last approved operation rows for this chain
-        if (!store.state.WalletStore.isUnlocked) {
-            return;
-        }
-
-        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain.value);
-        if (!rememberedRows || !rememberedRows.length) {
-            return [];
-        }
-
-        return rememberedRows;
     });
 
     let supportsLocal = ref(false);
@@ -72,20 +60,23 @@
     });
 
     function setScope(newValue) {
+        window.electron.resetTimer();
         chosenScope.value = newValue;
         if (newValue === 'AllowAll') {
-            hasSelectedRows.value = true;
+            const _ids = operationTypes.value.map(type => type.id);
+            selectedRows.value = _ids;
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
-                    chain: chain,
-                    rows: operationTypes.value.map(type => type.id)
+                    chain: chain.value,
+                    rows: _ids
                 }
             );
         }
     }
 
     async function onFileUpload(a) {
+        window.electron.resetTimer();
         inProgress.value = true;
 
         let account = store.getters['AccountStore/getCurrentSafeAccount']();
@@ -101,7 +92,7 @@
                 methods: ['localFileUpload'],
                 chain: chain.value,
                 filePath: a[0].sourceFile.path,
-                settingsRows: settingsRows.value,
+                allowedOperations: selectedRows.value,
             });
         } catch (error) {
             console.log({error});
@@ -127,10 +118,7 @@
 </script>
 
 <template>
-    <div
-        v-if="settingsRows"
-        class="bottom p-0"
-    >
+    <div class="bottom p-0">
         <span v-if="supportsLocal">
             <span>
                 <AccountSelect />
@@ -141,7 +129,7 @@
                     {{ t('common.local.label') }}
                 </p>
                 <ui-card
-                    v-if="!hasSelectedRows"
+                    v-if="!selectedRows"
                     v-shadow="3"
                     outlined
                     style="marginTop: 5px;"
@@ -165,15 +153,14 @@
                             {{ t('common.chosenScope.no') }}
                         </ui-button>
                     </span>
-                    <span v-else-if="chosenScope == 'Configure' && !hasSelectedRows">
+                    <span v-else-if="chosenScope == 'Configure' && !selectedRows">
                         <Operations
                             :ops="operationTypes"
-                            :stored="settingsRows"
                             :chain="chain"
-                            @selected="() => hasSelectedRows.value = true"
+                            @selected="(ops) => selectedRows = ops"
                             @exit="() => {
-                                chosenScope.value = null;
-                                hasSelectedRows.value = null;
+                                chosenScope = null;
+                                selectedRows = null;
                             }"
                         />
                     </span>
@@ -181,7 +168,7 @@
             </span>
 
             
-            <span v-if="chosenScope && settingsRows && hasSelectedRows">
+            <span v-if="chosenScope && selectedRows">
                 <span v-if="!inProgress">
                     <h3>{{ t('common.local.upload') }}</h3>
                     <ui-file
@@ -197,7 +184,7 @@
 
             <br>
             <ui-button
-                v-if="chosenScope && hasSelectedRows"
+                v-if="chosenScope && selectedRows"
                 style="margin-right:5px"
                 icon="arrow_back_ios"
                 @click="goBack"

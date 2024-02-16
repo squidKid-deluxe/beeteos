@@ -1,12 +1,3 @@
-/*
-import childProcess from 'child_process';
-import electron from 'electron';
-import webpack from 'webpack';
-import mainConfig from './webpack.main.config.mjs';
-import rendererConfig from './webpack.renderer.config.mjs';
-import preloadConfig from './webpack.preload.config.mjs';
-*/
-
 const childProcess = require('child_process');
 const electron = require('electron');
 const webpack = require('webpack');

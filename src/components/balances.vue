@@ -60,6 +60,7 @@
         ) {
             tableData.value = null;
             emit('refresh', true);
+            window.electron.resetTimer();
         } else {
             console.log("Unable to reload balances, please try again later.")
         }

@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed, inject, watchEffect } from 'vue';
+    import { ref, computed, watchEffect } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -9,7 +9,6 @@
     import BeetDB from '../lib/BeetDB.js';
 
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
     
     let serverOnline = ref(false);
 
@@ -127,8 +126,9 @@
     });
 
     watchEffect(async () => {
-        async function listen() {            
+        async function listen() {    
             window.electron.addLinkApp(async (data) => {
+                window.electron.resetTimer();
                 let app;
                 let _error;
                 try {
@@ -141,6 +141,7 @@
                 window.electron.sendLinkResponse({app, error: _error})
             });
             window.electron.getLinkApp((data) => {
+                window.electron.resetTimer();
                 let app;
                 let _error;
                 try {
@@ -166,7 +167,8 @@
                 window.electron.sendAuthResponse({app, error: _error})
             });
 
-            window.electron.newRequest((data) => { // BeetServer.respondAPI
+            window.electron.newRequest((data) => {
+                window.electron.resetTimer();
                 store.dispatch('OriginStore/newRequest', data);
             });
         }
@@ -175,10 +177,6 @@
             listen();
         }
     });
-
-    function goBack() {
-        window.electron.closeServer();
-    }
 </script>
 
 <template>
@@ -207,7 +205,6 @@
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
-                            @click="goBack"
                         >
                             {{ t('common.www.no') }}
                         </ui-button>
@@ -263,7 +260,6 @@
                 <ui-button
                     outlined
                     class="step_btn"
-                    @click="goBack"
                 >
                     {{ t('common.www.exit') }}
                 </ui-button>

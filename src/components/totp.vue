@@ -13,19 +13,6 @@
     let chain = computed(() => {
         return store.getters['AccountStore/getChain'];
     });
-
-    let settingsRows = computed(() => { // last approved TOTP rows for this chain
-        if (!store.state.WalletStore.isUnlocked || !chain.value) {
-            return;
-        }
-
-        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain.value);
-        if (!rememberedRows || !rememberedRows.length) {
-            return [];
-        }
-
-        return rememberedRows;
-    });
     
     let compatible = ref(false);
     let operationTypes = ref([]);
@@ -61,25 +48,28 @@
         }
     })
 
-    let hasSelectedRows = ref();
+    let selectedRows = ref();
     let chosenScope = ref();
     function setScope(newValue) {
+        window.electron.resetTimer();
         chosenScope.value = newValue;
         if (newValue === 'AllowAll') {
-            hasSelectedRows.value = true;
+            const _ids = operationTypes.value.map(type => type.id);
+            selectedRows.value = _ids;
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
                     chain: chain.value,
-                    rows: operationTypes.value.map(type => type.id)
+                    rows: _ids
                 }
             );
         }
     }
 
     function goBack() {
+        window.electron.resetTimer();
         chosenScope.value = null;
-        hasSelectedRows.value = null;
+        selectedRows.value = null;
         //
         timestamp.value = null;
         newCodeRequested.value = null;
@@ -90,6 +80,7 @@
     let timestamp = ref();
     let newCodeRequested = ref(false);
     function requestCode() {
+        window.electron.resetTimer();
         newCodeRequested.value = true;
         timestamp.value = new Date();
     }
@@ -123,6 +114,7 @@
     let copyContents = ref();
     watchEffect(() => {
         async function getNewCode() {
+            window.electron.resetTimer();
             let blockchainResponse;
             try {
                 blockchainResponse = await window.electron.blockchainRequest({
@@ -165,6 +157,7 @@
             return;
         }
 
+        window.electron.resetTimer();
         deepLinkInProgress.value = true;
         let blockchainResponse;
         try {
@@ -172,7 +165,7 @@
                 methods: ["totpDeeplink"],
                 chain: chain.value,
                 currentCode: currentCode.value,
-                settingsRows: settingsRows.value,
+                allowedOperations: selectedRows.value,
                 requestContent: args.request
             });
         } catch (error) {
@@ -198,10 +191,7 @@
 </script>
 
 <template>
-    <div
-        v-if="settingsRows"
-        class="bottom p-0"
-    >
+    <div class="bottom p-0">
         <span v-if="compatible">
             <AccountSelect />
             <span v-if="deepLinkInProgress">
@@ -246,20 +236,19 @@
                             {{ t('common.chosenScope.no') }}
                         </ui-button>
                     </span>
-                    <span v-else-if="chosenScope == 'Configure' && !hasSelectedRows">
+                    <span v-else-if="chosenScope == 'Configure' && !selectedRows">
                         <Operations
                             :ops="operationTypes"
-                            :stored="settingsRows"
                             :chain="chain"
-                            @selected="() => hasSelectedRows.value = true"
+                            @selected="(ops) => selectedRows = ops"
                             @exit="() => {
-                                chosenScope.value = null;
-                                hasSelectedRows.value = null;
+                                chosenScope = null;
+                                selectedRows = null;
                             }"
                         />
                     </span>
 
-                    <span v-if="chosenScope && settingsRows && hasSelectedRows">
+                    <span v-if="chosenScope && selectedRows">
                         <ui-chips
                             id="input-chip-set"
                             type="input"
@@ -268,17 +257,17 @@
                                 icon="security"
                                 style="margin-left:30px;"
                             >
-                                {{ settingsRows ? settingsRows.length : 0 }} {{ t('common.totp.chosen') }}
+                                {{ selectedRows ? selectedRows.length : 0 }} {{ t('common.totp.chosen') }}
                             </ui-chip>
                             <ui-chip
-                                v-if="settingsRows && settingsRows.length && newCodeRequested"
+                                v-if="selectedRows && selectedRows.length && newCodeRequested"
                                 icon="access_time"
                             >
                                 {{ t('common.totp.time') }}: {{ timeLimit - progress.toFixed(0) }}s
                             </ui-chip>
                         </ui-chips>
                         <span
-                            v-if="!newCodeRequested && settingsRows && settingsRows.length > 0 && !timeLimit"
+                            v-if="!newCodeRequested && selectedRows && selectedRows.length > 0 && !timeLimit"
                             style="padding-left: 20px;"
                         >
                             <ui-button
@@ -305,7 +294,7 @@
                         </span>
                         <span>
                             <ui-button
-                                v-if="!newCodeRequested && settingsRows && settingsRows.length > 0 && timeLimit"
+                                v-if="!newCodeRequested && selectedRows && selectedRows.length > 0 && timeLimit"
                                 icon="generating_tokens"
                                 raised
                                 style="margin-left: 30px; margin-right:5px; margin-bottom: 10px;"
@@ -338,7 +327,7 @@
             </span>
 
             <ui-button
-                v-if="chosenScope && hasSelectedRows"
+                v-if="chosenScope && selectedRows"
                 style="margin-right:5px"
                 icon="arrow_back_ios"
                 @click="goBack"

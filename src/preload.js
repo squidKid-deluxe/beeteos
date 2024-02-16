@@ -64,5 +64,11 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.on("newRequest", (event, data) => {
         func(data);
     })
-  }
+  },
+  timer: (func) => {
+    ipcRenderer.on(`resetTimer`, (event, data) => {
+      func(data);
+    });
+  },
+  resetTimer: async () => await ipcRenderer.send('resetTimer')
 });

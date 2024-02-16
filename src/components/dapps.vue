@@ -73,6 +73,7 @@
     });
 
     async function deleteDapp(dapp_id) {
+        window.electron.resetTimer();
         await store.dispatch('OriginStore/removeApp', dapp_id);
         dapps.value = fetchDapps();
     }

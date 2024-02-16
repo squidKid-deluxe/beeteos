@@ -15,18 +15,21 @@
     let chosenScope = ref();
     let qrInProgress = ref(false);
     let qrChoice = ref();
-    let hasSelectedRows = ref();
+    let selectedRows = ref();
 
     function goBack() {
+        window.electron.resetTimer();
         chosenScope.value = null;
-        hasSelectedRows.value = null;
+        selectedRows.value = null;
     }
 
     function undoQRChoice () {
+        window.electron.resetTimer();
         qrChoice.value = null;
     }
  
     function setChoice(choice) {
+        window.electron.resetTimer();
         qrChoice.value = choice;
     }
 
@@ -36,6 +39,7 @@
 
     const emitter = inject('emitter');
     emitter.on('detectedQR', async (data) => {
+        window.electron.resetTimer();
         qrInProgress.value = true;
 
         let blockchainResponse;
@@ -45,7 +49,7 @@
                 chain: chain.value,
                 qrChoice: qrChoice.value,
                 qrData: data,
-                settingsRows: settingsRows.value,
+                allowedOperations: selectedRows.value,
                 location: 'qrData'
             });
         } catch (error) {
@@ -60,19 +64,6 @@
             window.electron.notify(t("common.qr.prompt_success"));
         }
         qrInProgress.value = false;
-    });
-
-    let settingsRows = computed(() => { // last approved operation rows for this chain
-        if (!store.state.WalletStore.isUnlocked || !chain.value) {
-            return;
-        }
-
-        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain.value);
-        if (!rememberedRows || !rememberedRows.length) {
-            return [];
-        }
-
-        return rememberedRows;
     });
 
     let compatible = ref(false);
@@ -109,25 +100,24 @@
     });
 
     function setScope(newValue) {
+        window.electron.resetTimer();
         chosenScope.value = newValue;
         if (newValue === 'AllowAll') {
-            hasSelectedRows.value = true;
+            const _rows = operationTypes.value.map(type => type.id)
+            selectedRows.value = _rows
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
                     chain: chain.value,
-                    rows: operationTypes.value.map(type => type.id)
+                    rows: _rows
                 }
-            );
+            )
         }
     }
 </script>
 
 <template>
-    <div
-        v-if="settingsRows"
-        class="bottom p-0"
-    >
+    <div class="bottom p-0">
         <span v-if="compatible">
             <span v-if="qrInProgress">
                 <p>
@@ -144,7 +134,7 @@
                     {{ t('common.qr.label') }}
                 </p>
                 <ui-card
-                    v-if="!hasSelectedRows"
+                    v-if="!selectedRows"
                     v-shadow="3"
                     outlined
                     style="marginTop: 5px;"
@@ -168,15 +158,14 @@
                             {{ t('common.chosenScope.no') }}
                         </ui-button>
                     </span>
-                    <span v-else-if="chosenScope == 'Configure' && !hasSelectedRows">
+                    <span v-else-if="chosenScope == 'Configure' && !selectedRows">
                         <Operations
                             :ops="operationTypes"
-                            :stored="settingsRows"
                             :chain="chain"
-                            @selected="() => hasSelectedRows.value = true"
+                            @selected="(ops) => selectedRows = ops"
                             @exit="() => {
-                                chosenScope.value = null;
-                                hasSelectedRows.value = null;
+                                chosenScope = null;
+                                selectedRows = null;
                             }"
                         />
                     </span>
@@ -184,7 +173,7 @@
             </span>
 
             
-            <span v-if="chosenScope && settingsRows && hasSelectedRows">
+            <span v-if="chosenScope && selectedRows">
                 <span v-if="qrChoice && qrChoice === 'Scan'">
                     <QRScan />
                     <br>
@@ -239,7 +228,7 @@
 
             <br>
             <ui-button
-                v-if="chosenScope && hasSelectedRows"
+                v-if="chosenScope && selectedRows"
                 style="margin-right:5px"
                 icon="arrow_back_ios"
                 @click="goBack"

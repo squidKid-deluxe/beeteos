@@ -94,7 +94,7 @@
                 :chain="_chain"
                 :is-connected="isConnected"
                 :is-connecting="isConnecting"
-                @refresh="() => fetchQty.value = fetchQty.value + 1"
+                @refresh="() => fetchQty += 1"
             />
         </span>
     </span>
