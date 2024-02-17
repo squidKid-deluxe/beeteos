@@ -1,4 +1,4 @@
-import { ipcMain, webContents } from "electron";
+import { ipcMain } from "electron";
 import * as OTPAuth from "otpauth";
 
 import sha256 from "crypto-js/sha256.js";
@@ -185,7 +185,7 @@ const linkHandler = async (req, webContents) => {
  * @param {Object} req
  * @returns {Object}
  */
-const authHandler = function (req) {
+const authHandler = function (req, webContents) {
     if (!req.payload.identityhash) {
       // Comms authed but app not linked
       return Object.assign(req.payload, {authenticate: true, link: false});
@@ -292,7 +292,25 @@ export default class BeetServer {
 
       if (blockchain && blockchain.getOperationTypes().length) {
         // Check injected operation types are allowed
-        let app = store.getters['OriginStore/getBeetApp'](apiobj);
+
+        let app;
+        try {
+          app = await new Promise((resolve, reject) => {
+            this.webContents.send('getApiApp', apiobj);
+            ipcMain.once('getApiResponse', (event, fetchedApp) => {
+              if (fetchedApp.error) {
+                reject(fetchedApp.error);
+              } else {
+                resolve(fetchedApp);
+              }
+            });
+          });
+        } catch (error) {
+          console.log(error);
+          socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Could not fetch app from store."}});
+          return;
+        }
+
         if (!app || (!apiobj.payload.origin == app.origin && !apiobj.payload.appName == app.appName)) {
             socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Request format issue."}});
             return;
@@ -404,7 +422,7 @@ export default class BeetServer {
             browser: socket.browser,
             key: socket.keypair ?? null,
             type: linkType
-        });
+        }, this.webContents);
       } catch (error) {
         console.log(error)
         socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful"}});
@@ -470,7 +488,7 @@ export default class BeetServer {
                     id: data.id,
                     client: socket.id,
                     payload: data.payload
-                  });
+                  }, this.webContents);
                 } catch (error) {
                   console.log(error)
                 }

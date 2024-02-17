@@ -8,6 +8,7 @@ const SET_WALLET_UNLOCKED = 'SET_WALLET_UNLOCKED';
 const SET_WALLETLIST = 'SET_WALLETLIST';
 const REQ_NOTIFY = 'REQ_NOTIFY';
 const CLOSE_WALLET = 'CLOSE_WALLET';
+const SET_SELECTED_WALLET_INDEX = 'SET_SELECTED_WALLET_INDEX';
 
 const wallet = {};
 
@@ -40,10 +41,16 @@ const mutations = {
     },
     [CREATE_WALLET](state, wallet) {
         state.wallet = wallet;
-    }
+    },
+    [SET_SELECTED_WALLET_INDEX](state, index) {
+        state.selectedWalletIndex = index;
+    },
 };
 
 const actions = {
+    setSelectedWalletIndex({ commit }, index) {
+        commit(SET_SELECTED_WALLET_INDEX, index);
+    },
     getWallet({
         dispatch,
         commit,
@@ -380,6 +387,17 @@ const actions = {
 
 const getters = {
     getWallet: state => state.wallet,
+    getCurrentID: state => {
+        if (
+            state.selectedWalletIndex !== null &&
+            state.selectedWalletIndex >= 0 &&
+            state.selectedWalletIndex < state.walletlist.length
+        ) {
+            return state.walletlist[state.selectedWalletIndex].id;
+        } else {
+            return null;
+        }
+    },
     getWalletName: state => state.wallet.name,
     getHasWallet: state => state.hasWallet,
     getWalletList: state => state.walletlist
@@ -390,7 +408,8 @@ const initialState = {
     hasWallet: false,
     walletlist: [],
     unlocked: {},
-    isUnlocked: false
+    isUnlocked: false,
+    selectedWalletIndex: null,
 };
 
 export default {

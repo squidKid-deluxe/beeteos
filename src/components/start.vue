@@ -44,6 +44,7 @@
                 } catch (error) {
                     console.log(error);
                 }
+                store.dispatch("WalletStore/setSelectedWalletIndex", selectedWallet.value);
                 walletpass.value = "";
                 router.replace("/dashboard");
             })

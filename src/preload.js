@@ -5,8 +5,6 @@ contextBridge.exposeInMainWorld('electron', {
   blockchainRequest: async (args) => await ipcRenderer.invoke('blockchainRequest', args),
   notify: async (msg) => ipcRenderer.send('notify', msg),
   createPopup: async (popupData) => ipcRenderer.send('createPopup', popupData),
-  clickedAllow: async (allowData) => ipcRenderer.send('clickedAllow', allowData),
-  clickedDeny: async (denyData) => ipcRenderer.send('clickedDeny', denyData),
   downloadBackup: async (backupData) => ipcRenderer.send('downloadBackup', backupData),
   id: async (args) => await ipcRenderer.invoke('id', args),
   aesEncrypt: async (args) => await ipcRenderer.invoke('aesEncrypt', args),
@@ -70,5 +68,11 @@ contextBridge.exposeInMainWorld('electron', {
       func(data);
     });
   },
-  resetTimer: async () => await ipcRenderer.send('resetTimer')
+  resetTimer: async () => await ipcRenderer.send('resetTimer'),
+  getApiApp: async (func) => {
+    ipcRenderer.on("getApiApp", (event, data) => {
+        func(data);
+    })
+  },
+  sendApiResponse: async (args) => await ipcRenderer.send('getApiResponse', args),
 });

@@ -176,7 +176,8 @@ const createModal = async (arg, modalEvent) => {
             nodeIntegration: false, // Keep false for security
             contextIsolation: true, // Keep true for security
             enableRemoteModule: false, // Keep false for security
-            preload: path.join(__dirname, "preload.js"),
+            sandbox: true, // Keep true for security
+            preload: path.join(__dirname, "preload.modal.js"),
         },
         icon: __dirname + '/img/beet-taskbar.png'
     });
@@ -258,7 +259,8 @@ const createReceipt = async (arg, modalEvent) => {
             nodeIntegration: false, // Keep false for security
             contextIsolation: true, // Keep true for security
             enableRemoteModule: false, // Keep false for security
-            preload: path.join(__dirname, "preload.js"),
+            sandbox: true, // Keep true for security
+            preload: path.join(__dirname, "preload.modal.js"),
         },
         icon: __dirname + '/img/beet-taskbar.png'
     });
@@ -481,6 +483,7 @@ const createWindow = async () => {
         nodeIntegration: false, // Keep false for security
         contextIsolation: true, // Keep true for security
         enableRemoteModule: false, // Keep false for security
+        sandbox: true, // Keep true for security
         preload: path.join(__dirname, "preload.js"),
       },
       icon: __dirname + '/img/beet-taskbar.png'
