@@ -26,6 +26,13 @@
             default() {
                 return ''
             }
+        },
+        warning: {
+            type: String,
+            required: false,
+            default() {
+                return ''
+            }
         }
     });
 
@@ -67,6 +74,13 @@
             ? t('operations.rawsig.sign_btn')
             : t('operations.rawsig.sign_and_broadcast_btn')
     })
+
+    let warning = computed(() => {
+        if (!props.warning || !props.warning.length) {
+            return;
+        }
+        return props.warning;
+    });
 
     function _clickedAllow() {
         window.electron.clickedAllow({
@@ -178,6 +192,21 @@
         <h4 class="h4 beet-typo-small">
             {{ t('operations.rawsig.request_cta') }}
         </h4>
+        <ui-alert
+            v-if="warning"
+            state="warning"
+        >
+            {{ 
+                warning && warning === "serverError"
+                    ? t("operations.transfer.server_error")
+                    : null
+            }}
+            {{
+                warning && warning !== "serverError"
+                    ? t("operations.transfer.detected_scammer")
+                    : null
+            }}
+        </ui-alert>
         <div
             v-if="!!visualizedParams"
             style="padding-bottom: 25px;"

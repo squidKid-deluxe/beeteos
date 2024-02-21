@@ -13,10 +13,8 @@ const operations = [
     Actions.GET_ACCOUNT,
     Actions.REQUEST_SIGNATURE,
     Actions.INJECTED_CALL,
-    Actions.VOTE_FOR,
     Actions.SIGN_MESSAGE,
     Actions.VERIFY_MESSAGE,
-    Actions.TRANSFER,
     "setalimits",
     "setacctram",
     "setacctnet",
@@ -472,6 +470,7 @@ export default class EOS extends BlockchainAPI {
         );
     }
 
+    /*
     async transfer(key, from, to, amount, memo = null) {
         if (!amount.amount || !amount.asset_id) {
             throw "Amount must be a dict with amount and asset_id as keys"
@@ -505,6 +504,7 @@ export default class EOS extends BlockchainAPI {
         let result = await this.broadcast(signedTransaction);
         return result;
     }
+    */
 
     getExplorer(object) {
         if (object.accountName) {

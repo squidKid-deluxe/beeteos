@@ -100,15 +100,6 @@ const createModal = async (arg, modalEvent) => {
       modalData['visualizedParams'] = visualizedParams;
     }
 
-    if ([Actions.VOTE_FOR].includes(type)) {
-      let payload = arg.payload;
-      if (!payload) {
-        throw 'Missing required payload field'
-      }
-      modalRequests[id]['payload'] = payload;
-      modalData['payload'] = payload;
-    }
-
     if ([
       Actions.REQUEST_LINK,
       Actions.REQUEST_RELINK,
@@ -124,29 +115,7 @@ const createModal = async (arg, modalEvent) => {
       modalData['accounts'] = accounts;
     }
 
-    if ([Actions.TRANSFER].includes(type)) {
-      let chain = arg.chain;
-      let toSend = arg.toSend;
-      let accountName = arg.accountName;
-
-      if (!chain || !accountName || !toSend) {
-        throw 'Missing required fields'
-      }
-
-      modalRequests[id]['chain'] = chain;
-      modalRequests[id]['toSend'] = toSend;
-      modalRequests[id]['accountName'] = accountName;
-
-      let target = arg.target;
-      modalRequests[id]['target'] = target;
-
-      modalData['chain'] = chain;
-      modalData['accountName'] = accountName;
-      modalData['target'] = target;
-      modalData['toSend'] = toSend;
-    }
-
-    if ([Actions.INJECTED_CALL, Actions.TRANSFER].includes(type)) {
+    if ([Actions.INJECTED_CALL].includes(type)) {
         if (arg.isBlockedAccount) {
             modalRequests[id]['warning'] = true;
             modalData['warning'] = "blockedAccount";
@@ -577,6 +546,38 @@ const createWindow = async () => {
   });
 
   /*
+  ipcMain.handle('signBroadcast', async (event, arg) => {
+    const { operation, signingKey, request } = arg;
+
+    let transaction;
+    try {
+      transaction = await blockchain.sign(operation, signingKey);
+    } catch (error) {
+      console.log({
+        error,
+        location: "voteFor.sign",
+        id: request.id
+      });
+      return;
+    }
+
+    let broadcastResult;
+    try {
+      broadcastResult = await blockchain.broadcast(transaction);
+    } catch (error) {
+        console.log({
+            error,
+            location: "voteFor.broadcast",
+            id: request.id
+        });
+        return;
+    }
+
+    return broadcastResult;
+});
+*/
+
+  /*
   * Handling front end blockchain requests
   */
   ipcMain.handle('blockchainRequest', async (event, arg) => {
@@ -595,8 +596,6 @@ const createWindow = async () => {
     }
 
     let blockchainActions = [
-        Actions.TRANSFER,
-        Actions.VOTE_FOR,
         Actions.INJECTED_CALL
     ];
 
@@ -713,10 +712,6 @@ const createWindow = async () => {
       try {
           if (apiobj.type === Actions.INJECTED_CALL) {
               status = await injectedCall(apiobj, blockchain);
-          } else if (apiobj.type === Actions.VOTE_FOR) {
-              status = await voteFor(apiobj, blockchain);
-          } else if (apiobj.type === Actions.TRANSFER) {
-              status = await transfer(apiobj, blockchain);
           }
       } catch (error) {
           console.log({error: error || "No status"});
@@ -752,10 +747,6 @@ const createWindow = async () => {
         try {
             if (apiobj.type === Actions.INJECTED_CALL) {
                 status = await injectedCall(apiobj, blockchain);
-            } else if (apiobj.type === Actions.VOTE_FOR) {
-                status = await voteFor(apiobj, blockchain);
-            } else if (apiobj.type === Actions.TRANSFER) {
-                status = await transfer(apiobj, blockchain);
             }
         } catch (error) {
             console.log(error || "No status")
@@ -798,10 +789,6 @@ const createWindow = async () => {
         try {
             if (apiobj.type === Actions.INJECTED_CALL) {
                 status = await injectedCall(apiobj, blockchain);
-            } else if (apiobj.type === Actions.VOTE_FOR) {
-                status = await voteFor(apiobj, blockchain);
-            } else if (apiobj.type === Actions.TRANSFER) {
-                status = await transfer(apiobj, blockchain);
             }
         } catch (error) {
             console.log(error || "No status")
@@ -975,7 +962,7 @@ const createWindow = async () => {
     
             let retrievedAccounts;
             try{
-                retrievedAccounts = await wh.lookupAccounts();
+                retrievedAccounts = await wh.lookupAccounts(mainWindow.webContents);
             } catch (error) {
                 console.log({error});
                 return;
@@ -1133,12 +1120,6 @@ const createWindow = async () => {
   ipcMain.handle('id', (event, arg) => {
     const id = uuidv4();
     return id;
-  });
-
-  ipcMain.handle('encParse', (event, arg) => {
-    const {data} = arg;
-    console.log({data});
-    return JSON.parse(data.toString(ENC))
   });
 
   ipcMain.on('decrypt', async (event, arg) => {

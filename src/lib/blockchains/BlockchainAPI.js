@@ -423,11 +423,6 @@ export default class BlockchainAPI {
                 method: Actions.INJECTED_CALL
             },
             {
-                id: Actions.VOTE_FOR,
-                from: '',
-                method: Actions.VOTE_FOR
-            },
-            {
                 id: Actions.SIGN_MESSAGE,
                 from: '',
                 method: Actions.SIGN_MESSAGE
@@ -441,11 +436,6 @@ export default class BlockchainAPI {
                 id: Actions.VERIFY_MESSAGE,
                 from: '',
                 method: Actions.VERIFY_MESSAGE
-            },
-            {
-                id: Actions.TRANSFER,
-                from: '',
-                method: Actions.TRANSFER
             }
         ];
     }
@@ -558,9 +548,11 @@ export default class BlockchainAPI {
      * Placeholder for performing a blockchain transfer transaction
      * @returns {String}
      */
+    /*
     transfer(key, from, to, amount, asset, memo = null, broadcast = true) {
         throw "Needs implementation!"
     }
+    */
 
     /*
      * Placeholder for checking fee calculation support

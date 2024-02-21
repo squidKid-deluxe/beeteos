@@ -97,11 +97,6 @@ export default class BitShares extends BlockchainAPI {
                 method: Actions.INJECTED_CALL,
             },
             {
-                id: Actions.VOTE_FOR,
-                from: "",
-                method: Actions.VOTE_FOR,
-            },
-            {
                 id: Actions.SIGN_MESSAGE,
                 from: "",
                 method: Actions.SIGN_MESSAGE,
@@ -115,11 +110,6 @@ export default class BitShares extends BlockchainAPI {
                 id: Actions.VERIFY_MESSAGE,
                 from: "",
                 method: Actions.VERIFY_MESSAGE,
-            },
-            {
-                id: Actions.TRANSFER,
-                from: "",
-                method: Actions.TRANSFER,
             },
             // Blockchain based:
             {
@@ -1621,6 +1611,7 @@ export default class BitShares extends BlockchainAPI {
      * @param {String} memo
      * @returns {Object} transfer result
      */
+    /*
     async transfer(
         key,
         from,
@@ -1694,6 +1685,7 @@ export default class BitShares extends BlockchainAPI {
 
         return broadcastResult;
     }
+    */
 
     /*
      * Return an appropriate Bitshares blockchain explorer link.

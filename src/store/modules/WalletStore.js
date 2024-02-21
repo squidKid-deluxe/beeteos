@@ -281,14 +281,6 @@ const actions = {
                     throw ('decrypt_failure');
                 }
 
-                let decrypted_wallet;
-                try {
-                    decrypted_wallet = await window.electron.encParse({data: bytes});
-                } catch (error) {
-                    console.log({error});
-                    throw ('invalid');
-                }
-
                 let encwalletdata;
                 try {
                     encwalletdata = await window.electron.aesEncrypt({
@@ -348,13 +340,12 @@ const actions = {
                     });
                     commit(SET_WALLET_STATUS, true);
                     commit(SET_WALLETLIST, wallets);
-                    resolve('Wallets Found');
+                    return resolve('Wallets Found');
                 } else {
-                    resolve('Wallets not found');
+                    return resolve('Wallets not found');
                 }
-                resolve();
-            }).catch(() => {
-                reject();
+            }).catch((error) => {
+                return reject(error);
             });
         });
     },

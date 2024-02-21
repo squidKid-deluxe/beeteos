@@ -8,10 +8,8 @@
     import LinkRequestPopup from "./popups/linkrequestpopup";
     import ReLinkRequestPopup from "./popups/relinkrequestpopup";
     import IdentityRequestPopup from "./popups/identityrequestpopup";
-    import GenericRequestPopup from "./popups/genericrequestpopup";
     import SignMessageRequestPopup from "./popups/signedmessagepopup";
     import TransactionRequestPopup from "./popups/transactionrequestpopup";
-    import TransferRequestPopup from "./popups/transferrequestpopup";
     import langSelect from "./lang-select.vue";
 
     const { t } = useI18n({ useScope: 'global' });
@@ -175,6 +173,30 @@
         }
         return injectChips;
     });
+
+    /*
+        <GenericRequestPopup
+            v-else-if="type === Actions.VOTE_FOR && request && payload"
+            :request="request"
+            :payload="payload"
+        />
+        <TransferRequestPopup
+            v-else-if="
+                type === Actions.TRANSFER
+                    && request
+                    && chain
+                    && accountName
+                    && target
+                    && toSend
+            "
+            :request="request"
+            :chain="chain"
+            :account-name="accountName"
+            :target="target"
+            :warning="warning"
+            :to-send="toSend"
+        />
+    */
 </script>
 
 <template>
@@ -206,11 +228,6 @@
                 :request="request"
                 :accounts="accounts"
             />
-            <GenericRequestPopup
-                v-else-if="type === Actions.VOTE_FOR && request && payload"
-                :request="request"
-                :payload="payload"
-            />
             <SignMessageRequestPopup
                 v-else-if="
                     (type === Actions.SIGN_MESSAGE || type === Actions.SIGN_NFT)
@@ -218,22 +235,6 @@
                 "
                 :request="request"
                 :accounts="accounts"
-            />
-            <TransferRequestPopup
-                v-else-if="
-                    type === Actions.TRANSFER
-                        && request
-                        && chain
-                        && accountName
-                        && target
-                        && toSend
-                "
-                :request="request"
-                :chain="chain"
-                :account-name="accountName"
-                :target="target"
-                :warning="warning"
-                :to-send="toSend"
             />
             <div
                 v-else-if="
@@ -248,6 +249,7 @@
                     :request="request"
                     :visualized-params="visualizedParams"
                     :visualized-account="visualizedAccount"
+                    :warning="warning"
                 />
             </div>
         </ui-collapse>

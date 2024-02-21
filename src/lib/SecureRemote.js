@@ -1,4 +1,3 @@
-import { ipcRenderer } from 'electron';
 import * as secp from "@noble/secp256k1";
 import sha256 from "crypto-js/sha256.js";
 
@@ -52,15 +51,15 @@ const proof = new proover();
 
 export const getKey = async (enc_key) => {
     return new Promise(async (resolve, reject) => {
-        ipcRenderer.removeAllListeners('decrypt_success');
-        ipcRenderer.removeAllListeners('decrypt_fail');
+        window.electron.removeAllListeners('decrypt_success');
+        window.electron.removeAllListeners('decrypt_fail');
 
-        ipcRenderer.once('decrypt_success', (event, arg) => {
+        window.electron.onceSuccessfullyDecrypted((arg) => {
             console.log('decrypt_success')
             resolve(arg);
-        });
+        })
 
-        ipcRenderer.once('decrypt_fail', (event, arg) => {
+        window.electron.onceFailedToDecrypt((arg) => {
             console.log('decrypt_fail')
             reject('decrypt_fail');
         });

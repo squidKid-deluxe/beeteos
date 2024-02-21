@@ -2,11 +2,17 @@
     import { ref, computed, watchEffect } from 'vue';
     import { useI18n } from 'vue-i18n';
 
+    import {
+        linkRequest,
+        relinkRequest,
+    } from '../lib/apiUtils.js';
+
     import AccountSelect from "./account-select";
     
     import store from '../store/index.js';
     import router from '../router/index.js';
     import BeetDB from '../lib/BeetDB.js';
+    import { witness_update_operation_fee_parameters } from 'bitsharesjs/dist/serializer/src/operations';
 
     const { t } = useI18n({ useScope: 'global' });
     
@@ -126,8 +132,91 @@
     });
 
     watchEffect(async () => {
-        async function listen() {    
+        async function listen() {
+            window.electron.link(async (request) => {
+                // Linking with a new dapp account
+                window.electron.resetTimer();
+
+                let linkReq = {appName: request.appName, origin: request.origin, chain: request.chain};
+
+                let accounts =  store.getters['AccountStore/getSafeAccountList'];
+                if (!accounts) {
+                    window.electron.linkError({id: request.id, result: {isError: true, method: "getSafeAccountList", error: "No accounts"}})
+                    return;
+                }
+
+                store.dispatch(
+                    "WalletStore/notifyUser",
+                    {notify: "request", message: window.t("common.link_alert", linkReq)}
+                );
+
+                let existingLinks = [];
+                try {
+                    existingLinks = store.getters['OriginStore/getExistingLinks'](linkReq);
+                } catch (error) {
+                    window.electron.linkError({id: request.id, result: {isError: true, method: "existingLinks", error: error}});
+                    return;
+                }
+
+                window.electron.createPopup(
+                    {
+                        request: request,
+                        accounts: accounts,
+                        existingLinks: existingLinks
+                    }
+                );
+
+                window.electron.popupApproved(request.id, async (result) => {
+                    window.electron.resetTimer();
+                    store.dispatch("AccountStore/selectAccount", result.result);
+                    window.electron.linkResponse(result);
+                });
+
+                window.electron.popupRejected(request.id, (result) => {
+                    window.electron.resetTimer();
+                    window.electron.linkError({id: request.id, result: {isError: true, method: "rejectedPopup", error: result}});
+                });
+            });
+
+            window.electron.relink(async (data) => {
+                // Relinking with an existing dapp account
+                window.electron.resetTimer();
+
+                let shownBeetApp = store.getters['OriginStore/getBeetApp'](request);
+                if (!shownBeetApp) {
+                    window.electron.relinkError({id: request.id, result: {isError: true, method: "REQUEST_RELINK", error: 'No beetapp'}});
+                }
+
+                let linkReq = {appName: request.appName, origin: request.origin, chain: request.chain};
+
+                store.dispatch(
+                    "WalletStore/notifyUser",
+                    {notify: "request", message: window.t("common.relink_alert", linkReq)}
+                );
+
+                let account = store.getters['AccountStore/getSafeAccount'](JSON.parse(JSON.stringify(shownBeetApp)));
+
+                window.electron.createPopup(
+                    {
+                        request: request,
+                        accounts: [account]
+                    }
+                );
+
+                window.electron.popupApproved(request.id, async (result) => {
+                    window.electron.resetTimer();
+                    store.dispatch("AccountStore/selectAccount", result.result);
+                    window.electron.linkResponse(result);
+                });
+
+                window.electron.popupRejected(request.id, (result) => {
+                    window.electron.resetTimer();
+                    window.electron.relinkError({id: request.id, result: {isError: true, method: "rejectedPopup", error: result}});
+                });
+            });
+
             window.electron.addLinkApp(async (data) => {
+                // Adding a new dapp linkage to store
                 window.electron.resetTimer();
                 let app;
                 let _error;
@@ -138,9 +227,10 @@
                     _error = error;
                 }
 
-                window.electron.sendLinkResponse({app, error: _error})
+                window.electron.getLinkAppResponse({app, error: _error})
             });
             window.electron.getLinkApp((data) => {
+                // Fetching existing dapp linkage
                 window.electron.resetTimer();
                 let app;
                 let _error;
@@ -151,10 +241,11 @@
                     _error = error;
                 }
 
-                window.electron.sendLinkResponse({app, error: _error})
+                window.electron.getLinkAppResponse({app, error: _error})
             });
             
             window.electron.getAuthApp((data) => {
+                // Connecting...
                 let app;
                 let _error;
                 try {
@@ -168,6 +259,7 @@
             });
 
             window.electron.newRequest((data) => {
+                // Preparing for request
                 window.electron.resetTimer();
                 store.dispatch('OriginStore/newRequest', data);
             });

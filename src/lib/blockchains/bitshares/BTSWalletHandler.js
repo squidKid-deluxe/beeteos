@@ -59,14 +59,11 @@ class BTSWalletHandler {
         }
     }
 
-    async lookupAccounts() {
+    async lookupAccounts(webContents) {
 
         let blockchain = getBlockchainAPI('BTS');
         await blockchain.ensureConnection().then((connectedNode) => {
-            store.dispatch("SettingsStore/setNode", {
-                chain: 'BTS',
-                node: connectedNode
-            });
+            webContents.send('setNode', connectedNode);
         });
         let account_ids = await Apis.instance()
             .db_api()
