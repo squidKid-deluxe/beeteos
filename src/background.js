@@ -546,38 +546,6 @@ const createWindow = async () => {
   });
 
   /*
-  ipcMain.handle('signBroadcast', async (event, arg) => {
-    const { operation, signingKey, request } = arg;
-
-    let transaction;
-    try {
-      transaction = await blockchain.sign(operation, signingKey);
-    } catch (error) {
-      console.log({
-        error,
-        location: "voteFor.sign",
-        id: request.id
-      });
-      return;
-    }
-
-    let broadcastResult;
-    try {
-      broadcastResult = await blockchain.broadcast(transaction);
-    } catch (error) {
-        console.log({
-            error,
-            location: "voteFor.broadcast",
-            id: request.id
-        });
-        return;
-    }
-
-    return broadcastResult;
-});
-*/
-
-  /*
   * Handling front end blockchain requests
   */
   ipcMain.handle('blockchainRequest', async (event, arg) => {
@@ -588,7 +556,6 @@ const createWindow = async () => {
         blockchain = getBlockchainAPI(chain);
     } catch (error) {
         console.log(error);
-        return;
     }
 
     if (!blockchain) {
@@ -676,7 +643,65 @@ const createWindow = async () => {
         } catch (error) {
             console.log({error, location: "getOperationTypes"});
         }
-        responses['getOperationTypes'] = _opTypes;
+        if (_opTypes) {
+            responses['getOperationTypes'] = _opTypes;
+        }
+    }
+
+    if (methods.includes("createMemoObject")) {
+        const { from, to, memo, optionalNonce, encryptMemo } = arg;
+        let memoObj;
+        try {
+            memoObj = await blockchain.createMemoObject(
+                from,
+                to,
+                memo,
+                optionalNonce,
+                encryptMemo
+            );
+        } catch (error) {
+            console.log({error, location: "createMemoObject"});
+        }
+        
+        if (memoObj) {
+            responses['createMemoObject'] = memoObj;
+        }
+    }
+
+    if (methods.includes("processTransaction")) {
+        const { operation, signingKey, request } = arg;
+
+        let transaction;
+        try {
+          transaction = await blockchain.sign(operation, signingKey);
+        } catch (error) {
+          console.log({
+            error,
+            location: "processTransaction",
+            id: request.id
+          });
+        }
+
+        if (transaction) {
+            responses['processTransaction'] = transaction;
+        }
+    }
+
+    if (methods.includes("broadcastTransaction")) {
+        const { transaction, request } = arg;
+        let broadcastResponse;
+        try {
+            broadcastResponse = await blockchain.broadcast(transaction);
+        } catch (error) {
+            console.log({
+              error,
+              location: "broadcast",
+              id: request.id
+            });
+        }
+        if (broadcastResponse) {
+            responses['broadcastTransaction'] = broadcastResponse;
+        }
     }
 
     if (methods.includes("totpCode")) {
@@ -701,29 +726,20 @@ const createWindow = async () => {
         );
       } catch (error) {
         console.log(error);
-        return;
       }
 
-      if (!apiobj) {
-        return;
+      if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
+        let status;
+        try {
+          status = await injectedCall(apiobj, blockchain);
+        } catch (error) {
+            console.log({error: error || "No status"});
+        }
+  
+        if (status && status.result && !status.result.isError && !status.result.canceled) {
+            responses['getRawLink'] = status;
+        }      
       }
-
-      let status;
-      try {
-          if (apiobj.type === Actions.INJECTED_CALL) {
-              status = await injectedCall(apiobj, blockchain);
-          }
-      } catch (error) {
-          console.log({error: error || "No status"});
-          return;
-      }
-
-      if (!status || !status.result || status.result.isError || status.result.canceled) {
-          console.log("Issue occurred in approved prompt");
-          return;
-      }
-
-      responses['getRawLink'] = status;
     }
 
     if (methods.includes("getRawLink")) {
@@ -740,67 +756,57 @@ const createWindow = async () => {
             );
         } catch (error) {
             console.log(error);
-            return;
         }
 
-        let status;
-        try {
-            if (apiobj.type === Actions.INJECTED_CALL) {
+        if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
+            let status;
+            try {
                 status = await injectedCall(apiobj, blockchain);
+            } catch (error) {
+                console.log(error || "No status")
             }
-        } catch (error) {
-            console.log(error || "No status")
-            return;
+    
+            if (status && status.result && !status.result.isError && !status.result.canceled) {
+                responses['getRawLink'] = status;
+            }
         }
-
-        if (!status || !status.result || status.result.isError || status.result.canceled) {
-            console.log("Issue occurred in approved prompt");
-            return;
-        }
-
-        responses['getRawLink'] = status;
     }
 
     if (methods.includes("localFileUpload")) {
       const {allowedOperations, filePath} = arg;
       fs.readFile(filePath, 'utf-8', async (error, data) => {
-        if (error) {
-          console.log({error})
-          return;
-        }
-
-        const { requestBody } = data;
-
-        let apiobj;
-        try {
-            apiobj = _parseDeeplink(
-                requestBody,
-                chain,
-                blockchain,
-                blockchainActions,
-                allowedOperations
-            );
-        } catch (error) {
-            console.log(error);
-            return;
-        }
-
-        let status;
-        try {
-            if (apiobj.type === Actions.INJECTED_CALL) {
-                status = await injectedCall(apiobj, blockchain);
+        if (!error) {
+            const { requestBody } = data;
+    
+            let apiobj;
+            try {
+                apiobj = _parseDeeplink(
+                    requestBody,
+                    chain,
+                    blockchain,
+                    blockchainActions,
+                    allowedOperations
+                );
+            } catch (error) {
+                console.log(error);
             }
-        } catch (error) {
-            console.log(error || "No status")
-            return;
+    
+            if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
+                let status;
+                try {
+                    status = await injectedCall(apiobj, blockchain);
+                } catch (error) {
+                    console.log(error || "No status")
+                    return;
+                }
+        
+                if (status && status.result && !status.result.isError && !status.result.canceled) {
+                    responses['localFileUpload'] = status;
+                }
+            }            
+        } else {
+            console.log({error});
         }
-
-        if (!status || !status.result || status.result.isError || status.result.canceled) {
-            console.log("Issue occurred in approved prompt");
-            return;
-        }
-
-        responses['localFileUpload'] = status;
       });
     }
 
@@ -813,70 +819,64 @@ const createWindow = async () => {
             : JSON.parse(qrData);
       } catch (error) {
           console.log(error);
-          return;
       }
 
-      if (!qrTX) {
-          console.log("Couldn't process scanned QR code, sorry.")
-          return;
-      }
-
-      let authorizedUse = false;
-      if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
-          for (let i = 0; i < qrTX.operations.length; i++) {
-              let operation = qrTX.operations[i];
-              if (allowedOperations && allowedOperations.includes(operation[0])) {
-                  authorizedUse = true;
-                  break;
+      if (qrTX) {
+        let authorizedUse = false;
+        if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
+            for (let i = 0; i < qrTX.operations.length; i++) {
+                let operation = qrTX.operations[i];
+                if (allowedOperations && allowedOperations.includes(operation[0])) {
+                    authorizedUse = true;
+                    break;
+                }
+            }
+        } else if (
+            ["EOS", "BEOS", "TLOS"].includes(chain)
+        ) {
+            for (let i = 0; i < qrTX.actions.length; i++) {
+                let operation = qrTX.actions[i];
+                if (allowedOperations && allowedOperations.includes(operation.name)) {
+                    authorizedUse = true;
+                    break;
+                }
+            }
+        }
+  
+        if (authorizedUse) {
+          console.log('Authorized use of QR codes');
+  
+          let apiobj = {
+              type: Actions.INJECTED_CALL,
+              id: await uuidv4(),
+              payload: {
+                  origin: 'localhost',
+                  appName: 'qr',
+                  browser: qrChoice,
+                  params: ["BTS", "BTS_TEST", "TUSC"].includes(chain)
+                    ? qrTX.toObject()
+                    : qrTX,
+                  chain: chain
               }
           }
-      } else if (
-          ["EOS", "BEOS", "TLOS"].includes(chain)
-      ) {
-          for (let i = 0; i < qrTX.actions.length; i++) {
-              let operation = qrTX.actions[i];
-              if (allowedOperations && allowedOperations.includes(operation.name)) {
-                  authorizedUse = true;
-                  break;
-              }
+    
+          let status;
+          try {
+              status = await injectedCall(apiobj, blockchain);
+          } catch (error) {
+              console.log(error);
+              return;
           }
-      }
-
-      if (!authorizedUse) {
-          console.log(`Unauthorized QR use of ${chain} blockchain operation`);
-          return;
-      }
-
-      console.log('Authorized use of QR codes');
-
-      let apiobj = {
-          type: Actions.INJECTED_CALL,
-          id: await uuidv4(),
-          payload: {
-              origin: 'localhost',
-              appName: 'qr',
-              browser: qrChoice,
-              params: ["BTS", "BTS_TEST", "TUSC"].includes(chain)
-                ? qrTX.toObject()
-                : qrTX,
-              chain: chain
+    
+          if (status && status.result && !status.result.isError && !status.result.canceled) {
+            console.log("Issue occurred in approved prompt");
+              return;
           }
+    
+          responses['qrData'] = status;
+        }
       }
 
-      let status;
-      try {
-          status = await injectedCall(apiobj, blockchain);
-      } catch (error) {
-          console.log(error);
-          return;
-      }
-
-      if (!status || !status.result || status.result.isError || status.result.canceled) {
-          console.log("Issue occurred in approved prompt");
-          return;
-      }
-
-      responses['qrData'] = status;
     }
 
     if (methods.includes("verifyAccount")) {
@@ -889,12 +889,9 @@ const createWindow = async () => {
           return;
       }
 
-      if (!account) {
-          console.log("Couldn't verify account, sorry.")
-          return;
+      if (account) {
+        responses['verifyAccount'] = {account, authorities};
       }
-
-      responses['verifyAccount'] = {account, authorities};
     }
 
     if (methods.includes("verifyCloudAccount")) {
@@ -919,23 +916,22 @@ const createWindow = async () => {
                 };
         } catch (error) {
             console.log(error);
-            return;
         }
 
-        let account;
-        try {
-            account = await blockchain.verifyAccount(accountname, authorities);
-        } catch (error) {
-            console.log(error);
-            return;
+        if (authorities) {
+            let account;
+            try {
+                account = await blockchain.verifyAccount(accountname, authorities);
+            } catch (error) {
+                console.log(error);
+                return;
+            }
+    
+            if (account) {
+                responses['verifyCloudAccount'] = {account, authorities};
+            }
         }
 
-        if (!account) {
-            console.log("Couldn't verify account, sorry.")
-            return;
-        }
-
-        responses['verifyCloudAccount'] = {account, authorities};
     }
 
     if (methods.includes("decryptBackup")) {
@@ -943,32 +939,29 @@ const createWindow = async () => {
         fs.readFile(filePath, async (err, data) => {
             if (err) {
                 console.log({err});
-                return;
-            }
+            } else {
+                let wh = new BTSWalletHandler(data);
+                let unlocked;
+                try {
+                    unlocked = await wh.unlock(pass);
+                } catch (error) {
+                    console.log({error});
+                    return;
+                }
     
-            let wh = new BTSWalletHandler(data);
-            let unlocked;
-            try {
-                unlocked = await wh.unlock(pass);
-            } catch (error) {
-                console.log({error});
-                return;
+                if (unlocked) {
+                    let retrievedAccounts;
+                    try{
+                        retrievedAccounts = await wh.lookupAccounts(mainWindow.webContents);
+                    } catch (error) {
+                        console.log({error});   
+                    }
+        
+                    if (retrievedAccounts) {
+                        responses['decryptBackup'] = retrievedAccounts;
+                    }
+                }
             }
-
-            if (!unlocked) {
-                console.log("Wallet could not be unlocked");
-                return;
-            }
-    
-            let retrievedAccounts;
-            try{
-                retrievedAccounts = await wh.lookupAccounts(mainWindow.webContents);
-            } catch (error) {
-                console.log({error});
-                return;
-            }
-
-            responses['decryptBackup'] = retrievedAccounts;
         });
     }
 

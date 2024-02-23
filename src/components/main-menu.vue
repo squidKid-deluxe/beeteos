@@ -232,96 +232,6 @@
                 });
             });
 
-            /*
-            window.electron.onVoteFor((request, mappedData) => {
-                let payload = request.payload;
-
-                payload.action = "vote";
-                if (!mappedData) {
-                    window.electron.voteForError({id: request.id, result: {isError: true, method: "voteFor.inputs", error: 'input error'}});
-                }
-
-                payload.generic = {
-                    title: t("operations.vote.title"),
-                    message: t("operations.vote.request", {
-                        appName: payload.appName,
-                        origin: payload.origin,
-                        entity: mappedData.entity,
-                        chain: payload.chain,
-                        accountName: payload.account_id
-                    }),
-                    details: mappedData.description,
-                    acceptText: t("operations.vote.accept_btn"),
-                    rejectText: t("operations.vote.reject_btn")
-                };
-                payload.vote_id = mappedData.vote_id;
-                store.dispatch("WalletStore/notifyUser", {notify: "request", message: t('common.apiUtils.vote')});
-
-                window.electron.createPopup({
-                    request: request,
-                    payload: payload
-                });
-
-                window.electron.popupApproved(request.id, async (result) => { // `popupApproved_${request.id}`
-                    let shownBeetApp = store.getters['OriginStore/getBeetApp'](request);
-                    if (!shownBeetApp) {
-                        window.electron.voteForError({id: request.id, result: {isError: true, method: "voteFor.getBeetApp", error: 'No beetApp'}});
-                        return;
-                    }
-
-                    let approvedAccount = store.getters['AccountStore/getSafeAccount'](JSON.parse(JSON.stringify(shownBeetApp)));
-
-                    let operation;
-                    try {
-                        operation = await window.electron.getOperation(payload, approvedAccount);
-                    } catch (error) {
-                        window.electron.voteForError({id: request.id, result: {isError: true, method: "voteFor.getOperation", error: error}});
-                    }
-
-                    if (operation.nothingToDo) {
-                        window.electron.voteForResponse({
-                            result: {
-                                name: approvedAccount.accountName,
-                                chain: approvedAccount.chain,
-                                id: approvedAccount.accountID
-                            },
-                            request: {
-                                id: request.id
-                            }
-                        });
-                        return;
-                    }
-
-                    let activeKey = store.getters['AccountStore/getActiveKey'](request);
-
-                    let signingKey;
-                    try {
-                        signingKey = await getKey(activeKey);
-                    } catch (error) {
-                        window.electron.voteForError({id: request.id, result: {isError: true, method: "voteFor.getKey", error: error}});
-                        return;
-                    }
-
-                    window.electron.signBroadcast(operation, signingKey, request.id, async (broadcastResult) => {
-                        if (!broadcastResult) {
-                            window.electron.voteForError({id: request.id, result: {isError: true, method: "voteFor.broadcast", error: 'no broadcast'}});
-                            return;
-                        }
-                        window.electron.voteForResponse({
-                            result: broadcastResult,
-                            request: {
-                                id: request.id
-                            }
-                        });
-                    });
-
-                    window.electron.popupRejected(request.id, (result) => {
-                        window.electron.voteForError({id: request.id, result: {isError: true, method: "voteFor.popupRejected", error: result}});
-                    });
-                })
-            });
-            */
-
             window.electron.onInjectedCall((
                 request,
                 chain,
@@ -401,13 +311,15 @@
                             }
 
                             try {
-                                memoObject = window.electron.createMemoObject( // TODO: create
-                                    from,
-                                    to,
-                                    request.payload.memo,
-                                    request.payload.params.optionalNonce ?? undefined,
-                                    request.payload.params.encryptMemo ?? undefined
-                                );
+                                memoObject = await window.electron.blockchainRequest({
+                                    methods: ["createMemoObject"],
+                                    account: null,
+                                    chain: chain,
+                                    from: from,
+                                    to: to,
+                                    optionalNonce: request.payload.params.optionalNonce ?? undefined,
+                                    encryptMemo: request.payload.params.encryptMemo ?? undefined,
+                                });
                             } catch (error) {
                                 console.log(error);
                             }
@@ -422,7 +334,12 @@
                     let txType = _request.payload.params[0] ?? "signAndBroadcast";
                     if (txType == "broadcast") {
                         try {
-                            finalResult = await window.electron.broadcastTransaction(_request.payload.params);
+                            finalResult = await window.electron.blockchainRequest({
+                                methods: ["broadcastTransaction"],
+                                account: null,
+                                chain: chain,
+                                operation: _request.payload.params,
+                            });
                         } catch (error) {
                             console.log(error)
                             window.electron.injectedCallError({id: _request.id, result: {isError: true, method: "injectedCall.blockchain.broadcast", error: error}});
@@ -460,22 +377,43 @@
                         return;
                     }
 
-                    let transaction;
+                    let _processedTransaction;
                     try {
                         if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
-                            transaction = await window.electron.requestSignature(request.payload.params, signingKey);
+                            _processedTransaction = await window.electron.blockchainRequest({
+                                methods: ["processTransaction"],
+                                account: null,
+                                chain: chain,
+                                operation: request.payload.params,
+                                signingKey: signingKey,
+                            });
                         } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
-                            transaction = await window.electron.requestSignature(JSON.parse(request.payload.params[1]), signingKey);
+                            _processedTransaction = await window.electron.blockchainRequest({
+                                methods: ["processTransaction"],
+                                account: null,
+                                chain: chain,
+                                operation: JSON.parse(request.payload.params[1]),
+                                signingKey: signingKey,
+                            });
                         }   
                     } catch (error) {
-                        console.log(error);
+                        console.log({error});
+                    }
+
+                    if (!_processedTransaction) {
+                        console.log("Failed to process transaction");
                         window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.blockchain.sign", error: error}});
                         return;
                     }
 
                     if (txType == "signAndBroadcast") {
                         try {
-                            finalResult = await window.electron.broadcastTransaction(transaction);
+                            finalResult = window.electron.blockchainRequest({
+                                methods: ["broadcastTransaction"],
+                                account: null,
+                                chain: chain,
+                                operation: _processedTransaction,
+                            });
                         } catch (error) {
                             console.log(error);
                             window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.blockchain.broadcast", error: error}});
@@ -486,6 +424,7 @@
 
                     if (!finalResult) {
                         window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.finalResult", error: 'No final result'}});
+                        return;
                     }
 
                     store.dispatch("WalletStore/notifyUser", {notify: "request", message: notifyTXT});

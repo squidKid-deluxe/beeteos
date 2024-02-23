@@ -13,16 +13,6 @@ import {
 } from 'http-terminator';
 import { Server } from "socket.io";
 
-import {
-  getAccount,
-  requestSignature,
-  injectedCall,
-  voteFor,
-  signMessage,
-  signNFT,
-  messageVerification,
-  transfer
-} from './apiUtils.js';
 import getBlockchainAPI from "./blockchains/blockchainFactory.js";
 
 import * as Actions from './Actions.js';
@@ -283,7 +273,6 @@ export default class BeetServer {
 
       if (blockchain && blockchain.getOperationTypes().length) {
         // Check injected operation types are allowed
-
         let app;
         try {
           app = await new Promise((resolve, reject) => {
@@ -314,17 +303,31 @@ export default class BeetServer {
         
         let authorizedUse = true;
         if (app.injectables.length) {
-            // request.payload.params
-            let tr = blockchain._parseTransactionBuilder(msg.params);
-            for (let i = 0; i < tr.operations.length; i++) {
-                let operation = tr.operations[i];
-                if (!app.injectables.includes(operation[0])) {
-                    authorizedUse = false;
-                    break;
+            if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
+                let tr = blockchain._parseTransactionBuilder(msg.params);
+                for (let i = 0; i < tr.operations.length; i++) {
+                    let operation = tr.operations[i];
+                    if (!app.injectables.includes(operation[0])) {
+                        authorizedUse = false;
+                        break;
+                    }
+                }
+            } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
+                const params = msg.params;
+                if (!params || !params.length) {
+                    socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Request format issue."}});
+                    return;
+                }                    
+                const request = JSON.parse(params[1]);
+
+                for (let i = 0; i < request.actions.length; i++) {
+                    let action = request.actions[i];
+                    if (!app.injectables.includes(action.name)) {
+                        authorizedUse = false;
+                        break;
+                    }
                 }
             }
-
-            // TODO: Support EOS based chains here
 
             if (!authorizedUse) {
                 socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Unauthorized blockchain operations detected."}});
@@ -341,7 +344,20 @@ export default class BeetServer {
       let status;
       try {
         if (apiobj.type === Actions.GET_ACCOUNT) {
-          status = await getAccount(apiobj);
+
+          const _getAccount = (apiobj) => {
+            return new Promise((resolve, reject) => {
+              this.webContents.send('getAccount', apiobj);
+              ipcMain.once('getAccountResponse', (event, arg) => {
+                resolve(arg);
+              });
+              ipcMain.once('getAccountError', (event, error) => {
+                reject(error);
+              });
+            });
+          }
+
+          status = await _getAccount(apiobj);
         } else if (apiobj.type === Actions.REQUEST_SIGNATURE) {
 
             let visualizedParams;
@@ -366,9 +382,20 @@ export default class BeetServer {
                     : "";
             }
 
-          status = await requestSignature(apiobj, visualizedParams, visualizedAccount);
-        } else if (apiobj.type === Actions.INJECTED_CALL) {
+            const _requestSignature = (_apiobj, _visualizedParams, _visualizedAccount) => {
+                return new Promise((resolve, reject) => {
+                    this.webContents.send('requestSignature', _apiobj, _visualizedParams, _visualizedAccount);
+                    ipcMain.once('requestSignatureResponse', (event, arg) => {
+                        resolve(arg);
+                    });
+                    ipcMain.once('requestSignatureError', (event, error) => {
+                        reject(error);
+                    });
+                });
+            }
 
+          status = await _requestSignature(apiobj, visualizedParams, visualizedAccount);
+        } else if (apiobj.type === Actions.INJECTED_CALL) {
 
             let regexBTS = /1.2.\d+/g
             let isBlocked = false;
@@ -453,7 +480,19 @@ export default class BeetServer {
                 visualizedAccount = _actions[0].authorization[0].actor; 
             }
 
-          status = await injectedCall(
+          const _injectedCall = (_apiobj, _blockchain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs) => {
+            return new Promise((resolve, reject) => {
+              this.webContents.send('injectedCall', _apiobj, _blockchain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs);
+              ipcMain.once('injectedCallResponse', (event, arg) => {
+                resolve(arg);
+              });
+              ipcMain.once('injectedCallError', (event, error) => {
+                reject(error);
+              });
+            });
+          }
+
+          status = await _injectedCall(
             apiobj,
             blockchain._config.identifier,
             account,
@@ -479,7 +518,19 @@ export default class BeetServer {
             status = await _signMessage(apiobj);
         } else if (apiobj.type === Actions.SIGN_NFT) {
 
-          status = await signNFT(apiobj, blockchain);
+          const _signNFT = (_apiobj) => {
+            return new Promise((resolve, reject) => {
+              this.webContents.send('signNFT', _apiobj);
+              ipcMain.once('signNFTResponse', (event, arg) => {
+                resolve(arg);
+              });
+              ipcMain.once('signNFTError', (event, error) => {
+                reject(error);
+              });
+            });
+          }
+          status = await _signNFT(apiobj);
+
         } else if (apiobj.type === Actions.VERIFY_MESSAGE) {
 
           const _getVerified = (apiobj) => {

@@ -1,7 +1,5 @@
 import { blockchains } from "../../config/config.js";
 
-import store from "../../store/index.js";
-
 import BitShares from "./BitShares.js";
 import TUSC from "./TUSC.js";
 import EOSmainnet from "./EOSmainnet.js";
@@ -12,10 +10,6 @@ let storedChain;
 let lastChain;
 
 export default function getBlockchainAPI(chain = null, node = null) {
-    if (chain == null) {
-        chain = store.getters["AccountStore/getChain"];
-    }
-
     if (!lastChain) {
         lastChain = chain;
     } else if (lastChain && lastChain !== chain) {

@@ -132,7 +132,27 @@
     });
 
     watchEffect(async () => {
-        async function listen() {
+        async function listen() {           
+            window.electron.getAuthApp((data) => {
+                // Connecting...
+                let app;
+                let _error;
+                try {
+                    app = store.getters['OriginStore/getBeetApp'](data)
+                } catch (error) {
+                    console.log(error);
+                    _error = error;
+                }
+
+                window.electron.sendAuthResponse({app, error: _error})
+            });
+
+            window.electron.newRequest((data) => {
+                // Preparing for request
+                window.electron.resetTimer();
+                store.dispatch('OriginStore/newRequest', data);
+            });
+
             window.electron.link(async (request) => {
                 // Linking with a new dapp account
                 window.electron.resetTimer();
@@ -227,7 +247,7 @@
                     _error = error;
                 }
 
-                window.electron.getLinkAppResponse({app, error: _error})
+                window.electron.sendLinkAppResponse({app, error: _error})
             });
             window.electron.getLinkApp((data) => {
                 // Fetching existing dapp linkage
@@ -241,27 +261,7 @@
                     _error = error;
                 }
 
-                window.electron.getLinkAppResponse({app, error: _error})
-            });
-            
-            window.electron.getAuthApp((data) => {
-                // Connecting...
-                let app;
-                let _error;
-                try {
-                    app = store.getters['OriginStore/getBeetApp'](data)
-                } catch (error) {
-                    console.log(error);
-                    _error = error;
-                }
-
-                window.electron.sendAuthResponse({app, error: _error})
-            });
-
-            window.electron.newRequest((data) => {
-                // Preparing for request
-                window.electron.resetTimer();
-                store.dispatch('OriginStore/newRequest', data);
+                window.electron.sendLinkAppResponse({app, error: _error})
             });
         }
 

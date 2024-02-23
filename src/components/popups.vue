@@ -82,8 +82,9 @@
     watchEffect(() => {
         const id = handleProp('id');
 
-        window.electron.getPrompt(id);
+        window.electron.getPrompt(id); // Requesting the data from the main process
         window.electron.onPrompt(id, (data) => {
+            // Main process responded with prompt data
             window.electron.resetTimer();
             if (data.type) {
                 type.value = data.type;
@@ -173,30 +174,6 @@
         }
         return injectChips;
     });
-
-    /*
-        <GenericRequestPopup
-            v-else-if="type === Actions.VOTE_FOR && request && payload"
-            :request="request"
-            :payload="payload"
-        />
-        <TransferRequestPopup
-            v-else-if="
-                type === Actions.TRANSFER
-                    && request
-                    && chain
-                    && accountName
-                    && target
-                    && toSend
-            "
-            :request="request"
-            :chain="chain"
-            :account-name="accountName"
-            :target="target"
-            :warning="warning"
-            :to-send="toSend"
-        />
-    */
 </script>
 
 <template>

@@ -11,7 +11,6 @@ import {
 } from "bitsharesjs-ws";
 
 import getBlockchainAPI from "../blockchainFactory.js";
-import store from '../../../store/index.js';
 
 class BTSWalletHandler {
 

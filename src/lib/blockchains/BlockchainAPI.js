@@ -1,7 +1,4 @@
-import store from "../../store/index.js"
-
-//import store from "../../store/index.js";
-import {formatAsset, humanReadableFloat} from "../assetUtils.js";
+import { formatAsset } from "../assetUtils.js";
 import * as Actions from '../Actions.js';
 
 
@@ -76,10 +73,6 @@ export default class BlockchainAPI {
         this._isConnectedToNode = node;
         this._isConnected = true;
         this._isConnectingInProgress = false;
-        store.dispatch("SettingsStore/setNode", {
-            chain: this._config.identifier,
-            node: node
-        });
         if (resolveCallback) {
             resolveCallback(node);
         }

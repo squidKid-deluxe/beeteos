@@ -586,57 +586,6 @@ export default class BitShares extends BlockchainAPI {
         });
     }
 
-    /**
-     * Fetch a working node to connect to, using bitsharesws-js manager class
-     * Unused code - manager class failed to disconnect fast enough.
-     * @returns {Promise}
-     */
-    /*
-    _fetchValidNode() {
-        return new Promise((resolve, reject) => {
-            let urls = this.getNodes().map(node => node.url);
-
-            let filteredURLS = urls.filter(url => {
-              if (!this._tempBanned || !this._tempBanned.includes(url)) {
-                return true;
-              }
-            });
-
-            let connectionManager = new Manager({
-                url: filteredURLS[0],
-                urls: filteredURLS,
-                closeCb: res => {
-                  console.log(res);
-                },
-                optionalApis: {enableOrders: true},
-                urlChangeCallback: url => {
-                    console.log("urlChangeCallback:", url);
-                }
-            })
-
-            connectionManager
-            .checkConnections()
-            .then(res => {
-                let urls = Object.keys(res);
-                let ascLagNodes = urls.map(url => {
-                                    return { url: url, lag: res[url] };
-                                  }).sort((a, b) => a.lag - b.lag);
-                //console.log("best node: ", ascLagNodes[0]);
-                let now = new Date();
-                resolve({
-                  node: ascLagNodes[0].url,
-                  latencies: ascLagNodes,
-                  timestamp: now.getTime()
-                })
-            })
-            .catch(err => {
-                console.log("doLatencyUpdate error", err);
-                reject();
-            })
-        });
-    }
-    */
-
     /*
      * Check if the connection needs reestablished (placeholder replacement)
      * @returns {Boolean}
@@ -1042,19 +991,6 @@ export default class BitShares extends BlockchainAPI {
         });
 
         let timeLimitedPromise = new Promise(async (resolve, reject) => {
-            if (this._isTestnet()) {
-                if (assetSymbolOrId == "1.3.0") {
-                    return resolve({
-                        asset_id: "1.3.0",
-                        symbol: "TEST",
-                        precision: 5,
-                    });
-                } else {
-                    // TODO: Provide testnet bitshares lookup
-                    return reject(null);
-                }
-            }
-
             this.ensureConnection()
                 .then(() => {
                     Apis.instance()
@@ -1603,91 +1539,6 @@ export default class BitShares extends BlockchainAPI {
     }
 
     /*
-     * Broadcast a transfer operation on the Bitshares blockchain.
-     * @param {String} key
-     * @param {String} from
-     * @param {String} to
-     * @param {String} amount
-     * @param {String} memo
-     * @returns {Object} transfer result
-     */
-    /*
-    async transfer(
-        key,
-        from,
-        to,
-        amount,
-        memo = null,
-        optionalNonce = null,
-        encryptMemo = true
-    ) {
-        if (!amount.amount || !amount.asset_id) {
-            throw "Amount must be a dict with amount and asset_id as keys";
-        }
-
-        try {
-            from = await this.getAccount(from);
-        } catch (error) {
-            console.log(error);
-        }
-
-        try {
-            to = await this.getAccount(to);
-        } catch (error) {
-            console.log(error);
-        }
-
-        let memoObject;
-        if (memo) {
-            try {
-                memoObject = this._createMemoObject(
-                    from,
-                    to,
-                    memo,
-                    optionalNonce,
-                    encryptMemo
-                );
-            } catch (error) {
-                console.log(error);
-            }
-        }
-
-        let transaction;
-        try {
-            transaction = await this.sign(
-                {
-                    type: "transfer",
-                    data: {
-                        fee: {
-                            amount: 0,
-                            asset_id: "1.3.0",
-                        },
-                        from: from.id,
-                        to: to.id,
-                        amount: amount,
-                        memo: memoObject ?? undefined,
-                    },
-                },
-                key
-            );
-        } catch (error) {
-            console.log(error);
-            throw "Could not sign operation with Bitshares key";
-        }
-
-        let broadcastResult;
-        try {
-            broadcastResult = await this.broadcast(transaction);
-        } catch (error) {
-            console.log(error);
-            throw "Could not broadcast signed Bitshares transaction";
-        }
-
-        return broadcastResult;
-    }
-    */
-
-    /*
      * Return an appropriate Bitshares blockchain explorer link.
      * Warning: Opens dangerously, be cautious adding alt explorers.
      * @param {Object} object
@@ -1729,7 +1580,6 @@ export default class BitShares extends BlockchainAPI {
 
     /*
      * Returns a visualization for the input data.
-     * TODO: Requires refactor
      * @param {String||Class||Object} thing
      * @returns {String}
      */
