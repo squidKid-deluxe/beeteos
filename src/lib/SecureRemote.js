@@ -49,48 +49,6 @@ class proover {
 
 const proof = new proover();
 
-export const getKey = async (enc_key) => {
-    return new Promise(async (resolve, reject) => {
-        window.electron.removeAllListeners('decrypt_success');
-        window.electron.removeAllListeners('decrypt_fail');
-
-        window.electron.onceSuccessfullyDecrypted((arg) => {
-            console.log('decrypt_success')
-            resolve(arg);
-        })
-
-        window.electron.onceFailedToDecrypt((arg) => {
-            console.log('decrypt_fail')
-            reject('decrypt_fail');
-        });
-
-        let signature = await getSignature('decrypt');
-        if (!signature) {
-          console.log('Signature failure')
-          reject('signature failure');
-        }
-
-        let isValid;
-        try {
-          isValid = await secp.verify(
-            signature.signedMessage,
-            signature.msgHash,
-            signature.pubk
-          );
-        } catch (error) {
-          console.log(error);
-        }
-
-        if (isValid) {
-          console.log("Was valid, proceeding to decrypt");
-          ipcRenderer.send('decrypt', {data: enc_key});
-        } else {
-          console.log('invalid signature')
-          reject('invalid signature');
-        }
-    })
-}
-
 export const getSignature = async (data) => {
   let signature;
   try {

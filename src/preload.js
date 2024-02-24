@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('electron', {
     aesEncrypt: async (args) => await ipcRenderer.invoke('aesEncrypt', args),
     aesDecrypt: async (args) => await ipcRenderer.invoke('aesDecrypt', args),
     sha512: async (args) => await ipcRenderer.invoke('sha512', args),
+    getSignature: async (args) => await ipcRenderer.invoke('getSignature', args),
+    verifyCrypto: async (args) => await ipcRenderer.invoke('verifyCrypto', args),
     // Backup and restore functionality
     downloadBackup: async (backupData) => ipcRenderer.send('downloadBackup', backupData),
     restore: async (args) => await ipcRenderer.invoke('restore', args),
@@ -37,14 +39,6 @@ contextBridge.exposeInMainWorld('electron', {
     },
     // Creating popups for prompts and receipts
     createPopup: async (popupData) => ipcRenderer.send('createPopup', popupData),
-    getPrompt: (id) => {
-        ipcRenderer.send(`get:prompt:${id}`);
-    },
-    onPrompt: (id, func) => {
-        ipcRenderer.on(`respond:prompt:${id}`, (event, data) => {
-            func(data);
-        });
-    },
     popupApproved: (id, func) => {
         ipcRenderer.on(`popupApproved_${id}`, (event, data) => {
             func(data);
@@ -68,8 +62,16 @@ contextBridge.exposeInMainWorld('electron', {
     closeServer: async () => await ipcRenderer.send('closeServer'),
     fetchSSL: async (args) => await ipcRenderer.invoke('fetchSSL', args),
     // Beeteos-js
-    link: async (args) => await ipcRenderer.on('link', args),
-    relink: async (args) => await ipcRenderer.on('relink', args),
+    link: async (func) => {
+        ipcRenderer.on("link", (event, data) => {
+            func(data);
+        })
+    },
+    relink: async (func) => {
+        ipcRenderer.on("relink", (event, data) => {
+            func(data);
+        })
+    },
     linkResponse: async (args) => await ipcRenderer.send('linkResponse', args),
     // Establishing web connection
     getAuthApp: async (func) => {
@@ -112,13 +114,13 @@ contextBridge.exposeInMainWorld('electron', {
     signMessageResponse: async (args) => await ipcRenderer.send('signMessageResponse', args),
     signMessageError: async (args) => await ipcRenderer.send('signMessageError', args),
     // Signing nfts on bts
-    onSignNft: async (func) => {
-        ipcRenderer.on("signNft", (event, data) => {
+    onSignNFT: async (func) => {
+        ipcRenderer.on("signNFT", (event, data) => {
             func(data);
         })
     },
-    signNFTResponse: async (args) => await ipcRenderer.send('signNftResponse', args),
-    signNFTError: async (args) => await ipcRenderer.send('signNftError', args),
+    signNFTResponse: async (args) => await ipcRenderer.send('signNFTResponse', args),
+    signNFTError: async (args) => await ipcRenderer.send('signNFTError', args),
     // Handling injected calls
     onInjectedCall: async (func) => {
         ipcRenderer.on("injectedCall", (event, data) => {
@@ -127,8 +129,6 @@ contextBridge.exposeInMainWorld('electron', {
     },
     injectedCallResponse: async (args) => await ipcRenderer.send('injectedCallResponse', args),
     injectedCallError: async (args) => await ipcRenderer.send('injectedCallError', args),
-    //
-    createMemoObject: async (args) => await ipcRenderer.invoke('createMemoObject', args), // TOOD: Handle in background js file
     // Signing messages
     onRequestSignature: async (func) => {
         ipcRenderer.on("requestSignature", (event, data) => {
@@ -137,6 +137,13 @@ contextBridge.exposeInMainWorld('electron', {
     },
     sendSignatureResponse: async (args) => await ipcRenderer.send('signatureResponse', args),
     sendSignatureError: async (args) => await ipcRenderer.send('signatureError', args),
+    //
+    onGetSafeAccount: async (func) => {
+        ipcRenderer.on("getSafeAccount", (event, data) => {
+            func(data);
+        })
+    },
+    getSafeAccountResponse: async (args) => await ipcRenderer.send('getSafeAccountResponse', args),
     // Informing 3rd party dapps of selected account details
     onGetAccount: async (func) => {
         ipcRenderer.on("getAccount", (event, data) => {

@@ -14,7 +14,7 @@ Thumbs.db
 /app/modal.js
 /app/background.js
 /app/preload.js
-/app/preloadModal.js
+/app/preloadmodal.js
 /app/receipt.js
 /app/**/*.map
 /app/*.ttf

@@ -371,7 +371,6 @@ export default class EOS extends BlockchainAPI {
         return new Promise((resolve, reject) => {
             let balances = [];
             this.getAccount(accountName).then((account) => {
-                let balances = [];
                 balances.push({
                     asset_type: "Core",
                     asset_name: this._getCoreSymbol(),
@@ -415,11 +414,10 @@ export default class EOS extends BlockchainAPI {
                             });
                         }
                     });
-                    console.log({balances, tableRows});
                 })
             })
             .then(() => {
-                resolve(balances);
+                return resolve(balances);
             })
             .catch((error) => {
                 console.log({error});

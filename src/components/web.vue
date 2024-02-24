@@ -2,17 +2,11 @@
     import { ref, computed, watchEffect } from 'vue';
     import { useI18n } from 'vue-i18n';
 
-    import {
-        linkRequest,
-        relinkRequest,
-    } from '../lib/apiUtils.js';
-
     import AccountSelect from "./account-select";
     
     import store from '../store/index.js';
     import router from '../router/index.js';
     import BeetDB from '../lib/BeetDB.js';
-    import { witness_update_operation_fee_parameters } from 'bitsharesjs/dist/serializer/src/operations';
 
     const { t } = useI18n({ useScope: 'global' });
     
@@ -158,7 +152,7 @@
                 window.electron.resetTimer();
 
                 let linkReq = {appName: request.appName, origin: request.origin, chain: request.chain};
-
+                console.log({request, linkReq});
                 let accounts =  store.getters['AccountStore/getSafeAccountList'];
                 if (!accounts) {
                     window.electron.linkError({id: request.id, result: {isError: true, method: "getSafeAccountList", error: "No accounts"}})
@@ -177,6 +171,12 @@
                     window.electron.linkError({id: request.id, result: {isError: true, method: "existingLinks", error: error}});
                     return;
                 }
+
+                console.log({
+                    request: request,
+                    accounts: accounts,
+                    existingLinks: existingLinks
+                });
 
                 window.electron.createPopup(
                     {

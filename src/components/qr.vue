@@ -228,7 +228,7 @@
 
             <br>
             <ui-button
-                v-if="chosenScope && selectedRows"
+                v-if="chosenScope && selectedRows && !qrChoice"
                 style="margin-right:5px"
                 icon="arrow_back_ios"
                 @click="goBack"

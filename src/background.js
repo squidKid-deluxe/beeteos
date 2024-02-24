@@ -36,7 +36,7 @@ import getBlockchainAPI from "./lib/blockchains/blockchainFactory.js";
 import BTSWalletHandler from "./lib/blockchains/bitshares/BTSWalletHandler.js";
 import BeetServer from './lib/BeetServer.js';
 
-import { injectedCall, voteFor, transfer } from './lib/apiUtils.js';
+import { inject } from './lib/inject.js';
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -48,6 +48,7 @@ let receiptWindows = {};
 var isDevMode = process.execPath.match(/[\\/]electron/);
 const logger = new Logger(isDevMode ? 3 : 0);
 let tray = null;
+let regexBTS = /1.2.\d+/g
 
 /*
  * On modal popup this runs to create child browser window
@@ -146,7 +147,7 @@ const createModal = async (arg, modalEvent) => {
             contextIsolation: true, // Keep true for security
             enableRemoteModule: false, // Keep false for security
             sandbox: true, // Keep true for security
-            preload: path.join(__dirname, "preload.modal.js"),
+            preload: path.join(__dirname, "preloadmodal.js"),
         },
         icon: __dirname + '/img/beet-taskbar.png'
     });
@@ -229,7 +230,7 @@ const createReceipt = async (arg, modalEvent) => {
             contextIsolation: true, // Keep true for security
             enableRemoteModule: false, // Keep false for security
             sandbox: true, // Keep true for security
-            preload: path.join(__dirname, "preload.modal.js"),
+            preload: path.join(__dirname, "preloadmodal.js"),
         },
         icon: __dirname + '/img/beet-taskbar.png'
     });
@@ -731,7 +732,7 @@ const createWindow = async () => {
       if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
         let status;
         try {
-          status = await injectedCall(apiobj, blockchain);
+            status = await inject(blockchain, apiobj)
         } catch (error) {
             console.log({error: error || "No status"});
         }
@@ -761,9 +762,9 @@ const createWindow = async () => {
         if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
             let status;
             try {
-                status = await injectedCall(apiobj, blockchain);
+                status = await inject(blockchain, apiobj)
             } catch (error) {
-                console.log(error || "No status")
+                console.log({error: error || "No status"});
             }
     
             if (status && status.result && !status.result.isError && !status.result.canceled) {
@@ -794,10 +795,9 @@ const createWindow = async () => {
             if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
                 let status;
                 try {
-                    status = await injectedCall(apiobj, blockchain);
+                    status = await inject(blockchain, apiobj)
                 } catch (error) {
-                    console.log(error || "No status")
-                    return;
+                    console.log({error: error || "No status"});
                 }
         
                 if (status && status.result && !status.result.isError && !status.result.canceled) {
@@ -859,21 +859,17 @@ const createWindow = async () => {
                   chain: chain
               }
           }
-    
+
           let status;
           try {
-              status = await injectedCall(apiobj, blockchain);
+              status = await inject(blockchain, apiobj);
           } catch (error) {
               console.log(error);
-              return;
           }
-    
+
           if (status && status.result && !status.result.isError && !status.result.canceled) {
-            console.log("Issue occurred in approved prompt");
-              return;
+            responses['qrData'] = status;
           }
-    
-          responses['qrData'] = status;
         }
       }
 
@@ -1134,6 +1130,33 @@ const createWindow = async () => {
         console.log("No event || event.sender")
       }
   });
+
+  ipcMain.handle('getSignature', async (event, arg) => {
+    let response;
+    try {
+        response = await getSignature(arg);
+    } catch (error) {
+        console.log(error);
+    }
+
+    return response;
+  });
+
+    ipcMain.handle('verifyCrypto', async (event, arg) => {
+        const { signedMessage, msgHash, pubk } = arg;
+        let isValid;
+        try {
+            isValid = await secp.verify(
+                signedMessage,
+                msgHash,
+                pubk
+            );
+        } catch (error) {
+            console.log(error);
+        }
+        
+        return isValid;
+    });
 
   ipcMain.on('downloadBackup', async (event, arg) => {
     const { walletName, accounts, seed } = arg;

@@ -1,8 +1,8 @@
 import { createApp } from 'vue';
 import mitt from 'mitt';
 
-import BalmUI from 'balm-ui';
-import BalmUIPlus from 'balm-ui/dist/balm-ui-plus';
+import BalmUI from 'balm-gui';
+import BalmUIPlus from 'balm-ui-plus';
 import 'balm-ui-css';
 
 import 'typeface-roboto';

@@ -5,8 +5,6 @@
     import router from '../router/index.js';
     import store from '../store/index.js';
     import langSelect from "./lang-select.vue";
-    import { getKey } from '../lib/SecureRemote.js';
-    import { registerRuntimeCompiler } from 'vue';
 
     let open = ref(false);
     let lastIndex = ref(0);
@@ -120,12 +118,62 @@
         } else if (newValue === oldValue) {
             console.log(`Page ${items.value[newValue].text} is in use...`);
         }
+
+        window.electron.removeAllListeners('getSafeAccount');
+        window.electron.removeAllListeners('signMessage');
+        window.electron.removeAllListeners('signNFT');
+        window.electron.removeAllListeners('injectedCall');
+        window.electron.removeAllListeners('requestSignature');
+        window.electron.removeAllListeners('getAccount');
+        window.electron.removeAllListeners('verifyMessage');
+
         if (
             store.state.WalletStore.isUnlocked &&
-            [2,3,4,5,6].includes(lastIndex)
+            [2,3,4,5,6].includes(newValue)
         ) {
-            window.electron.onSignMessage((request) => {
+            const getKey = async (enc_key) => {
+                return new Promise(async (resolve, reject) => {
+                    window.electron.removeAllListeners('decrypt_success');
+                    window.electron.removeAllListeners('decrypt_fail');
 
+                    window.electron.onceSuccessfullyDecrypted((arg) => {
+                        console.log('decrypt_success')
+                        resolve(arg);
+                    })
+
+                    window.electron.onceFailedToDecrypt((arg) => {
+                        console.log('decrypt_fail')
+                        return reject('decrypt_fail');
+                    });
+
+                    let signature = await window.electron.getSignature('decrypt');
+                    if (!signature) {
+                        console.log('Signature failure')
+                        return reject('signature failure');
+                    }
+
+                    let isValid;
+                    try {
+                        isValid = await window.electron.verifyCrypto({
+                            signedMessage: signature.signedMessage,
+                            msgHash: signature.msgHash,
+                            pubk: signature.pubk
+                        });
+                    } catch (error) {
+                        console.log(error);
+                    }
+
+                    if (isValid) {
+                        console.log("Was valid, proceeding to decrypt");
+                        window.electron.aesDecrypt({data: enc_key});
+                    } else {
+                        console.log('invalid signature')
+                        reject('invalid signature');
+                    }
+                })
+            }
+
+            window.electron.onSignMessage((request) => {
                 let shownBeetApp = store.getters['OriginStore/getBeetApp'](request);
                 if (!shownBeetApp) {
                     window.electron.signMessageError({id: request.id, result: {isError: true, method: "signMessage.getBeetApp", error: 'No beetApp'}});
@@ -246,7 +294,7 @@
                     (["BTS", "BTS_TEST", "TUSC"].includes(chain)) &&
                     ((!visualizedAccount && !account || !account.accountName) || !visualizedParams)
                 ) {
-                    console.log("Missing required fields for injected BTS call");
+                    console.log("Missing required fields for injected call");
                     window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.missingFields", error: 'Missing required fields for injected BTS call'}});
                     return;
                 }
@@ -575,6 +623,10 @@
                 chain: _currentChain,
                 node: data
             });
+        });
+        window.electron.onGetSafeAccount(() => {
+            let account = store.getters['AccountStore/getCurrentSafeAccount']();
+            window.electron.getSafeAccountResponse(account);
         });
     });
 

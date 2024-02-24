@@ -14,8 +14,8 @@ module.exports = function(env) {
         },
         mode: env === "production" ? "production" : "development",
         node: {
-        __dirname: false,
-        __filename: false
+            __dirname: false,
+            __filename: false
         },
             
         externals: [nodeExternals({

@@ -89,115 +89,16 @@ function _getLinkResponse(result) {
     return response;
 }
 
-const rejectRequest = (req, error) => {
+const rejectRequest = (req, reject, error) => {
   console.log(error)
-  return {
+  return reject({
       id: req.id,
       result: {
           isError: true,
           error: error
       }
-  };
+  });
 }
-
-/*
- * Show the link/relink modal
- * @returns {bool}
- */
-const linkHandler = async (req, webContents) => {
-    webContents.send(
-        req.type == 'link' ? 'link' : 'relink',
-        Object.assign(req, {})
-    );
-
-    ipcMain.once('linkResponse', async (event, response) => {
-        if (!response || !response.result) {
-            return rejectRequest(req, 'User rejected request');
-        }
-      
-        let identityhash;
-        if (req.type == 'link') {
-            let hashContents = `${req.browser} ${req.origin} ${req.appName} ${response.result.chain} ${response.result.id}`;
-            try {
-            identityhash = sha256(hashContents).toString();
-            } catch (error) {
-            return rejectRequest(req, error);
-            }
-    
-            let tempSecret;
-            try {
-                tempSecret = await ed.getSharedSecret(req.key, req.payload.pubkey);
-            } catch (error) {
-                return rejectRequest(req, error);
-            }
-            let secret = ed.utils.bytesToHex(tempSecret)
-    
-            webContents.send('addLinkApp', {
-                appName: req.appName,
-                identityhash: identityhash,
-                origin: req.origin,
-                account_id: response.result.id,
-                chain: response.result.chain,
-                injectables: req.injectables ?? [],
-                secret: secret,
-                next_hash: req.payload.next_hash
-            });
-        } else {
-            identityhash = response.result.identityhash
-            webContents.send('getLinkApp', {payload: {identityhash: identityhash}});
-        }
-    
-        ipcMain.once('getLinkAppResponse', (event, response) => {
-            const { app, error } = response;
-            if (error) {
-                return rejectRequest(req, error);
-            }
-            return Object.assign(req, {
-                isLinked: true,
-                identityhash: identityhash,
-                app: app,
-                existing: false
-            });
-        })
-    });
-};
-
-/**
- * Apply appropriate auth fields to the user request payload
- *
- * @param {Object} req
- * @returns {Object}
- */
-const authHandler = function (req, webContents) {
-    if (!req.payload.identityhash) {
-      // Comms authed but app not linked
-      return Object.assign(req.payload, {authenticate: true, link: false});
-    }
-
-    webContents.send('getAuthApp', {payload: {identityhash: req.payload.identityhash}});
-
-    ipcMain.once('getAuthResponse', (event, response) => {
-        const { app, error } = response;
-        if (error) {
-            return rejectRequest(req, error);
-        }
-
-        if (
-            !app ||
-            !app.length ||
-            (!req.payload.origin === app.origin && !req.payload.appName === app.appName)
-        ) {
-          // Reject authentication!
-          return Object.assign(req.payload, {authenticate: false, link: false});
-        }
-
-        return Object.assign(req.payload, {
-            authenticate: true,
-            link: true,
-            app: app
-        });
-    });
-};
 
 export default class BeetServer {
     static httpSocket;
@@ -465,7 +366,16 @@ export default class BeetServer {
             if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
                 let fromField = types.find(type => type.method === request.type).from;
                 if (!fromField || !fromField.length) {
-                    account = store.getters['AccountStore/getCurrentSafeAccount']();
+                    const _account = () => {
+                        return new Promise((resolve, reject) => {
+                            this.webContents.send('getSafeAccount');
+                            ipcMain.once('getSafeAccountResponse', (event, arg) => {
+                                resolve(arg);
+                            });
+                        });
+                    }
+                    
+                    account = await _account();
                 } else {
                     let visualizeContents = request.payload[fromField];
                     try {
@@ -566,7 +476,7 @@ export default class BeetServer {
 
       if (!status.result || status.result.isError || status.result.canceled) {
         console.log("Issue occurred in approved prompt");
-        socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful"}});
+        socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful: prompt"}});
         return;
       }
 
@@ -602,6 +512,69 @@ export default class BeetServer {
      * @parameter {request} data
      */
     static async respondLink(linkType, socket, data) {
+        /*
+        * Show the link/relink modal
+        * @returns {bool}
+        */
+        const linkHandler = async (req) => {
+            return new Promise((resolve, reject) => {
+                this.webContents.send(
+                    req.type == 'link' ? 'link' : 'relink',
+                    Object.assign(req, {})
+                );
+    
+                ipcMain.once('linkResponse', async (event, response) => {
+                    if (!response || !response.result) {
+                        return rejectRequest(req, reject, 'User rejected request');
+                    }
+                
+                    let identityhash;
+                    if (req.type == 'link') {
+                        let hashContents = `${req.browser} ${req.origin} ${req.appName} ${response.result.chain} ${response.result.id}`;
+                        try {
+                            identityhash = sha256(hashContents).toString();
+                        } catch (error) {
+                            return rejectRequest(req, reject, error);
+                        }
+                
+                        let tempSecret;
+                        try {
+                            tempSecret = await ed.getSharedSecret(req.key, req.payload.pubkey);
+                        } catch (error) {
+                            return rejectRequest(req, reject, error);
+                        }
+                        let secret = ed.utils.bytesToHex(tempSecret)
+                
+                        this.webContents.send('addLinkApp', {
+                            appName: req.appName,
+                            identityhash: identityhash,
+                            origin: req.origin,
+                            account_id: response.result.id,
+                            chain: response.result.chain,
+                            injectables: req.injectables ?? [],
+                            secret: secret,
+                            next_hash: req.payload.next_hash
+                        });
+                    } else {
+                        identityhash = response.result.identityhash
+                        this.webContents.send('getLinkApp', {payload: {identityhash: identityhash}});
+                    }
+                
+                    ipcMain.once('getLinkAppResponse', (event, response) => {
+                        const { app, error } = response;
+                        if (error) {
+                            return rejectRequest(req, reject, error);
+                        }
+                        return resolve(Object.assign(req, {
+                            isLinked: true,
+                            identityhash: identityhash,
+                            app: app,
+                            existing: false
+                        }));
+                    })
+                });
+            });
+        };
 
       if (linkType == "relink") {
         socket.isLinked = false;
@@ -622,13 +595,14 @@ export default class BeetServer {
         }, this.webContents);
       } catch (error) {
         console.log(error)
-        socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful"}});
+        socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful: linkHandler1"}});
         return;
       }
 
       if (!status || status.result && status.result.isError) {
-        console.log("No linkhandler status");
-        socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful"}});
+        //console.log("No linkhandler status");
+        console.log({status})
+        socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful: linkHandler2"}});
         return;
       }
 
@@ -679,6 +653,46 @@ export default class BeetServer {
                * Wallet handshake with client.
                */
               socket.on("authenticate", async (data) => {
+
+                /**
+                 * Apply appropriate auth fields to the user request payload
+                 *
+                 * @param {Object} req
+                 * @returns {Object}
+                 */
+                const authHandler = function (req, webContents) {
+                    return new Promise((resolve, reject) => {
+                        if (!req.payload.identityhash) {
+                            // Comms authed but app not linked
+                            return resolve(Object.assign(req.payload, {authenticate: true, link: false}));
+                        }
+    
+                        this.webContents.send('getAuthApp', {payload: {identityhash: req.payload.identityhash}});
+    
+                        ipcMain.once('getAuthResponse', (event, response) => {
+                            const { app, error } = response;
+                            if (error) {
+                                return rejectRequest(req, reject, error);
+                            }
+    
+                            if (
+                                !app ||
+                                !app.length ||
+                                (!req.payload.origin === app.origin && !req.payload.appName === app.appName)
+                            ) {
+                                // Reject authentication!
+                                return resolve(Object.assign(req.payload, {authenticate: false, link: false}));
+                            }
+    
+                            return resolve(Object.assign(req.payload, {
+                                authenticate: true,
+                                link: true,
+                                app: app
+                            }));
+                        });
+                    });
+                };
+
                 let status;
                 try {
                   status = await authHandler({

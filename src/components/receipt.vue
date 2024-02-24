@@ -8,13 +8,14 @@
     const { t } = useI18n({ useScope: 'global' });
 
     function handleProp(target) {
-        if (!global || !global.location || !global.location.search) {
+        let search = window.electron.getLocationSearch();
+        if (!search) {
             return '';
         }
 
         let qs;
         try {
-            qs = queryString.parse(global.location.search);
+            qs = queryString.parse(search);
         } catch (error) {
             console.log(error);
             return;
