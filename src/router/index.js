@@ -15,6 +15,7 @@ import Qr from "../components/qr.vue";
 import Popups from "../components/popups.vue";
 import Receipt from "../components/receipt.vue";
 import Local from "../components/local.vue";
+import Settings from "../components/settings.vue";
 
 const router = createRouter({
   routes: [{
@@ -100,6 +101,13 @@ const router = createRouter({
         default: Dashboard,
         header: HeaderSmall
       }
+    },
+    {
+        path: '/settings',
+        components: {
+            default: Settings,
+            header: HeaderSmall
+        }
     },
     {
       path: '/modal',

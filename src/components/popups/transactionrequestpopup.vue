@@ -1,5 +1,5 @@
 <script setup>
-    import { computed, ref, watchEffect } from "vue";
+    import { computed, ref, watchEffect, onMounted } from "vue";
     import { useI18n } from 'vue-i18n';
     import {formatChain} from "../../lib/formatter.js";
 
@@ -36,11 +36,13 @@
         }
     });
 
-    let visualizedParams = computed(() => {
-        if (!props.visualizedParams) {
-            return {};
+    let parsedParameters = ref([]);
+    onMounted(() => {
+        if (props.visualizedParams) {
+            const _parsedparsedParameters = JSON.parse(props.visualizedParams);
+            //console.log({parsed: _parsedparsedParameters});
+            parsedParameters.value = _parsedparsedParameters;
         }
-        return JSON.parse(props.visualizedParams);
     });
 
     let open = ref(false);
@@ -107,7 +109,7 @@
 
     let jsonData = ref("");
     watchEffect(() => {
-        jsonData.value = JSON.stringify(visualizedParams.value[page.value - 1].op, undefined, 4)
+        jsonData.value = JSON.stringify(parsedParameters.value[page.value - 1].op, undefined, 4)
     });
 </script>
 <template>
@@ -116,13 +118,13 @@
     </div>
     <div>
         {{ 
-            visualizedParams && visualizedParams.length > 1
-                ? t('operations.rawsig.summary', {numOps: visualizedParams.length})
+            parsedParameters && parsedParameters.length > 1
+                ? t('operations.rawsig.summary', {numOps: parsedParameters.length})
                 : t('operations.rawsig.summary_single')
         }}
     </div>
     <div
-        v-if="!!visualizedParams"
+        v-if="!!parsedParameters"
         class="text-left custom-content"
         style="marginTop: 10px;"
     >
@@ -130,26 +132,26 @@
             <ui-card-content>
                 <ui-card-text>
                     <div
-                        v-if="visualizedParams.length > 1"
+                        v-if="parsedParameters.length > 1"
                         :class="$tt('subtitle1')"
                     >
-                        {{ t(visualizedParams[page - 1].title) }} ({{ page }}/{{ visualizedParams.length }})
+                        {{ t(parsedParameters[page - 1].title) }} ({{ page }}/{{ parsedParameters.length }})
                     </div>
                     <div
                         v-else
                         :class="$tt('subtitle1')"
                     >
-                        {{ t(visualizedParams[page - 1].title) }}
+                        {{ t(parsedParameters[page - 1].title) }}
                     </div>
                     <div>
-                        {{ t(`operations.injected.${props.request.payload.chain}.${visualizedParams[page - 1].method}.headers.request`) }}
+                        {{ t(`operations.injected.${props.request.payload.chain}.${parsedParameters[page - 1].method}.headers.request`) }}
                     </div>
                     <div
-                        v-for="row in visualizedParams[page - 1].rows"
+                        v-for="row in parsedParameters[page - 1].rows"
                         :key="row.key"
                         :class="$tt('subtitle2')"
                     >
-                        {{ t(`operations.injected.${props.request.payload.chain}.${visualizedParams[page - 1].method}.rows.${row.key}`, row.params) }}
+                        {{ t(`operations.injected.${props.request.payload.chain}.${parsedParameters[page - 1].method}.rows.${row.key}`, row.params) }}
                     </div>
                 </ui-card-text>
             </ui-card-content>
@@ -167,7 +169,7 @@
         </ui-card>
         <ui-pagination
             v-model="page"
-            :total="visualizedParams.length"
+            :total="parsedParameters.length"
             mini
             show-total
             :page-size="[1]"
@@ -208,7 +210,7 @@
             }}
         </ui-alert>
         <div
-            v-if="!!visualizedParams"
+            v-if="!!parsedParameters"
             style="padding-bottom: 25px;"
         >
             <ui-button
@@ -257,11 +259,11 @@
         v-model="open"
         fullscreen
     >
-        <ui-dialog-title v-if="visualizedParams.length > 1">
-            {{ t(visualizedParams[page - 1].title) }} ({{ page }}/{{ visualizedParams.length }})
+        <ui-dialog-title v-if="parsedParameters.length > 1">
+            {{ t(parsedParameters[page - 1].title) }} ({{ page }}/{{ parsedParameters.length }})
         </ui-dialog-title>
         <ui-dialog-title v-else>
-            {{ t(visualizedParams[page - 1].title) }}
+            {{ t(parsedParameters[page - 1].title) }}
         </ui-dialog-title>
         <ui-dialog-content>
             <ui-textfield

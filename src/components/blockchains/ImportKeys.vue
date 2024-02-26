@@ -2,6 +2,7 @@
     import {ref, inject, computed, watchEffect} from "vue";
 
     import { useI18n } from 'vue-i18n';
+    import store from '../../store/index.js';
     const { t } = useI18n({ useScope: 'global' });
 
     const props = defineProps({
@@ -72,7 +73,9 @@
             console.log("Account verified");
             privateKey.value = "";
 
-            window.electron.resetTimer();
+            if (store.state.WalletStore.isUnlocked) {
+                window.electron.resetTimer();
+            }
             emit('continue');
             emit('imported', [{
                 account: {

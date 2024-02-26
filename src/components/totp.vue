@@ -212,6 +212,9 @@
                 <p style="marginBottom:0px;">
                     {{ t('common.totp.label') }}
                 </p>
+                <p style="marginBottom:0px;">
+                    {{ t('common.totp.desc') }}
+                </p>
                 <ui-card
                     v-shadow="3"
                     outlined

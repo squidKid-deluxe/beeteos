@@ -24,10 +24,10 @@
 <template>
     <span v-if="qrContent">
         <p>
-            QR detected in upload
+            {{ t('common.qr.scan.detected') }}
         </p>
         <ui-button @click="uploadAnother">
-            Upload another QR
+            {{ t('common.qr.scan.another') }}
         </ui-button>
     </span>
     <span v-else>

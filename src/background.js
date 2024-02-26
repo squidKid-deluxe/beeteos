@@ -1078,7 +1078,7 @@ const createWindow = async () => {
             decryptedData = await aes.decrypt(data, seed);
         } catch (error) {
             console.log(error);
-            return;
+            throw error;
         }
 
         let decryptedString;
@@ -1086,7 +1086,7 @@ const createWindow = async () => {
             decryptedString = JSON.parse(decryptedData.toString(ENC));
         } catch (error) {
             console.log(error);
-            return;
+            throw error;
         }
     
         return decryptedString;

@@ -15,7 +15,7 @@
     let accounts = computed(() => {
         let accountList;
         try {
-            accountList = store.getters['AccountStore/getSafeAccountList'];
+            accountList = store.getters['AccountStore/getSafeAccountList']();
         } catch (error) {
             console.log(error);
             return [];

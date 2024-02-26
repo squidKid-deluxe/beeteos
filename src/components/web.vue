@@ -42,7 +42,7 @@
                 if (retrievedSSL) {
                     const { key, cert } = retrievedSSL;
                     db.toArray().then((res) => {
-                        if (res.length == 0) {
+                        if (!res || res.length == 0) {
                             db.add({key: key, cert: cert, timestamp: Date.now()});
                         } else {
                             db.update(res[0].id, {key: key, cert: cert, timestamp: Date.now()});
@@ -120,7 +120,7 @@
             };
         }
 
-        if (compatibleChain.value && proceed.value === true) {
+        if (compatibleChain.value && proceed.value === true && serverOnline.value === false) {
             launchServer();
         }
     });
@@ -152,17 +152,11 @@
                 window.electron.resetTimer();
 
                 let linkReq = {appName: request.appName, origin: request.origin, chain: request.chain};
-                console.log({request, linkReq});
-                let accounts =  store.getters['AccountStore/getSafeAccountList'];
+                let accounts =  store.getters['AccountStore/getSafeAccountList']();
                 if (!accounts) {
                     window.electron.linkError({id: request.id, result: {isError: true, method: "getSafeAccountList", error: "No accounts"}})
                     return;
                 }
-
-                store.dispatch(
-                    "WalletStore/notifyUser",
-                    {notify: "request", message: window.t("common.link_alert", linkReq)}
-                );
 
                 let existingLinks = [];
                 try {
@@ -172,11 +166,10 @@
                     return;
                 }
 
-                console.log({
-                    request: request,
-                    accounts: accounts,
-                    existingLinks: existingLinks
-                });
+                store.dispatch(
+                    "WalletStore/notifyUser",
+                    {notify: "request", message: window.t("common.link_alert", linkReq)}
+                );
 
                 window.electron.createPopup(
                     {
@@ -188,6 +181,7 @@
 
                 window.electron.popupApproved(request.id, async (result) => {
                     window.electron.resetTimer();
+                    console.log({result, location: "popupApproved", id: request.id})
                     store.dispatch("AccountStore/selectAccount", result.result);
                     window.electron.linkResponse(result);
                 });
@@ -198,7 +192,7 @@
                 });
             });
 
-            window.electron.relink(async (data) => {
+            window.electron.relink(async (request) => {
                 // Relinking with an existing dapp account
                 window.electron.resetTimer();
 

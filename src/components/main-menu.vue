@@ -67,8 +67,14 @@
                 url: "/backup"
             },
             {
-                text: t("common.actionBar.Logout"),
+                text: t("common.actionBar.Settings"),
                 index: 9,
+                icon: "settings",
+                url: "/settings"
+            },
+            {
+                text: t("common.actionBar.Logout"),
+                index: 10,
                 icon: "logout",
                 url: "/"
             }
@@ -87,8 +93,8 @@
         }
         lastIndex.value = newIndex;
 
-        if (data.index === 9) {
-            console.log('logout')
+        if (data.index === 10) {
+            console.log('User logged out.');
             store.dispatch("WalletStore/logout");
             router.replace("/");
         }
@@ -168,7 +174,7 @@
                         window.electron.aesDecrypt({data: enc_key});
                     } else {
                         console.log('invalid signature')
-                        reject('invalid signature');
+                        return reject('invalid signature');
                     }
                 })
             }
@@ -450,7 +456,7 @@
 
                     if (!_processedTransaction) {
                         console.log("Failed to process transaction");
-                        window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.blockchain.sign", error: error}});
+                        window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.blockchain.sign", error: 'Transaction failure'}});
                         return;
                     }
 
@@ -616,21 +622,21 @@
     });
 
     onMounted(() => {
-        window.electron.timer(() => startLogoutTimer(lastIndex.value));
-        window.electron.setNode((data) => {
-            const _currentChain = store.getters['SettingsStore/getChain'];
-            store.dispatch("SettingsStore/setNode", {
-                chain: _currentChain,
-                node: data
+        if (store.state.WalletStore.isUnlocked) {
+            window.electron.timer(() => startLogoutTimer(lastIndex.value));
+            window.electron.setNode((data) => {
+                const _currentChain = store.getters['SettingsStore/getChain'];
+                store.dispatch("SettingsStore/setNode", {
+                    chain: _currentChain,
+                    node: data
+                });
             });
-        });
-        window.electron.onGetSafeAccount(() => {
-            let account = store.getters['AccountStore/getCurrentSafeAccount']();
-            window.electron.getSafeAccountResponse(account);
-        });
+            window.electron.onGetSafeAccount(() => {
+                let account = store.getters['AccountStore/getCurrentSafeAccount']();
+                window.electron.getSafeAccountResponse(account);
+            });
+        }
     });
-
-    
 </script>
 
 <template>
@@ -640,6 +646,7 @@
             position="BOTTOM_START"
         >
             <ui-fab
+                v-if="store.state.WalletStore.isUnlocked"
                 style="margin-bottom: 10px;"
                 icon="menu"
                 mini

@@ -141,6 +141,9 @@
                 <p style="marginBottom:0px;">
                     {{ t('common.raw.label') }}
                 </p>
+                <p style="marginBottom:0px;">
+                    {{ t('common.raw.desc') }}
+                </p>
                 <ui-card
                     v-shadow="3"
                     outlined

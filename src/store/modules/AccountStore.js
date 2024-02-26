@@ -2,6 +2,7 @@ const LOAD_ACCOUNTS = 'LOAD_ACCOUNTS';
 const CHOOSE_ACCOUNT = 'CHOOSE_ACCOUNT';
 const ADD_ACCOUNT = 'ADD_ACCOUNT';
 const CLEAR_ACCOUNTS = 'CLEAR_ACCOUNTS';
+const DELETE_ACCOUNT = 'DELETE_ACCOUNT';
 
 const mutations = {
     [LOAD_ACCOUNTS](state, accounts) {
@@ -18,6 +19,17 @@ const mutations = {
     [CLEAR_ACCOUNTS](state) {
         state.selectedIndex = null;
         state.accountlist = [];
+    },
+    [DELETE_ACCOUNT](state, accountName) {
+        const index = state.accountlist.findIndex(account => account.accountName === accountName);
+        if (index !== -1) {
+            state.accountlist.splice(index, 1);
+            if (state.selectedIndex === index) {
+                state.selectedIndex = null;
+            } else if (state.selectedIndex > index) {
+                state.selectedIndex--;
+            }
+        }
     }
 };
 
@@ -30,16 +42,31 @@ const actions = {
         return new Promise(async (resolve, reject) => {
             let existingAccount = state.accountlist.find(
                 x => x.chain == payload.account.chain &&
-                (x.accountID == payload.account.accountName || x.accountName === payload.account.accountName)
+                (
+                    x.accountID && x.accountID === payload.account.accountName ||
+                    x.accountName && x.accountName === payload.account.accountName
+                )
             );
 
             if (!existingAccount) {
                 let _hash = await window.electron.sha512({data: payload.password});
-                for (let keytype in payload.account.keys) {
-                    payload.account.keys[keytype] = await window.electron.aesEncrypt({
-                        data: payload.account.keys[keytype],
-                        seed: _hash
-                    });
+                let keys = Object.keys(payload.account.keys);
+                for (let i = 0; i < keys.length; i++) {
+                    let keytype = keys[i];
+                    let _aesResult;
+                    try {
+                        _aesResult = await window.electron.aesEncrypt({
+                            data: payload.account.keys[keytype],
+                            seed: _hash
+                        });
+                    } catch (error) {
+                        console.log({error});
+                        throw 'AES encryption failure';
+                    }
+
+                    if (_aesResult) {
+                        payload.account.keys[keytype] = _aesResult;
+                    }
                 }
 
                 dispatch('WalletStore/saveAccountToWallet', payload, {root: true})
@@ -54,6 +81,25 @@ const actions = {
                 return reject('Account already exists');
             }
         });
+    },
+    deleteAccount({ commit, dispatch, state }, payload) {
+        return new Promise((resolve, reject) => {
+            let existingAccount = state.accountlist.find(
+                x => x.chain == payload.account.chain &&
+                (x.accountID == payload.account.accountName || x.accountName === payload.account.accountName)
+            );
+            
+            if (existingAccount) {
+                dispatch('deleteAccountFromWallet', payload).then(() => {
+                    commit(DELETE_ACCOUNT, payload.accountName);
+                    resolve('Account deleted');
+                }).catch((error) => {
+                    reject(error);
+                });
+            } else {
+                reject('Account not found');
+            }
+        })
     },
     loadAccounts({
         commit
@@ -105,7 +151,8 @@ const actions = {
 
 const getters = {
     getCurrentSafeAccount: state => () => {
-        let currentAccount = state.accountlist[state.selectedIndex];
+        let selected = state.selectedIndex;
+        let currentAccount = state.accountlist[selected ?? 0];
         return {
             accountID: currentAccount.accountID,
             accountName: currentAccount.accountName,
@@ -115,13 +162,17 @@ const getters = {
     getCurrentIndex: state => state.selectedIndex ?? -1,
     getChain: state => state.accountlist[state.selectedIndex].chain,
     getAccountList: state => state.accountlist,
-    getSafeAccountList: state => state.accountlist.map(account => {
-      return {
-        accountID: account.accountID,
-        accountName: account.accountName,
-        chain: account.chain
-      };
-    }),
+    getAccountQuantity: state => state.accountlist.length,
+    getSafeAccountList: state => () => {
+        const _mappedAccounts = state.accountlist.map(account => {
+            return {
+                accountID: account.accountID,
+                accountName: account.accountName,
+                chain: account.chain
+            };
+        });
+        return _mappedAccounts;
+    },
     getSafeAccount: state => (request) => {
         let safeAccounts = state.accountlist.map(account => {
           return {

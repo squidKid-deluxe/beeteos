@@ -15,7 +15,6 @@
     })
 
     async function restore() {
-        window.electron.resetTimer();
         fileError.value = false;
         passError.value = false;
 

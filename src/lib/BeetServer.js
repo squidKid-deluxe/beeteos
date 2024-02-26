@@ -600,8 +600,8 @@ export default class BeetServer {
       }
 
       if (!status || status.result && status.result.isError) {
-        //console.log("No linkhandler status");
-        console.log({status})
+        console.log("No linkhandler status");
+        //console.log({status})
         socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful: linkHandler2"}});
         return;
       }
@@ -611,6 +611,7 @@ export default class BeetServer {
           await _establishLink(socket, status);
       }
 
+      console.log("Link established");
       socket.emit("link", _getLinkResponse(status));
       return;
     }

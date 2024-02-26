@@ -20,11 +20,11 @@
             detectedQR = await promise
         } catch (error) {
             if (error.name === 'DropImageFetchError') {
-                error.value = "Cross-origin images like this are unsupported.";
+                error.value = t('common.qr.drag.error1')
             } else if (error.name === 'DropImageDecodeError') {
-                error.value = "Couldn't decode QR in image.";
+                error.value = t('common.qr.drag.error2')
             } else {
-                error.value = 'QR detection error';
+                error.value = t('common.qr.drag.error3')
             }
         }
       
@@ -59,10 +59,10 @@
     <div>
         <span v-if="result && !error">
             <p>
-                Successfully scanned image for QR
+                {{ t('common.qr.drag.successPrompt') }}
             </p>           
             <ui-button @click="tryAgain">
-                Scan another image
+                {{ t('common.qr.drag.successBtn') }}
             </ui-button>
         </span>
         <span v-else-if="!result && error">
@@ -73,7 +73,7 @@
                 {{ error }}
             </ui-alert>           
             <ui-button @click="tryAgain">
-                Scan another image
+                {{ t('common.qr.drag.successBtn') }}
             </ui-button>
         </span>
         <span v-else>
@@ -96,7 +96,7 @@
                         style="height: 100px; width: 200px; padding-top: 40px;"
                         :class="{ 'dragover': dragover }"
                     >
-                        DROP YOUR IMAGE HERE
+                        {{ t('common.qr.drag.prompt') }}
                     </div>
                 </qrcode-drop-zone>
             </ui-card>

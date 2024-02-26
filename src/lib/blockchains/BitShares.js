@@ -1546,7 +1546,7 @@ export default class BitShares extends BlockchainAPI {
      */
     getExplorer(object) {
         if (object.accountName) {
-            return "https://blocksights.info/#/accounts/" + object.accountID;
+            return "https://blocksights.info/#/accounts/" + object.accountName;
         } else if (object.opid) {
             // 1.11.833380474
             return "https://blocksights.info/#/operations/" + object.opid;

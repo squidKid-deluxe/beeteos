@@ -10,7 +10,12 @@
     "error": "Es konnte keine Verbindung zur Blockchain hergestellt werden"
   },
   "settings": {
-    "exit": "Einstellungsmenü verlassen"
+    "exit": "Zurück zum Dashboard",
+    "deleted": "Das Konto wurde erfolgreich aus Ihrem Wallet gelöscht.",
+    "label": "Konto aus Wallet entfernen?",
+    "prompt": "Bestätigen Sie unten Ihr Passwort, um dieses Konto unwiderruflich aus Ihrem Wallet zu entfernen.",
+    "button": "Konto löschen",
+    "insufficient": "Das letzte Konto in einer Wallet kann leider nicht gelöscht werden."
   },
   "start": {
     "wallet_name": "Wallet-Name",
@@ -35,7 +40,8 @@
     "duplicate": "Es existiert bereits eine Wallet mit demselben Namen. Die Wiederherstellung der Wallet wird abgebrochen"
   },
   "raw": {
-    "label": "Rohe Deep-Link-Seite",
+    "label": "Rohe Deeplink-Seite",
+    "desc": "Diese Seite verarbeitet eingehende Deeplink-Eingabeaufforderungen ohne zeitkritische Verschlüsselung.",
     "promptFailure": "Ein Raw-Deeplink wurde abgelehnt. ",
     "exit": "Deeplink-Seite verlassen"
   },
@@ -53,7 +59,8 @@
     "prompt": "Bereit zur Bearbeitung externer Webanfragen. Apps von Drittanbietern können jetzt Eingabeaufforderungen starten, um Vorgänge zu verknüpfen und dann zu übertragen."
   },
   "totp": {
-    "label": "Zeitbasierte Einmalpasswörter",
+    "label": "Zeitlich begrenzte und verschlüsselte Deeplink-Eingabeaufforderungsseite",
+    "desc": "Diese Seite verarbeitet eingehende Deeplink-Eingabeaufforderungen, die zeitkritisch verschlüsselt wurden.",
     "promptFailure": "Ein TOTP-Deeplink wurde abgelehnt. ",
     "prompt": "Wählen Sie unten Ihre gewünschten Vorgänge aus",
     "chosen": "Operationen ausgewählt",
@@ -87,14 +94,27 @@
       "upload": "Laden Sie ein QR-Bild hoch"
     },
     "scan": {
-      "title": "Scannen Sie einen QR-Code mit Ihrer Webcam"
-    },
-    "drag": {
-      "title": "Ziehen Sie ein Bild mit einem QR-Code per Drag & Drop"
-    },
-    "upload": {
-      "title": "Laden Sie eine Bilddatei hoch, um nach QR-Codes zu scannen"
-    },
+        "title": "Scannen Sie einen QR-Code mit Ihrer Webcam",
+        "switch": "Kamera wechseln",
+        "initFail": "Die Initialisierung Ihrer Webcam ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "again": "Versuchen Sie es erneut",
+        "scanned": "QR-Code gescannt!",
+        "another": "Scannen Sie einen anderen"
+      },
+      "drag": {
+        "title": "Ziehen Sie ein Bild mit einem QR-Code per Drag & Drop",
+        "error1": "Ursprungsübergreifende Bilder wie dieses werden nicht unterstützt.",
+        "error2": "QR im Bild konnte nicht dekodiert werden.",
+        "error3": "QR-Erkennungsfehler",
+        "successPrompt": "Das Bild wurde erfolgreich für QR gescannt",
+        "successBtn": "Scannen Sie ein weiteres Bild",
+        "prompt": "FÜGEN SIE IHR BILD HIER EIN"
+      },
+      "upload": {
+        "title": "Laden Sie eine Bilddatei hoch, um nach QR-Codes zu scannen",
+        "detected": "QR beim Hochladen erkannt",
+        "another": "Laden Sie einen weiteren QR hoch"
+      },
     "exit": "QR-Seite verlassen",
     "back": "Zurück",
     "progress": "QR-Code wird verarbeitet",
@@ -104,7 +124,8 @@
   },
   "local": {
     "label": "Lokaler Datei-Op-Scanner",
-    "upload": "Laden Sie die JSON-Datei des vorgeschlagenen Vorgangs hoch",
+    "desc": "Diese Seite ermöglicht die Auswertung und Übertragung von Transaktionen aus lokal gespeicherten JSON-Dateien.",
+    "upload": "Um fortzufahren, laden Sie bitte eine JSON-Datei hoch, die Ihre vorgeschlagene Transaktion enthält.",
     "exit": "Lokale Dateiseite verlassen",
     "failed": "JSON konnte nicht verarbeitet werden",
     "back": "Zurück",

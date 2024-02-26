@@ -163,24 +163,24 @@
                 v-if="videoDevices && videoDevices.length > 1"
                 @click="switchCamera"
             >
-                Switch camera
+                {{ t('common.qr.scan.switch') }}
             </ui-button>
         </span>
         <span v-else>
             <span v-if="cameraError">
                 <p>
-                    Your webcam failed to initialize, please try again.
+                    {{ t('common.qr.scan.initFail') }}
                 </p>
                 <ui-button @click="switchCamera">
-                    Try again
+                    {{ t('common.qr.scan.again') }}
                 </ui-button>
             </span>
             <span v-else>
                 <p>
-                    QR code scanned!
+                    {{ t('common.qr.scan.scanned') }}
                 </p>
                 <ui-button @click="switchCamera">
-                    Scan another
+                    {{ t('common.qr.scan.another') }}
                 </ui-button>
             </span>
 

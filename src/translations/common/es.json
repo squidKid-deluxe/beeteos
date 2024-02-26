@@ -10,7 +10,12 @@
     "error": "No se pudo conectar a blockchain"
   },
   "settings": {
-    "exit": "Salir del menú de configuración"
+    "exit": "Volver al panel",
+    "deleted": "Cuenta eliminada exitosamente de su billetera.",
+    "label": "¿Quitar cuenta de la billetera?",
+    "prompt": "Confirme su contraseña a continuación para eliminar irreversiblemente esta cuenta de su billetera.",
+    "button": "Borrar cuenta",
+    "insufficient": "No se puede eliminar la última cuenta en una billetera, lo siento."
   },
   "start": {
     "wallet_name": "Nombre de la billetera",
@@ -36,6 +41,7 @@
   },
   "raw": {
     "label": "Página de enlace profundo sin formato",
+    "desc": "Esta página procesa solicitudes de enlaces profundos entrantes sin cifrado urgente.",
     "promptFailure": "Se rechazó un enlace profundo de Raw. ",
     "exit": "Salir de la página de enlace profundo"
   },
@@ -53,9 +59,10 @@
     "prompt": "Listo para procesar solicitudes web externas. Las aplicaciones de terceros ahora pueden iniciar mensajes para vincular y luego transmitir operaciones."
   },
   "totp": {
-    "label": "Contraseñas de un solo uso basadas en el tiempo",
+    "label": "Página de solicitud de enlace profundo cifrada y por tiempo limitado",
+    "desc": "Esta página procesa solicitudes de enlaces profundos entrantes que han sido cifradas de manera urgente.",
     "promptFailure": "Se rechazó un enlace profundo TOTP. ",
-    "prompt": "Seleccione sus operaciones requeridas a continuación",
+    "prompt": "Seleccione las operaciones requeridas a continuación",
     "chosen": "operaciones elegidas",
     "request": "Solicitar contraseña",
     "failed": "La solicitud TOTP entrante falló. ",
@@ -64,7 +71,7 @@
     "exit": "Salir de la página TOTP",
     "save": "Ahorrar",
     "unsupported": "TOTP aún no es compatible con esta cadena, lo sentimos.",
-    "warning": "No comparta el código anterior con nadie.",
+    "warning": "No compartas el código anterior con nadie.",
     "inProgress": "Se está procesando un enlace profundo"
   },
   "chosenScope": {
@@ -87,14 +94,27 @@
       "upload": "Sube una imagen QR"
     },
     "scan": {
-      "title": "Escanea un código QR con tu webcam"
-    },
-    "drag": {
-      "title": "Arrastra y suelta una imagen que contiene un código QR"
-    },
-    "upload": {
-      "title": "Cargue un archivo de imagen para buscar códigos QR"
-    },
+        "title": "Escanea un código QR con tu cámara web",
+        "switch": "Cambiar cámara",
+        "initFail": "Su cámara web no pudo inicializarse, inténtelo nuevamente.",
+        "again": "Intentar otra vez",
+        "scanned": "¡Código QR escaneado!",
+        "another": "escanear otro"
+      },
+      "drag": {
+        "title": "Arrastra y suelta una imagen que contiene un código QR",
+        "error1": "Imágenes de orígenes cruzados como esta no son compatibles.",
+        "error2": "No se pudo decodificar el QR en la imagen.",
+        "error3": "Error de detección de QR",
+        "successPrompt": "Imagen escaneada exitosamente para QR",
+        "successBtn": "Escanear otra imagen",
+        "prompt": "DEJA TU IMAGEN AQUÍ"
+      },
+      "upload": {
+        "title": "Cargue un archivo de imagen para escanear códigos QR",
+        "detected": "QR detectado en la carga",
+        "another": "Sube otro QR"
+      },
     "exit": "Salir de la página QR",
     "back": "Atrás",
     "progress": "Procesando código QR",
@@ -104,7 +124,8 @@
   },
   "local": {
     "label": "Escáner de operaciones de archivos locales",
-    "upload": "Cargue el archivo JSON de la operación propuesta",
+    "desc": "Esta página permite evaluar y transmitir transacciones desde archivos JSON almacenados localmente.",
+    "upload": "Para continuar, cargue un archivo JSON que contenga la transacción propuesta.",
     "exit": "Salir de la página del archivo local",
     "failed": "Error al procesar JSON",
     "back": "Atrás",

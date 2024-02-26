@@ -22,7 +22,9 @@
 
     watch(step, async (newVal, oldVal) => {
         if (newVal !== oldVal) {
-            window.electron.resetTimer();
+            if (store.state.WalletStore.isUnlocked) {
+                window.electron.resetTimer();
+            }
             stepMessage.value = t('common.step_counter', {step_no: newVal});
         }
     }, {immediate: true});
@@ -96,7 +98,9 @@
      */
     watch(selectedChain, async (newVal, oldVal) => {
         if (newVal !== oldVal) {
-            window.electron.resetTimer();
+            if (store.state.WalletStore.isUnlocked) {
+                window.electron.resetTimer();
+            }
             selectedImport.value = 0;
         }
     }, {immediate: true});
@@ -196,6 +200,7 @@
         for (let i in accounts_to_import.value) {
             let account = accounts_to_import.value[i];
             if (!userHasWallet.value || createNewWallet.value) {
+                // User is creating a new wallet
                 try {
                     await store.dispatch("WalletStore/saveWallet", {
                         walletname: walletname.value,
@@ -207,6 +212,7 @@
                     _handleError(error);
                 }
             } else {
+                // User is adding an account to an existing wallet
                 account.password = password.value;
                 account.walletname = walletname.value;
 
@@ -219,6 +225,9 @@
             }
         }
 
+        if (store.state.WalletStore.isUnlocked) {
+            store.dispatch("WalletStore/logout");
+        }
         router.replace("/");
     }
 </script>

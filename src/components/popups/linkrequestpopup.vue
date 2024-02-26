@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed } from "vue";
+    import { ref, computed, onMounted } from "vue";
     import {formatChain, formatAccount} from "../../lib/formatter.js";
 
     import { useI18n } from 'vue-i18n';
@@ -94,7 +94,7 @@
             {{ requestText }}
         </div>
         <br>
-        <div v-if="existingLinks.length > 0">
+        <div v-if="existingLinks && existingLinks.length > 0">
             {{ secondText }}
         </div>
         <br>

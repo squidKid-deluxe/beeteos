@@ -65,20 +65,15 @@ const actions = {
                     _hash = await window.electron.sha512({data: payload.wallet_pass});
                 } catch (error) {
                     console.log({error});
-                    reject('hash_failure');
+                    return reject('hash_failure');
                 }
 
-                let bytes;
+                let decryptedWallet;
                 try {
-                    bytes = await window.electron.aesDecrypt({data: wallet.data, seed: _hash});
+                    decryptedWallet = await window.electron.aesDecrypt({data: wallet.data, seed: _hash});
                 } catch (error) {
                     console.log({error});
-                    throw error;
-                }
-
-                if (!bytes) {
-                    console.log("No decrypted data")
-                    throw 'decrypt_failure';
+                    return reject(error);
                 }
 
                 let public_wallets = state.walletlist.filter((x) => {
@@ -86,9 +81,14 @@ const actions = {
                 });
 
                 commit(GET_WALLET, public_wallets[0]);
-                let accountlist = bytes;
-                dispatch('AccountStore/loadAccounts', accountlist, {
-                    root: true
+                dispatch(
+                    'AccountStore/loadAccounts',
+                    Array.isArray(decryptedWallet)
+                        ? decryptedWallet
+                        : [decryptedWallet],
+                    {root: true}
+                ).catch(error => {
+                    console.error('Error loading accounts:', error);
                 });
                 resolve();
             }).catch((e) => {
@@ -182,12 +182,16 @@ const actions = {
                 walletid = await window.electron.id();
             } catch (error) {
                 console.log({error});
-                reject('uuid_failure');
+                return reject('uuid_failure');
             }
             let newwallet = {
                 id: walletid,
                 name: payload.walletname,
-                accounts: [{ accountID: payload.walletdata.accountID, chain: payload.walletdata.chain}]
+                accounts: [{
+                    accountID: payload.walletdata.accountID ? payload.walletdata.accountID : payload.walletdata.accountName,
+                    accountName: payload.walletdata.accountName,
+                    chain: payload.walletdata.chain
+                }]
             };
             BeetDB.wallets_public.put(newwallet).then(() => {
                 BeetDB.wallets_public.toArray().then(async (wallets) => {
@@ -207,10 +211,12 @@ const actions = {
                         _hash = await window.electron.sha512({data: payload.password});
                     } catch (error) {
                         console.log({error});   
-                        return;
+                        return reject(error);
                     }
 
-                    for (let keytype in payload.walletdata.keys) {
+                    let keys = Object.keys(payload.walletdata.keys);
+                    for (let i = 0; i < keys.length; i++) {
+                        let keytype = keys[i];
                         let _encrypted;
                         try {
                             _encrypted = await window.electron.aesEncrypt({
@@ -219,8 +225,10 @@ const actions = {
                             });
                         } catch (error) {
                             console.log({error});
-                            reject('AES encryption failure');
+                            return reject('AES encryption failure');
                         }
+                    
+                        payload.walletdata.keys[keytype] = _encrypted;
                     }
                     
                     let _encryptedWalletData;
@@ -231,7 +239,7 @@ const actions = {
                         });
                     } catch (error) {
                         console.log({error});
-                        reject('AES encryption failure');
+                        return reject('AES encryption failure');
                     }
 
                     BeetDB.wallets_encrypted.put({
@@ -270,7 +278,7 @@ const actions = {
                     _hash = await window.electron.sha512({data: payload.password});
                 } catch (error) {
                     console.log({error});
-                    throw ('hash_failure');
+                    return reject('hash_failure');
                 }
 
                 let bytes;
@@ -278,7 +286,7 @@ const actions = {
                     bytes = await window.electron.aesDecrypt({data: wallet.data, seed: _hash});
                 } catch (error) {
                     console.log({error});
-                    throw ('decrypt_failure');
+                    return reject('decrypt_failure');
                 }
 
                 let encwalletdata;
@@ -289,7 +297,7 @@ const actions = {
                     });
                 } catch (error) {
                     console.log(error)
-                    throw ('encrypt_failure');
+                    return reject('encrypt_failure');
                 }
 
                 let updatedWallet = JSON.parse(JSON.stringify(state.wallet))
@@ -308,20 +316,87 @@ const actions = {
                         "accounts": newAccounts
                     }).then(() => {
                         commit(GET_WALLET, updatedWallet);
-                        resolve('Account saved');
+                        return resolve('Account saved');
                     }).catch((error) => {
                         console.log(error);
-                        reject('update_failed');
+                        return reject('update_failed');
                     });
                 }).catch((error) => {
                     console.log(error)
-                    reject(error);
+                    return reject(error);
                 });
             }).catch((error) => {
                 console.log(error)
-                reject(error);
+                return reject(error);
             });
 
+        });
+    },
+    deleteAccountFromWallet({ commit, state, rootState }, payload) {
+        return new Promise(async (resolve, reject) => {
+            await BeetDB.wallets_encrypted.get({
+                id: state.wallet.id
+            }).then(async (wallet) => {
+                let _hash;
+                try {
+                    _hash = await window.electron.sha512({ data: payload.wallet_pass });
+                } catch (error) {
+                    console.log({ error });
+                    return reject('hash_failure');
+                }
+    
+                let authorized;
+                try {
+                    authorized = await window.electron.aesDecrypt({ data: wallet.data, seed: _hash });
+                } catch (error) {
+                    console.log({ error });
+                    return reject('decrypt_failure');
+                }
+    
+                let walletdata = rootState.AccountStore.accountlist.slice();
+
+                let newwalletdata = walletdata.filter(account => {
+                    return account.chain !== payload.chain 
+                        || account.accountName !== payload.accountName;
+                });
+
+                let encwalletdata;
+                try {
+                    encwalletdata = await window.electron.aesEncrypt({
+                        data: JSON.stringify(newwalletdata),
+                        seed: _hash
+                    });
+                } catch (error) {
+                    console.log(error)
+                    return reject('encrypt_failure');
+                }
+    
+                let updatedWallet = JSON.parse(JSON.stringify(state.wallet))
+                updatedWallet.accounts = updatedWallet.accounts.filter(
+                    account => account.chain !== payload.chain &&
+                               account.accountName !== payload.accountName
+                );
+    
+                await BeetDB.wallets_encrypted.update(updatedWallet.id, {
+                    "data": encwalletdata
+                }).then(async () => {
+                    await BeetDB.wallets_public.update(updatedWallet.id, {
+                        "accounts": updatedWallet.accounts
+                    }).then(() => {
+                        commit(GET_WALLET, updatedWallet);
+                        return resolve('Account deleted');
+                    }).catch((error) => {
+                        console.log(error);
+                        return reject('update_failed');
+                    });
+                }).catch((error) => {
+                    console.log(error)
+                    return reject(error);
+                });
+            }).catch((error) => {
+                console.log(error)
+                return reject(error);
+            });
         });
     },
     loadWallets({

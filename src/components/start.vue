@@ -45,6 +45,7 @@
                     await store.dispatch("WalletStore/confirmUnlock");
                 } catch (error) {
                     console.log(error);
+                    return;
                 }
                 store.dispatch("WalletStore/setSelectedWalletIndex", selectedWallet.value);
                 walletpass.value = "";

@@ -128,6 +128,13 @@
                 >
                     {{ t('common.local.label') }}
                 </p>
+                <p
+                    v-if="!chosenScope"
+                    style="marginBottom:0px;"
+                >
+                    {{ t('common.local.desc') }}
+                </p>
+
                 <ui-card
                     v-if="!selectedRows"
                     v-shadow="3"
@@ -170,7 +177,11 @@
             
             <span v-if="chosenScope && selectedRows">
                 <span v-if="!inProgress">
-                    <h3>{{ t('common.local.upload') }}</h3>
+                    <p>{{ t('common.local.label') }}</p>
+
+                    <p>{{ t('common.local.desc') }}</p>
+
+                    <h4>{{ t('common.local.upload') }}</h4>
                     <ui-file
                         accept="application/json"
                         @change="onFileUpload($event)"

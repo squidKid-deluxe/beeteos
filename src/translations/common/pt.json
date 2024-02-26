@@ -10,7 +10,12 @@
     "error": "Não foi possível conectar-se ao blockchain"
   },
   "settings": {
-    "exit": "Sair do menu de configurações"
+    "exit": "Retornar ao painel",
+    "deleted": "Conta excluída da sua carteira com sucesso.",
+    "label": "Remover conta da carteira?",
+    "prompt": "Confirme sua senha abaixo para remover irreversivelmente esta conta de sua carteira.",
+    "button": "Deletar conta",
+    "insufficient": "Não é possível excluir a última conta de uma carteira, desculpe."
   },
   "start": {
     "wallet_name": "Nome da carteira",
@@ -36,6 +41,7 @@
   },
   "raw": {
     "label": "Página de link direto bruto",
+    "desc": "Esta página processa solicitações de deeplink recebidas sem criptografia urgente.",
     "promptFailure": "Um deeplink Raw foi rejeitado. ",
     "exit": "Sair da página de deeplink"
   },
@@ -53,17 +59,18 @@
     "prompt": "Pronto para processar solicitações externas da web. Aplicativos de terceiros agora são capazes de iniciar prompts para vincular e depois transmitir operações."
   },
   "totp": {
-    "label": "Senhas únicas baseadas em tempo",
+    "label": "Página de prompt de deeplink criptografada e limitada por tempo",
+    "desc": "Esta página processa prompts de deeplink recebidos que foram criptografados de maneira sensível ao tempo.",
     "promptFailure": "Um deeplink TOTP foi rejeitado. ",
-    "prompt": "Selecione as operações necessárias abaixo",
+    "prompt": "Selecione abaixo as operações necessárias",
     "chosen": "operações escolhidas",
     "request": "Solicitar senha",
-    "failed": "A solicitação TOTP recebida falhou. ",
+    "failed": "Falha na solicitação TOTP recebida. ",
     "default": "Operações insuficientes",
     "time": "Tempo restante",
     "exit": "Sair da página TOTP",
     "save": "Salvar",
-    "unsupported": "TOTP ainda não é suportado por esta cadeia, desculpe.",
+    "unsupported": "TOTP ainda não é compatível com esta cadeia, desculpe.",
     "warning": "Não compartilhe o código acima com ninguém",
     "inProgress": "Um link direto está sendo processado"
   },
@@ -87,14 +94,27 @@
       "upload": "Carregue uma imagem QR"
     },
     "scan": {
-      "title": "Escaneie um código QR com sua webcam"
-    },
-    "drag": {
-      "title": "Arraste e solte uma imagem contendo um código QR"
-    },
-    "upload": {
-      "title": "Carregue um arquivo de imagem para escanear códigos QR"
-    },
+        "title": "Digitalize um código QR com sua webcam",
+        "switch": "Trocar câmera",
+        "initFail": "Sua webcam não foi inicializada. Tente novamente.",
+        "again": "Tente novamente",
+        "scanned": "Código QR digitalizado!",
+        "another": "Digitalize outro"
+      },
+      "drag": {
+        "title": "Arraste e solte uma imagem contendo um código QR",
+        "error1": "Imagens de origem cruzada como esta não são suportadas.",
+        "error2": "Não foi possível decodificar o QR na imagem.",
+        "error3": "Erro de detecção de QR",
+        "successPrompt": "Imagem digitalizada com sucesso para QR",
+        "successBtn": "Digitalize outra imagem",
+        "prompt": "DEIXE SUA IMAGEM AQUI"
+      },
+      "upload": {
+        "title": "Carregue um arquivo de imagem para procurar códigos QR",
+        "detected": "QR detectado no upload",
+        "another": "Carregar outro QR"
+      },
     "exit": "Sair da página QR",
     "back": "Voltar",
     "progress": "Processando código QR",
@@ -104,7 +124,8 @@
   },
   "local": {
     "label": "Scanner operacional de arquivo local",
-    "upload": "Fazer upload do arquivo JSON da operação proposta",
+    "desc": "Esta página permite avaliar e transmitir transações de arquivos JSON armazenados localmente.",
+    "upload": "Para continuar, carregue um arquivo JSON que contenha a transação proposta.",
     "exit": "Sair da página de arquivo local",
     "failed": "Falha ao processar JSON",
     "back": "Voltar",
