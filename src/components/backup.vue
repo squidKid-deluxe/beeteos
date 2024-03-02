@@ -1,6 +1,7 @@
 <script setup>
-    import { ref } from 'vue';
+    import { ref, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
+    
     import store from '../store/index.js';
     import router from '../router/index.js';
 
@@ -40,6 +41,15 @@
                 window.electron.notify(t('common.start.invalid_password'));
             });
     }
+
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
+    });
 </script>
 
 <template>

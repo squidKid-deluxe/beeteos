@@ -1,11 +1,12 @@
 <script setup>
-    import { computed, watchEffect, ref } from "vue";
+    import { computed, watchEffect, ref, onMounted } from "vue";
 
     import Balances from "./balances";
     import AccountDetails from "./account-details";
     import AccountSelect from "./account-select";
 
     import store from '../store/index.js';
+    import router from '../router/index.js';
 
     let selectedAccount = computed(() => {
         if (!store.state.WalletStore.isUnlocked) {
@@ -73,7 +74,16 @@
             console.log(`Fetching blockchain data #${fetchQty.value}`);
             lookupBlockchain();
         }
-    })
+    });
+
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
+    });
 </script>
 
 <template>

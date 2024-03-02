@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed, watchEffect } from 'vue';
+    import { ref, computed, watchEffect, toRaw, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -138,7 +138,10 @@
                     _error = error;
                 }
 
-                window.electron.sendAuthResponse({app, error: _error})
+                window.electron.sendAuthResponse({
+                    app: app ? toRaw(app) : null,
+                    error: _error
+                })
             });
 
             window.electron.newRequest((data) => {
@@ -195,7 +198,6 @@
             window.electron.relink(async (request) => {
                 // Relinking with an existing dapp account
                 window.electron.resetTimer();
-
                 let shownBeetApp = store.getters['OriginStore/getBeetApp'](request);
                 if (!shownBeetApp) {
                     window.electron.relinkError({id: request.id, result: {isError: true, method: "REQUEST_RELINK", error: 'No beetapp'}});
@@ -240,9 +242,9 @@
                     console.log(error)
                     _error = error;
                 }
-
                 window.electron.sendLinkAppResponse({app, error: _error})
             });
+
             window.electron.getLinkApp((data) => {
                 // Fetching existing dapp linkage
                 window.electron.resetTimer();
@@ -255,12 +257,40 @@
                     _error = error;
                 }
 
+                console.log({about: "getlinkapp", app, error: _error})
                 window.electron.sendLinkAppResponse({app, error: _error})
+            });
+
+            window.electron.getApiApp((data) => {
+                // For checking a dapp's allowed operations
+                window.electron.resetTimer();
+                let app;
+                let _error;
+                try {
+                    app = store.getters['OriginStore/getBeetApp'](data)
+                } catch (error) {
+                    console.log(error);
+                    _error = error;
+                }
+
+                window.electron.sendApiResponse({
+                    app: app ? toRaw(app) : null,
+                    error: _error
+                })
             });
         }
 
         if (serverOnline.value) {
             listen();
+        }
+    });
+
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
         }
     });
 </script>

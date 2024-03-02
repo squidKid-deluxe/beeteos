@@ -669,8 +669,8 @@ const createWindow = async () => {
         }
     }
 
-    if (methods.includes("processTransaction")) {
-        const { operation, signingKey, request } = arg;
+    if (methods.includes("signAndBroadcast")) {
+        const { operation, signingKey } = arg;
 
         let transaction;
         try {
@@ -678,26 +678,36 @@ const createWindow = async () => {
         } catch (error) {
           console.log({
             error,
-            location: "processTransaction",
-            id: request.id
+            location: "signAndBroadcast.blockchain.sign"
           });
         }
 
         if (transaction) {
-            responses['processTransaction'] = transaction;
+            let broadcastResponse;
+            try {
+                broadcastResponse = await blockchain.broadcast(transaction);
+            } catch (error) {
+                console.log({
+                  error,
+                  location: "signAndBroadcast.blockchain.broadcast"
+                });
+            }
+            if (broadcastResponse) {
+                responses['signAndBroadcast'] = broadcastResponse;
+            }
         }
     }
 
     if (methods.includes("broadcastTransaction")) {
-        const { transaction, request } = arg;
+        const { operation } = arg;
+        console.log("broadcastTransaction")
         let broadcastResponse;
         try {
-            broadcastResponse = await blockchain.broadcast(transaction);
+            broadcastResponse = await blockchain.broadcast(operation);
         } catch (error) {
             console.log({
               error,
-              location: "broadcast",
-              id: request.id
+              location: "broadcast"
             });
         }
         if (broadcastResponse) {
@@ -732,7 +742,7 @@ const createWindow = async () => {
       if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
         let status;
         try {
-            status = await inject(blockchain, apiobj)
+            status = await inject(blockchain, apiobj, mainWindow.webContents)
         } catch (error) {
             console.log({error: error || "No status"});
         }
@@ -762,7 +772,7 @@ const createWindow = async () => {
         if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
             let status;
             try {
-                status = await inject(blockchain, apiobj)
+                status = await inject(blockchain, apiobj, mainWindow.webContents)
             } catch (error) {
                 console.log({error: error || "No status"});
             }
@@ -795,7 +805,7 @@ const createWindow = async () => {
             if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
                 let status;
                 try {
-                    status = await inject(blockchain, apiobj)
+                    status = await inject(blockchain, apiobj, mainWindow.webContents)
                 } catch (error) {
                     console.log({error: error || "No status"});
                 }
@@ -862,7 +872,7 @@ const createWindow = async () => {
 
           let status;
           try {
-              status = await inject(blockchain, apiobj);
+              status = await inject(blockchain, apiobj, mainWindow.webContents);
           } catch (error) {
               console.log(error);
           }
@@ -1111,24 +1121,30 @@ const createWindow = async () => {
     return id;
   });
 
-  ipcMain.on('decrypt', async (event, arg) => {
-      const {data, seed} = arg;
+  let _seed;
+  ipcMain.on('seed', (event, arg) => {
+    console.log("SEEDED")
+    _seed = arg;
+  });
 
+  ipcMain.handle('decrypt', async (event, arg) => {
+      let seed;
+      if (arg.seed) {
+        seed = arg.seed;
+      } else if (arg.inject && _seed) {
+        seed = _seed;
+      }
+      
       let decryptedData;
-      try {
-        decryptedData = await aes.decrypt(data, seed).toString(ENC);
-      } catch (error) {
-        console.log(error);
+      if (arg.data && seed) {
+        try {
+          decryptedData = await aes.decrypt(arg.data, seed).toString(ENC);
+        } catch (error) {
+          console.log(error);
+        }
       }
 
-      if (event && event.sender) {
-        event.sender.send(
-          decryptedData ? 'decrypt_success' : 'decrypt_fail',
-          decryptedData ?? 'decryption failure'
-        );
-      } else {
-        console.log("No event || event.sender")
-      }
+      return decryptedData;
   });
 
   ipcMain.handle('getSignature', async (event, arg) => {

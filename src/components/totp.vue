@@ -1,5 +1,5 @@
 <script setup>
-    import { watchEffect, ref, computed } from 'vue';
+    import { watchEffect, ref, computed, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -187,6 +187,15 @@
             console.log({totpDeeplink})
         }
         deepLinkInProgress.value = false;
+    });
+
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
     });
 </script>
 

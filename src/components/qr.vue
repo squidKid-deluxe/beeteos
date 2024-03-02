@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed, watchEffect, inject } from 'vue';
+    import { ref, computed, watchEffect, inject, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -9,6 +9,7 @@
     import QRUpload from "./qr/Upload";
 
     import store from '../store/index.js';
+    import router from '../router/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
 
@@ -114,6 +115,15 @@
             )
         }
     }
+
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
+    });
 </script>
 
 <template>

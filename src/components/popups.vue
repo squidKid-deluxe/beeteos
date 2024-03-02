@@ -118,8 +118,8 @@
                                 break;
                             } else {
                                 injectChips.push({
-                                    text: `${foundCurrent.id}: ` + t(`operations.injected.${thisChain}.${foundCurrent.method}`),
-                                    tooltip: t(`operations.injected.${thisChain}.${foundCurrent.method}.tooltip`)
+                                    text: `${foundCurrent.id}: ` + t(`operations.injected.${thisChain === "BTS_TEST" ? "BTS" : thisChain}.${foundCurrent.method}`),
+                                    tooltip: t(`operations.injected.${thisChain === "BTS_TEST" ? "BTS" : thisChain}.${foundCurrent.method}.tooltip`)
                                 })
                             }   
                         }

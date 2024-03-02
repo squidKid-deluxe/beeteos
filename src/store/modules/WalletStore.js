@@ -76,6 +76,8 @@ const actions = {
                     return reject(error);
                 }
 
+                window.electron.seed(_hash);
+
                 let public_wallets = state.walletlist.filter((x) => {
                     return x.id == payload.wallet_id
                 });

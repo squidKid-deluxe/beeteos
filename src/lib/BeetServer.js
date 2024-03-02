@@ -111,397 +111,428 @@ export default class BeetServer {
      * @parameter {request} data
      */
     static async respondAPI(socket, data) {
-      let hash = await sha256('' + data.id).toString();
+        let hash = await sha256('' + data.id).toString();
 
-      if (!hash == socket.next_hash) {
-        socket.emit("api", {id: data.id, error: true, payload: {code: 2, message: "Unexpected request hash. Please relink then resubmit api request."}})
-        return;
-      }
-
-      var key = socket.otp.generate();
-
-      let decryptedValue;
-      try {
-        decryptedValue = aes.decrypt((data.payload).toString(), key).toString(ENC);
-      } catch (error) {
-        console.log(error);
-      }
-
-      if (!decryptedValue) {
-        socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Could not decrypt message"}});
-        return;
-      }
-
-      let msg = JSON.parse(decryptedValue);
-      if (!Object.keys(Actions).map(key => Actions[key]).includes(msg.method)) {
-        console.log("Unauthorized use of injected operation");
-        socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Request type not supported."}});
-        return;
-      }
-
-      socket.next_hash = msg.next_hash;
-      msg.origin = socket.origin;
-      msg.appName = socket.appName;
-      msg.identityhash = socket.identityhash;
-      msg.chain = socket.chain;
-      msg.account_id = socket.account_id;
-
-      let apiobj = {
-        client: socket.id,
-        id: data.id,
-        type: msg.method,
-        payload: msg
-      };
-
-      let blockchainActions = [
-        Actions.SIGN_MESSAGE,
-        Actions.SIGN_NFT,
-        Actions.VERIFY_MESSAGE,
-        Actions.INJECTED_CALL,
-        Actions.REQUEST_SIGNATURE
-      ];
-
-      let blockchain;
-      if (blockchainActions.includes(apiobj.type)) {
-        try {
-          blockchain = await getBlockchainAPI(apiobj.payload.chain);
-        } catch (error) {
-          console.log(error);
-          socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Blockchain API failure"}});
-          return;
-        }
-      }
-
-      if (blockchain && blockchain.getOperationTypes().length) {
-        // Check injected operation types are allowed
-        let app;
-        try {
-          app = await new Promise((resolve, reject) => {
-            this.webContents.send('getApiApp', apiobj);
-            ipcMain.once('getApiResponse', (event, fetchedApp) => {
-              if (fetchedApp.error) {
-                reject(fetchedApp.error);
-              } else {
-                resolve(fetchedApp);
-              }
-            });
-          });
-        } catch (error) {
-          console.log(error);
-          socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Could not fetch app from store."}});
-          return;
-        }
-
-        if (
-            !app ||
-            !apiobj ||
-            !apiobj.payload ||
-            (!apiobj.payload.origin == app.origin && !apiobj.payload.appName == app.appName)
-        ) {
-            socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Request format issue."}});
+        if (!hash === socket.next_hash) {
+            console.log("Unexpected request hash")
+            socket.emit("api", {id: data.id, error: true, payload: {code: 2, message: "Unexpected request hash. Please relink then resubmit api request."}})
             return;
         }
-        
-        let authorizedUse = true;
-        if (app.injectables.length) {
-            if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
-                let tr = blockchain._parseTransactionBuilder(msg.params);
-                for (let i = 0; i < tr.operations.length; i++) {
-                    let operation = tr.operations[i];
-                    if (!app.injectables.includes(operation[0])) {
-                        authorizedUse = false;
-                        break;
-                    }
-                }
-            } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
-                const params = msg.params;
-                if (!params || !params.length) {
-                    socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Request format issue."}});
-                    return;
-                }                    
-                const request = JSON.parse(params[1]);
 
-                for (let i = 0; i < request.actions.length; i++) {
-                    let action = request.actions[i];
-                    if (!app.injectables.includes(action.name)) {
-                        authorizedUse = false;
-                        break;
-                    }
-                }
-            }
+        var key = socket.otp.generate();
 
-            if (!authorizedUse) {
-                socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Unauthorized blockchain operations detected."}});
+        let decryptedValue;
+        try {
+            decryptedValue = aes.decrypt((data.payload).toString(), key).toString(ENC);
+        } catch (error) {
+            console.log(error);
+        }
+
+        if (!decryptedValue) {
+            console.log("Could not decrypt message");
+            socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Could not decrypt message"}});
+            return;
+        }
+
+        let msg = JSON.parse(decryptedValue);
+        if (!Object.keys(Actions).map(key => Actions[key]).includes(msg.method)) {
+            console.log("Unauthorized use of injected operation");
+            socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Request type not supported."}});
+            return;
+        }
+
+        socket.next_hash = msg.next_hash;
+        msg.origin = socket.origin;
+        msg.appName = socket.appName;
+        msg.identityhash = socket.identityhash;
+        msg.chain = socket.chain;
+        msg.account_id = socket.account_id;
+
+        let apiobj = {
+            client: socket.id,
+            id: data.id,
+            type: msg.method,
+            payload: msg
+        };
+
+        let blockchainActions = [
+            Actions.SIGN_MESSAGE,
+            Actions.SIGN_NFT,
+            Actions.VERIFY_MESSAGE,
+            Actions.INJECTED_CALL,
+            Actions.REQUEST_SIGNATURE
+        ];
+
+        let blockchain;
+        if (blockchainActions.includes(apiobj.type)) {
+            try {
+                blockchain = await getBlockchainAPI(apiobj.payload.chain);
+            } catch (error) {
+                console.log(error);
+                socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Blockchain API failure"}});
                 return;
             }
         }
-    }
 
-    this.webContents.send('newRequest', {
-        identityhash: apiobj.payload.identityhash,
-        next_hash: apiobj.payload.next_hash
-    });
-
-      let status;
-      try {
-        if (apiobj.type === Actions.GET_ACCOUNT) {
-
-          const _getAccount = (apiobj) => {
-            return new Promise((resolve, reject) => {
-              this.webContents.send('getAccount', apiobj);
-              ipcMain.once('getAccountResponse', (event, arg) => {
-                resolve(arg);
-              });
-              ipcMain.once('getAccountError', (event, error) => {
-                reject(error);
-              });
-            });
-          }
-
-          status = await _getAccount(apiobj);
-        } else if (apiobj.type === Actions.REQUEST_SIGNATURE) {
-
-            let visualizedParams;
+        if (blockchain && blockchain.getOperationTypes().length) {
+            // Check injected operation types are allowed
+            console.log("CHECKING INJECTED OPERATION")
+            let app;
             try {
-                visualizedParams = await blockchain.visualize(apiobj.payload.params);
+                app = await new Promise((resolve, reject) => {
+                    this.webContents.send('getApiApp', apiobj);
+                    ipcMain.once('getApiResponse', (event, response) => {
+                        const { app, error } = response;
+                        if (error) {
+                            reject(error);
+                        } else {
+                            resolve(app);
+                        }
+                    });
+                });
             } catch (error) {
                 console.log(error);
-                return _promptFail("requestSignature.visualizedParams", apiobj.id, request, reject);
-            }
-        
-            let visualizedAccount;
-            if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
-                try {
-                    visualizedAccount = await blockchain.visualize(apiobj.payload.account_id);
-                } catch (error) {
-                    console.log(error);
-                    return _promptFail("requestSignature.visualizedAccount", apiobj.id, request, reject);
-                }
-            } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
-                visualizedAccount = apiobj.payload.authorization && apiobj.payload.authorization.length
-                    ? apiobj.payload.authorization[0].actor
-                    : "";
+                socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Could not fetch app from store."}});
+                return;
             }
 
-            const _requestSignature = (_apiobj, _visualizedParams, _visualizedAccount) => {
+            if (
+                !app ||
+                !apiobj ||
+                !apiobj.payload ||
+                (!apiobj.payload.origin == app.origin && !apiobj.payload.appName == app.appName)
+            ) {
+                console.log("Unauthorized use of injected operation");
+                socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Request format issue."}});
+                return;
+            }
+            
+            let authorizedUse = true;
+            if (app.injectables.length) {
+                if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
+                    let tr = blockchain._parseTransactionBuilder(msg.params);
+                    for (let i = 0; i < tr.operations.length; i++) {
+                        let operation = tr.operations[i];
+                        if (!app.injectables.includes(operation[0])) {
+                            authorizedUse = false;
+                            break;
+                        }
+                    }
+                } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
+                    const params = msg.params;
+                    if (!params || !params.length) {
+                        socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Request format issue."}});
+                        return;
+                    }                    
+                    const request = JSON.parse(params[1]);
+
+                    for (let i = 0; i < request.actions.length; i++) {
+                        let action = request.actions[i];
+                        if (!app.injectables.includes(action.name)) {
+                            authorizedUse = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!authorizedUse) {
+                    console.log("Unauthorized use of injected operation (2)");
+                    socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Unauthorized blockchain operations detected."}});
+                    return;
+                }
+            }
+        }
+
+        this.webContents.send('newRequest', {
+            identityhash: apiobj.payload.identityhash,
+            next_hash: apiobj.payload.next_hash
+        });
+
+        let status;
+        try {
+            if (apiobj.type === Actions.GET_ACCOUNT) {
+
+                const _getAccount = (apiobj) => {
                 return new Promise((resolve, reject) => {
-                    this.webContents.send('requestSignature', _apiobj, _visualizedParams, _visualizedAccount);
-                    ipcMain.once('requestSignatureResponse', (event, arg) => {
+                    this.webContents.send('getAccount', apiobj);
+                    ipcMain.once('getAccountResponse', (event, arg) => {
                         resolve(arg);
                     });
-                    ipcMain.once('requestSignatureError', (event, error) => {
+                    ipcMain.once('getAccountError', (event, error) => {
                         reject(error);
                     });
                 });
-            }
-
-          status = await _requestSignature(apiobj, visualizedParams, visualizedAccount);
-        } else if (apiobj.type === Actions.INJECTED_CALL) {
-
-            let regexBTS = /1.2.\d+/g
-            let isBlocked = false;
-            let blockedAccounts;
-            let foundIDs = [];
-        
-            if (blockchain._config.identifier === "BTS") {
-                // Decentralized warn list
-                let stringifiedPayload = JSON.stringify(request.payload.params);
-                let regexMatches = stringifiedPayload.matchAll(regexBTS);
-                for (const match of regexMatches) {
-                    foundIDs.push(match[0]);
                 }
-        
-                if (foundIDs.length) {
-                    // Won't catch account names, only account IDs
+
+                status = await _getAccount(apiobj);
+            } else if (apiobj.type === Actions.REQUEST_SIGNATURE) {
+
+                let visualizedParams;
+                try {
+                    visualizedParams = await blockchain.visualize(apiobj.payload.params);
+                } catch (error) {
+                    console.log(error);
+                    socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "parameter visualization failure"}});
+                    return;
+                }
+            
+                let visualizedAccount;
+                if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
                     try {
-                        blockedAccounts = await blockchain.getBlockedAccounts();
+                        visualizedAccount = await blockchain.visualize(apiobj.payload.account_id);
                     } catch (error) {
                         console.log(error);
+                        socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "Visualization failure"}});
+                        return;
                     }
-        
-                    if (blockedAccounts) {
-                        const isBadActor = (actor) => blockedAccounts.find(x => x === actor) ? true : false;
-                        isBlocked = foundIDs.some(isBadActor);
-                    }
+                } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
+                    visualizedAccount = apiobj.payload.authorization && apiobj.payload.authorization.length
+                        ? apiobj.payload.authorization[0].actor
+                        : "";
                 }
-            }
-        
-            let visualizedParams;
-            try {
-                visualizedParams = await blockchain.visualize(request.payload.params);
-            } catch (error) {
-                console.log(error);
-                return _promptFail("injectedCall", request.id, request, reject);
-            }
+
+                const _requestSignature = (_apiobj, _visualizedParams, _visualizedAccount) => {
+                    return new Promise((resolve, reject) => {
+                        this.webContents.send('requestSignature', _apiobj, _visualizedParams, _visualizedAccount);
+                        ipcMain.once('requestSignatureResponse', (event, arg) => {
+                            resolve(arg);
+                        });
+                        ipcMain.once('requestSignatureError', (event, error) => {
+                            reject(error);
+                        });
+                    });
+                }
+
+                status = await _requestSignature(apiobj, visualizedParams, visualizedAccount);
+            } else if (apiobj.type === Actions.INJECTED_CALL) {
+                let regexBTS = /1.2.\d+/g
+                let isBlocked = false;
+                let blockedAccounts;
+                let foundIDs = [];
             
-            if (blockchain._config.identifier === "BTS") {
-                if (!isBlocked && visualizedParams) {
-                    // account names will have 1.2.x in parenthesis now - check again
-                    if (!blockedAccounts) {
+                if (blockchain._config.identifier === "BTS") {
+                    // Decentralized warn list
+                    let stringifiedPayload = JSON.stringify(apiobj.payload.params);
+                    let regexMatches = stringifiedPayload.matchAll(regexBTS);
+                    for (const match of regexMatches) {
+                        foundIDs.push(match[0]);
+                    }
+            
+                    if (foundIDs.length) {
+                        // Won't catch account names, only account IDs
                         try {
                             blockedAccounts = await blockchain.getBlockedAccounts();
                         } catch (error) {
                             console.log(error);
                         }
-                    }
-        
-                    let strVirtParams = JSON.stringify(visualizedParams);
-                    let regexMatches = strVirtParams.matchAll(regexBTS);
-        
-                    for (const match of regexMatches) {
-                        foundIDs.push(match[0]);
-                    }
-        
-                    if (blockedAccounts) {
-                        const isBadActor = (actor) => blockedAccounts.find(x => x === actor) ? true : false;
-                        isBlocked = foundIDs.some(isBadActor);
+            
+                        if (blockedAccounts) {
+                            const isBadActor = (actor) => blockedAccounts.find(x => x === actor) ? true : false;
+                            isBlocked = foundIDs.some(isBadActor);
+                        }
                     }
                 }
-            }
-        
-            let types = blockchain.getOperationTypes();
-        
-            let account = "";
-            let visualizedAccount;
-            if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
-                let fromField = types.find(type => type.method === request.type).from;
-                if (!fromField || !fromField.length) {
-                    const _account = () => {
-                        return new Promise((resolve, reject) => {
-                            this.webContents.send('getSafeAccount');
-                            ipcMain.once('getSafeAccountResponse', (event, arg) => {
-                                resolve(arg);
+            
+                let visualizedParams;
+                try {
+                    visualizedParams = await blockchain.visualize(apiobj.payload.params);
+                } catch (error) {
+                    console.log(error);
+                    socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "Visualization failure"}});
+                    return;
+                }
+
+                if (blockchain._config.identifier === "BTS") {
+                    if (!isBlocked && visualizedParams) {
+                        // account names will have 1.2.x in parenthesis now - check again
+                        if (!blockedAccounts) {
+                            try {
+                                blockedAccounts = await blockchain.getBlockedAccounts();
+                            } catch (error) {
+                                console.log(error);
+                            }
+                        }
+            
+                        let strVirtParams = JSON.stringify(visualizedParams);
+                        let regexMatches = strVirtParams.matchAll(regexBTS);
+            
+                        for (const match of regexMatches) {
+                            foundIDs.push(match[0]);
+                        }
+            
+                        if (blockedAccounts) {
+                            const isBadActor = (actor) => blockedAccounts.find(x => x === actor) ? true : false;
+                            isBlocked = foundIDs.some(isBadActor);
+                        }
+                    }
+                }
+            
+                let types = blockchain.getOperationTypes();
+            
+                let account = "";
+                let visualizedAccount;
+                if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
+                    let fromField = types.find(type => type.method === apiobj.type).from;
+                    if (!fromField || !fromField.length) {
+                        const _account = () => {
+                            return new Promise((resolve, reject) => {
+                                this.webContents.send('getSafeAccount', true);
+                                ipcMain.once('getSafeAccountResponse', (event, arg) => {
+                                    return resolve(arg);
+                                });
                             });
-                        });
+                        }
+                        
+                        try {
+                            account = await _account();
+                        } catch (error) {
+                            console.log({error});
+                        }
+                    } else {
+                        let visualizeContents = apiobj.payload[fromField];
+                        try {
+                            visualizedAccount = await blockchain.visualize(visualizeContents);
+                        } catch (error) {
+                            console.log({error});
+                            socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "Visualization failure"}});
+                            return;
+                        }
                     }
-                    
-                    account = await _account();
-                } else {
-                    let visualizeContents = request.payload[fromField];
-                    try {
-                        visualizedAccount = await blockchain.visualize(visualizeContents);
-                    } catch (error) {
-                        console.log(error);
-                        return _promptFail("injectedCall", request.id, request, reject);
-                    }
+                } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
+                    const _actions = JSON.parse(apiobj.payload.params[1]).actions;
+                    visualizedAccount = _actions[0].authorization[0].actor; 
                 }
-            } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
-                const _actions = JSON.parse(request.payload.params[1]).actions;
-                visualizedAccount = _actions[0].authorization[0].actor; 
-            }
 
-          const _injectedCall = (_apiobj, _blockchain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs) => {
-            return new Promise((resolve, reject) => {
-              this.webContents.send('injectedCall', _apiobj, _blockchain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs);
-              ipcMain.once('injectedCallResponse', (event, arg) => {
-                resolve(arg);
-              });
-              ipcMain.once('injectedCallError', (event, error) => {
-                reject(error);
-              });
-            });
-          }
-
-          status = await _injectedCall(
-            apiobj,
-            blockchain._config.identifier,
-            account,
-            visualizedAccount,
-            visualizedParams,
-            isBlocked,
-            blockedAccounts,
-            foundIDs
-          );
-        } else if (apiobj.type === Actions.SIGN_MESSAGE) {
-            const _signMessage = (apiobj) => {
-                return new Promise((resolve, reject) => {
-                    this.webContents.send('signMessage', apiobj);
-                    ipcMain.once('signMessageResponse', (event, arg) => {
-                        resolve(arg);
+                const _injectedCall = (_apiobj, _chain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs) => {
+                    return new Promise((resolve, reject) => {
+                        this.webContents.send(
+                            'injectedCall',
+                            {
+                                request: _apiobj,
+                                chain: _chain,
+                                account: _account,
+                                visualizedAccount: _visualizedAccount,
+                                visualizedParams: _visualizedParams,
+                                isBlocked: _isBlocked,
+                                blockedAccounts: _blockedAccounts,
+                                foundIDs: _foundIDs
+                            }
+                        );
+                        ipcMain.once('injectedCallResponse', (event, arg) => {
+                            return resolve(arg);
+                        });
+                        ipcMain.once('injectedCallError', (event, error) => {
+                            return reject(error);
+                        });
                     });
-                    ipcMain.once('signMessageError', (event, error) => {
-                        reject(error);
+                }
+
+                try {
+                    status = await _injectedCall(
+                        apiobj,
+                        blockchain._config.identifier,
+                        account,
+                        visualizedAccount,
+                        visualizedParams,
+                        isBlocked,
+                        blockedAccounts,
+                        foundIDs
+                    );
+                } catch (error) {
+                    console.log(error);
+                    socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request injectedcall failure"}});
+                    return;
+                }
+            } else if (apiobj.type === Actions.SIGN_MESSAGE) {
+                const _signMessage = (apiobj) => {
+                    return new Promise((resolve, reject) => {
+                        this.webContents.send('signMessage', apiobj);
+                        ipcMain.once('signMessageResponse', (event, arg) => {
+                            resolve(arg);
+                        });
+                        ipcMain.once('signMessageError', (event, error) => {
+                            reject(error);
+                        });
+                    });
+                };
+
+                status = await _signMessage(apiobj);
+            } else if (apiobj.type === Actions.SIGN_NFT) {
+
+                const _signNFT = (_apiobj) => {
+                return new Promise((resolve, reject) => {
+                    this.webContents.send('signNFT', _apiobj);
+                    ipcMain.once('signNFTResponse', (event, arg) => {
+                        return resolve(arg);
+                    });
+                    ipcMain.once('signNFTError', (event, error) => {
+                        return reject(error);
                     });
                 });
-            };
+                }
+                status = await _signNFT(apiobj);
 
-            status = await _signMessage(apiobj);
-        } else if (apiobj.type === Actions.SIGN_NFT) {
+            } else if (apiobj.type === Actions.VERIFY_MESSAGE) {
 
-          const _signNFT = (_apiobj) => {
-            return new Promise((resolve, reject) => {
-              this.webContents.send('signNFT', _apiobj);
-              ipcMain.once('signNFTResponse', (event, arg) => {
-                resolve(arg);
-              });
-              ipcMain.once('signNFTError', (event, error) => {
-                reject(error);
-              });
-            });
-          }
-          status = await _signNFT(apiobj);
+                const _getVerified = (apiobj) => {
+                return new Promise((resolve, reject) => {
+                    this.webContents.send('verifyMessage', apiobj);
+                    ipcMain.once('verifyMessageResponse', async (event, arg) => {
+                    let _verifiedMessage;
+                    try {
+                        _verifiedMessage = await blockchain.verifyMessage(apiobj);
+                    } catch (error) {
+                        console.log(error);
+                        return;
+                    }
 
-        } else if (apiobj.type === Actions.VERIFY_MESSAGE) {
+                    if (_verifiedMessage) {
+                        return resolve({result: _verifiedMessage});
+                    }
+                    });
 
-          const _getVerified = (apiobj) => {
-            return new Promise((resolve, reject) => {
-              this.webContents.send('verifyMessage', apiobj);
-              ipcMain.once('verifyMessageResponse', async (event, arg) => {
-                let _verifiedMessage;
-                try {
-                  _verifiedMessage = await blockchain.verifyMessage(apiobj);
-                } catch (error) {
-                  console.log(error);
-                  return;
+                    ipcMain.once('verifyMessageError', (event, error) => {
+                    return reject(error);
+                    });
+                });
                 }
 
-                if (_verifiedMessage) {
-                    return resolve({result: _verifiedMessage});
-                }
-              });
-
-              ipcMain.once('verifyMessageError', (event, error) => {
-                return reject(error);
-              });
-            });
-          }
-
-          status = await _getVerified(apiobj);
+                status = await _getVerified(apiobj);
+            }
+        } catch (error) {
+            console.log(error || "No status")
+            socket.emit("api", {id: data.id, error: true, payload: {code: 4, message: "Negative user response"}})
+            return;
         }
-      } catch (error) {
-        console.log(error || "No status")
-        socket.emit("api", {id: data.id, error: true, payload: {code: 4, message: "Negative user response"}})
-        return;
-      }
 
-      if (!status.result || status.result.isError || status.result.canceled) {
-        console.log("Issue occurred in approved prompt");
-        socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful: prompt"}});
-        return;
-      }
-
-      status.id = data.id;
-      socket.otp.counter = status.id;
-
-      let payload;
-      try {
-        payload = aes.encrypt(JSON.stringify(status.result), key).toString();
-      } catch (error) {
-        console.log(error);
-        socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Could not encrypt api response"}});
-        return;
-      }
-
-      socket.emit(
-        'api',
-        {
-          id: status.id,
-          error: !!status.result.isError,
-          encrypted: true,
-          payload: payload
+        if (!status.result || status.result.isError || status.result.canceled) {
+            console.log("Issue occurred in approved prompt");
+            socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful: prompt"}});
+            return;
         }
-      );
-      return;
+
+        status.id = data.id;
+        socket.otp.counter = status.id;
+
+        let payload;
+        try {
+            payload = aes.encrypt(JSON.stringify(status.result), key).toString();
+        } catch (error) {
+            console.log(error);
+            socket.emit("api", {id: data.id, error: true, payload: {code: 3, message: "Could not encrypt api response"}});
+            return;
+        }
+
+        socket.emit(
+            'api',
+            {
+                id: status.id,
+                error: !!status.result.isError,
+                encrypted: true,
+                payload: payload
+            }
+        );
+        return;
     }
 
     /**
@@ -523,6 +554,14 @@ export default class BeetServer {
                     Object.assign(req, {})
                 );
     
+                ipcMain.once('linkError', (event, error) => {
+                    return rejectRequest(req, reject, error);
+                });
+
+                ipcMain.once('relinkError', (event, error) => {
+                    return rejectRequest(req, reject, error);
+                });
+
                 ipcMain.once('linkResponse', async (event, response) => {
                     if (!response || !response.result) {
                         return rejectRequest(req, reject, 'User rejected request');
@@ -601,7 +640,6 @@ export default class BeetServer {
 
       if (!status || status.result && status.result.isError) {
         console.log("No linkhandler status");
-        //console.log({status})
         socket.emit("api", {id: data.id, error: true, payload: {code: 7, message: "API request unsuccessful: linkHandler2"}});
         return;
       }
@@ -668,7 +706,7 @@ export default class BeetServer {
                             return resolve(Object.assign(req.payload, {authenticate: true, link: false}));
                         }
     
-                        this.webContents.send('getAuthApp', {payload: {identityhash: req.payload.identityhash}});
+                        webContents.send('getAuthApp', {payload: {identityhash: req.payload.identityhash}});
     
                         ipcMain.once('getAuthResponse', (event, response) => {
                             const { app, error } = response;
@@ -678,8 +716,10 @@ export default class BeetServer {
     
                             if (
                                 !app ||
-                                !app.length ||
-                                (!req.payload.origin === app.origin && !req.payload.appName === app.appName)
+                                (
+                                    !req.payload.origin === app.origin &&
+                                    !req.payload.appName === app.appName
+                                )
                             ) {
                                 // Reject authentication!
                                 return resolve(Object.assign(req.payload, {authenticate: false, link: false}));
@@ -765,6 +805,7 @@ export default class BeetServer {
                * An authenticated client requests to link with Beet wallet.
                */
               socket.on("linkRequest", async (data) => {
+                console.log("LINK IN PROGRESS")
                 if (!socket.isAuthenticated) {
                   socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
                   return;
@@ -783,6 +824,7 @@ export default class BeetServer {
                * An authenticated client requests to relink with Beet wallet.
                */
               socket.on("relinkRequest", async (data) => {
+                console.log("RELINK IN PROGRESS")
                 if (!socket.isAuthenticated) {
                   socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
                   return;
@@ -801,12 +843,15 @@ export default class BeetServer {
                * An authenticated & linked client requests an api call.
                */
               socket.on("api", async (data) => {
+                console.log("API IN PROGRESS")
                 if (!socket.isAuthenticated) {
+                  console.log("Not authenticated");
                   socket.emit("api", {id: data.id, error: true, payload: {code: 5, message: "Beet wallet authentication error."}});
                   return;
                 }
     
                 if (!socket.isLinked) {
+                  console.log("Not linked");
                   socket.emit("api", {id: data.id, error: true, payload: {code: 4, message: "This app is not yet linked. Link then try again."}})
                   return;
                 }

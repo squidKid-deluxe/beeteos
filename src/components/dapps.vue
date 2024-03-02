@@ -1,7 +1,9 @@
 <script setup>
-    import { watchEffect, ref, computed } from 'vue';
+    import { watchEffect, ref, computed, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
+
     import store from '../store/index.js';
+    import router from '../router/index.js';
     import {formatAccount} from "../lib/formatter.js";
 
     const { t } = useI18n({ useScope: 'global' });
@@ -77,6 +79,15 @@
         await store.dispatch('OriginStore/removeApp', dapp_id);
         dapps.value = fetchDapps();
     }
+
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
+    });
 </script>
 
 <template>

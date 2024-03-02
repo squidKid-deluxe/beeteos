@@ -61,13 +61,13 @@
         {
             field: 'method',
             fn: data => {
-                return t(`operations.injected.${props.chain}.${data.method}.method`)
+                return t(`operations.injected.${props.chain === "BTS_TEST" ? "BTS" : props.chain}.${data.method}.method`)
             }
         },
         {
             field: 'info',
             fn: data => {
-                return t(`operations.injected.${props.chain}.${data.method}.tooltip`)
+                return t(`operations.injected.${props.chain === "BTS_TEST" ? "BTS" : props.chain}.${data.method}.tooltip`)
             }
         }
     ]);

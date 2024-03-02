@@ -4,7 +4,9 @@
 
     import AccountSelect from "./account-select";
     import Operations from "./blockchains/operations";
+    
     import store from '../store/index.js';
+    import router from '../router/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
 
@@ -115,6 +117,15 @@
             console.log({success});
         }
     }
+
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
+    });
 </script>
 
 <template>

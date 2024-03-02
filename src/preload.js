@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('electron', {
         });
     },
     // Stores
+    seed: (args) => ipcRenderer.send('seed', args),
+    decrypt: async (args) => await ipcRenderer.invoke('decrypt', args),
     id: async (args) => await ipcRenderer.invoke('id', args),
     aesEncrypt: async (args) => await ipcRenderer.invoke('aesEncrypt', args),
     aesDecrypt: async (args) => await ipcRenderer.invoke('aesDecrypt', args),
@@ -72,6 +74,8 @@ contextBridge.exposeInMainWorld('electron', {
             func(data);
         })
     },
+    linkError: async (args) => await ipcRenderer.send('linkError', args),
+    relinkError: async (args) => await ipcRenderer.send('relinkError', args),
     linkResponse: async (args) => await ipcRenderer.send('linkResponse', args),
     // Establishing web connection
     getAuthApp: async (func) => {
@@ -140,6 +144,7 @@ contextBridge.exposeInMainWorld('electron', {
     //
     onGetSafeAccount: async (func) => {
         ipcRenderer.on("getSafeAccount", (event, data) => {
+            console.log("getSafeAccount - triggered")
             func(data);
         })
     },
@@ -160,16 +165,6 @@ contextBridge.exposeInMainWorld('electron', {
     },
     verifyMessageResponse: async (args) => await ipcRenderer.send('verifyMessageResponse', args),
     verifyMessageError: async (args) => await ipcRenderer.send('verifyMessageError', args),
-    // Secure Remote
-    removeAllListeners: async (msg) => await ipcRenderer.send('removeAllListeners', msg),
-    onceSuccessfullyDecrypted: async (func) => {
-        ipcRenderer.once("sucessfullyDecrypted", (event, data) => {
-            func(data);
-        })
-    },
-    onceFailedToDecrypt: async (func) => {
-        ipcRenderer.once("failedToDecrypt", (event, data) => {
-            func(data);
-        })
-    },
+    //
+    removeAllListeners: async (msg) => await ipcRenderer.removeAllListeners(msg),
 });

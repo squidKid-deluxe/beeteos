@@ -71,25 +71,25 @@ const actions = {
         return new Promise((resolve, reject) => {
             let db = BeetDB.apps;
             db.where("identityhash").equals(payload.identityhash).toArray().then((res) => {
-                if (res.length == 0) {
-                    db.add(payload).then((id) => {
+                if (!res || !res.length) {
+                    return db.add(payload).then((id) => {
                         payload.id = id;
                         commit(ADD_APP, payload);
-                        resolve(payload);
+                        return resolve(payload);
                     }).catch((err) => {
-                        reject(err);
+                        return reject(err);
                     });
                 } else {
-                    db.update(res[0].id, payload).then((id)=>{
+                    return db.update(res[0].id, payload).then((id)=>{
                         payload.id = id;
                         commit(UPDATE_APP, payload);
-                        resolve(payload);
+                        return resolve(payload);
                     }).catch((err) => {
-                        reject(err);
+                        return reject(err);
                     });
                 }
             }).catch((err) => {
-                reject(err);
+                return reject(err);
             });
         });
     }
@@ -100,21 +100,23 @@ const getters = {
     walletAccessibleDapps: (state) => (account_id, chain) => {
         return state.apps.filter( x => { return x.chain == chain && x.account_id == account_id});
     },
-    getExistingLinks: (state) => (appName, origin, chain) => {
+    getExistingLinks: state => (appName, origin, chain) => {
         return state.apps.filter((x) => {
             return x.appName == appName && x.origin == origin && chain == "ANY" || x.chain == chain
         })
     },
-    getBeetApp: (state) => (request) => {
-        let matchingApps = state.apps.filter((x) => {
-            return x.identityhash == request.payload.identityhash
-        })
-
-        if (!matchingApps || !matchingApps.length) {
+    getBeetApp: state => (request) => {
+        if (!state.apps || !state.apps.length) {
             return;
         }
+        
+        let matchingApps = state.apps.filter((x) => {
+            return x.identityhash === request.payload.identityhash
+        })
 
-        return matchingApps[0];
+        return matchingApps && matchingApps.length
+            ?   matchingApps[0]
+            :   null;
     }
 };
 

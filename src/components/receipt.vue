@@ -173,14 +173,14 @@
                                     <b>{{ t(visualizedParams[page > 0 ? page - 1 : 0].title) }}</b>
                                 </div>
                                 <div style="margin-bottom: 5px;">
-                                    {{ t(`operations.injected.${chain}.${visualizedParams[page > 0 ? page - 1 : 0].method}.headers.result`) }}
+                                    {{ t(`operations.injected.${chain === "BTS_TEST" ? "BTS" : chain}.${visualizedParams[page > 0 ? page - 1 : 0].method}.headers.result`) }}
                                 </div>
                                 <div
                                     v-for="row in visualizedParams[page > 0 ? page - 1 : 0].rows"
                                     :key="row.key"
                                     :class="$tt('subtitle2')"
                                 >
-                                    {{ t(`operations.injected.${chain}.${visualizedParams[page > 0 ? page - 1 : 0].method}.rows.${row.key}`, row.params) }}
+                                    {{ t(`operations.injected.${chain === "BTS_TEST" ? "BTS" : chain}.${visualizedParams[page > 0 ? page - 1 : 0].method}.rows.${row.key}`, row.params) }}
                                 </div>
                             </ui-card-text>
                         </ui-card-content>

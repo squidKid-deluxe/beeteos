@@ -125,7 +125,6 @@
             console.log(`Page ${items.value[newValue].text} is in use...`);
         }
 
-        window.electron.removeAllListeners('getSafeAccount');
         window.electron.removeAllListeners('signMessage');
         window.electron.removeAllListeners('signNFT');
         window.electron.removeAllListeners('injectedCall');
@@ -137,21 +136,8 @@
             store.state.WalletStore.isUnlocked &&
             [2,3,4,5,6].includes(newValue)
         ) {
-            const getKey = async (enc_key) => {
+            const decryptKey = async (encryptedKey) => {
                 return new Promise(async (resolve, reject) => {
-                    window.electron.removeAllListeners('decrypt_success');
-                    window.electron.removeAllListeners('decrypt_fail');
-
-                    window.electron.onceSuccessfullyDecrypted((arg) => {
-                        console.log('decrypt_success')
-                        resolve(arg);
-                    })
-
-                    window.electron.onceFailedToDecrypt((arg) => {
-                        console.log('decrypt_fail')
-                        return reject('decrypt_fail');
-                    });
-
                     let signature = await window.electron.getSignature('decrypt');
                     if (!signature) {
                         console.log('Signature failure')
@@ -169,13 +155,26 @@
                         console.log(error);
                     }
 
-                    if (isValid) {
-                        console.log("Was valid, proceeding to decrypt");
-                        window.electron.aesDecrypt({data: enc_key});
-                    } else {
+                    if (!isValid) {
                         console.log('invalid signature')
                         return reject('invalid signature');
                     }
+
+                    console.log("Was valid, proceeding to decrypt");
+                    let decryptedKey;
+                    try {
+                        decryptedKey = await window.electron.decrypt({data: encryptedKey, inject: true});
+                    } catch (error) {
+                        console.log(error);
+                        return reject('decrypt failure');
+                    }
+
+                    if (!decryptedKey) {
+                        console.log('Decryption failure')
+                        return reject('decryption failure');
+                    }
+
+                    return resolve(decryptedKey);
                 })
             }
 
@@ -204,7 +203,7 @@
 
                     let processedKey;
                     try {
-                        processedKey = await getKey(retrievedKey)
+                        processedKey = await decryptKey(retrievedKey)
                     } catch (error) {
                         window.electron.signMessageError({id: request.id, result: {isError: true, method: "signMessage.getKey", error: error}});
                         return;
@@ -264,7 +263,7 @@
             
                     let processedKey;
                     try {
-                        processedKey = await getKey(retrievedKey)
+                        processedKey = await decryptKey(retrievedKey)
                     } catch (error) {
                         window.electron.signNFTError({id: request.id, result: {isError: true, method: "signNFT.getKey", error: error}});
                         return;
@@ -286,19 +285,21 @@
                 });
             });
 
-            window.electron.onInjectedCall((
-                request,
-                chain,
-                account,
-                visualizedAccount,
-                visualizedParams,
-                isBlocked,
-                blockedAccounts,
-                foundIDs
-            ) => {
+            window.electron.onInjectedCall(async (args) => {
+                const {
+                    request,
+                    chain,
+                    account,
+                    visualizedAccount,
+                    visualizedParams,
+                    isBlocked,
+                    blockedAccounts,
+                    foundIDs
+                } = args;
+
                 if (
                     (["BTS", "BTS_TEST", "TUSC"].includes(chain)) &&
-                    ((!visualizedAccount && !account || !account.accountName) || !visualizedParams)
+                    ((!visualizedAccount && account && !account.accountName) || !visualizedParams)
                 ) {
                     console.log("Missing required fields for injected call");
                     window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.missingFields", error: 'Missing required fields for injected BTS call'}});
@@ -336,7 +337,7 @@
                 ) {
                     popupContents['serverError'] = true;
                 }
-
+                
                 try {
                     window.electron.createPopup(popupContents);
                 } catch (error) {
@@ -392,7 +393,7 @@
                                 methods: ["broadcastTransaction"],
                                 account: null,
                                 chain: chain,
-                                operation: _request.payload.params,
+                                operation: _request.payload.params
                             });
                         } catch (error) {
                             console.log(error)
@@ -424,50 +425,32 @@
 
                     let signingKey;
                     try {
-                        signingKey = await getKey(activeKey);
+                        signingKey = await decryptKey(activeKey);
                     } catch (error) {
                         console.log(error)
                         window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.getKey", error: error}});
                         return;
                     }
 
-                    let _processedTransaction;
-                    try {
-                        if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
-                            _processedTransaction = await window.electron.blockchainRequest({
-                                methods: ["processTransaction"],
-                                account: null,
-                                chain: chain,
-                                operation: request.payload.params,
-                                signingKey: signingKey,
-                            });
-                        } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
-                            _processedTransaction = await window.electron.blockchainRequest({
-                                methods: ["processTransaction"],
-                                account: null,
-                                chain: chain,
-                                operation: JSON.parse(request.payload.params[1]),
-                                signingKey: signingKey,
-                            });
-                        }   
-                    } catch (error) {
-                        console.log({error});
-                    }
-
-                    if (!_processedTransaction) {
-                        console.log("Failed to process transaction");
-                        window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.blockchain.sign", error: 'Transaction failure'}});
-                        return;
-                    }
-
                     if (txType == "signAndBroadcast") {
                         try {
-                            finalResult = window.electron.blockchainRequest({
-                                methods: ["broadcastTransaction"],
-                                account: null,
-                                chain: chain,
-                                operation: _processedTransaction,
-                            });
+                            if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
+                                finalResult = await window.electron.blockchainRequest({
+                                    methods: ["signAndBroadcast"],
+                                    account: null,
+                                    chain: chain,
+                                    operation: request.payload.params,
+                                    signingKey: signingKey
+                                });
+                            } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
+                                finalResult = await window.electron.blockchainRequest({
+                                    methods: ["signAndBroadcast"],
+                                    account: null,
+                                    chain: chain,
+                                    operation: JSON.parse(request.payload.params[1]),
+                                    signingKey: signingKey
+                                });
+                            }
                         } catch (error) {
                             console.log(error);
                             window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.blockchain.broadcast", error: error}});
@@ -480,7 +463,8 @@
                         window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.finalResult", error: 'No final result'}});
                         return;
                     }
-
+                    
+                    console.log({finalResult});
                     store.dispatch("WalletStore/notifyUser", {notify: "request", message: notifyTXT});
 
                     if (args?.result?.receipt) {
@@ -540,7 +524,7 @@
 
                     let signingKey;
                     try {
-                        signingKey = await getKey(activeKey);
+                        signingKey = await decryptKey(activeKey);
                     } catch (error) {
                         console.log(error);
                         window.electron.requestSignatureError({id: request.id, result: {isError: true, method: "requestSignature.getKey", error: error}});
@@ -621,8 +605,8 @@
         }
     });
 
-    onMounted(() => {
-        if (store.state.WalletStore.isUnlocked) {
+    watch(() => store.state.WalletStore.isUnlocked, (isUnlocked) => {
+        if (isUnlocked) {
             window.electron.timer(() => startLogoutTimer(lastIndex.value));
             window.electron.setNode((data) => {
                 const _currentChain = store.getters['SettingsStore/getChain'];
@@ -631,12 +615,12 @@
                     node: data
                 });
             });
-            window.electron.onGetSafeAccount(() => {
+            window.electron.onGetSafeAccount((arg) => {
                 let account = store.getters['AccountStore/getCurrentSafeAccount']();
                 window.electron.getSafeAccountResponse(account);
             });
         }
-    });
+    }, { immediate: true }); 
 </script>
 
 <template>

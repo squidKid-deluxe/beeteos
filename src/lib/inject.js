@@ -1,6 +1,10 @@
 import { ipcMain } from 'electron';
 
-export async function inject(blockchain, request) {
+export async function inject(
+    blockchain,
+    request,
+    webContents
+) {
     let isBlocked = false;
     let blockedAccounts;
     let foundIDs = [];
@@ -72,7 +76,7 @@ export async function inject(blockchain, request) {
         if (!fromField || !fromField.length) {
             const _account = async () => {
                 return new Promise((resolve, reject) => {
-                    this.webContents.send('getSafeAccount');
+                    webContents.send('getSafeAccount');
                     ipcMain.once('getSafeAccountResponse', (event, arg) => {
                         resolve(arg);
                     });
@@ -95,12 +99,15 @@ export async function inject(blockchain, request) {
 
     const _injectedCall = async (_request, _blockchain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs) => {
         return new Promise((resolve, reject) => {
-            this.webContents.send('injectedCall', _request, _blockchain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs);
+            console.log("sending injectedCall")
+            webContents.send('injectedCall', _request, _blockchain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs);
             ipcMain.once('injectedCallResponse', (event, arg) => {
-                resolve(arg);
+                console.log("injectedCallResponse")
+                return resolve(arg);
             });
             ipcMain.once('injectedCallError', (event, error) => {
-                reject(error);
+                console.log("injectedCallError")
+                return reject(error);
             });
         });
     }
@@ -120,6 +127,8 @@ export async function inject(blockchain, request) {
     } catch (error) {
         console.log(error);
     }
+
+    console.log({ injectedCallResult });
 
     return injectedCallResult;
 }
