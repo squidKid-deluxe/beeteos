@@ -14,4 +14,12 @@ contextBridge.exposeInMainWorld('electron', {
         func(data);
     });
   },
+  getReceipt: (id) => {
+    ipcRenderer.send(`get:receipt:${id}`);
+  },
+  onReceipt: (id, func) => {
+    ipcRenderer.on(`respond:receipt:${id}`, (event, data) => {
+        func(data);
+    });
+  },
 });

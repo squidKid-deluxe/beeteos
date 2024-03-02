@@ -51,14 +51,7 @@ contextBridge.exposeInMainWorld('electron', {
             func(data);
         });
     },
-    getReceipt: (id) => {
-        ipcRenderer.send(`get:receipt:${id}`);
-    },
-    onReceipt: (id, func) => {
-        ipcRenderer.on(`respond:receipt:${id}`, (event, data) => {
-            func(data);
-        });
-    },
+    createReceipt: async (receiptData) => ipcRenderer.send('createReceipt', receiptData),
     // WWW
     launchServer: async (args) => await ipcRenderer.invoke('launchServer', args),
     closeServer: async () => await ipcRenderer.send('closeServer'),
@@ -144,7 +137,6 @@ contextBridge.exposeInMainWorld('electron', {
     //
     onGetSafeAccount: async (func) => {
         ipcRenderer.on("getSafeAccount", (event, data) => {
-            console.log("getSafeAccount - triggered")
             func(data);
         })
     },

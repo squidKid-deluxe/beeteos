@@ -669,6 +669,20 @@ const createWindow = async () => {
         }
     }
 
+    if (methods.includes("signNFT")) {
+        const {key, target} = arg;
+        let signedNFT;
+        try {
+            signedNFT = await blockchain.signNFT(key, target);
+        } catch (error) {
+            console.log(error);
+        }
+
+        if (signedNFT) {
+            responses['signNFT'] = signedNFT;
+        }
+    }
+
     if (methods.includes("signAndBroadcast")) {
         const { operation, signingKey } = arg;
 
@@ -700,7 +714,6 @@ const createWindow = async () => {
 
     if (methods.includes("broadcastTransaction")) {
         const { operation } = arg;
-        console.log("broadcastTransaction")
         let broadcastResponse;
         try {
             broadcastResponse = await blockchain.broadcast(operation);

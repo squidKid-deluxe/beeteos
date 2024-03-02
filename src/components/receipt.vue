@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, watchEffect } from "vue";
+    import { ref, watchEffect, watch } from "vue";
     import queryString from "query-string";
     import { useI18n } from 'vue-i18n';
 
@@ -30,56 +30,52 @@
         return decoded;
     }
 
-    const type = ref();
-    const toSend = ref();
-    const chain = ref();
-    const accountName = ref();
-    const target = ref();
-    const warning = ref();
     const visualizedParams = ref();
     const request = ref();
     const moreRequest = ref();
     const result = ref();
+    const chain = ref();
     const moreResult = ref();
     const notifyTXT = ref();
 
+    let openOPReq = ref(false);
+    let openOPRes = ref(false);
+    let openOpDetails = ref(false);
+    let page = ref(1);
+
     const payload = ref();
     const accounts = ref();
-    const existingLinks = ref();
+
+    let jsonData = ref("");
+    let resultData = ref("");
+    let resultID = ref("");
+    let resultBlockNum = ref(1);
+    let resultTrxNum = ref(1);
+    let resultExpiration = ref("");
+    let resultSignatures = ref("");
 
     watchEffect(() => {
         const id = handleProp('id');
 
         window.electron.getReceipt(id);
         window.electron.onReceipt(id, (data) => {
-            if (data.type) {
-                type.value = data.type;
-            }
-            if (data.toSend) {
-                toSend.value = data.toSend;
-            }
-            if (data.chain) {
-                chain.value = data.chain;
-            }
-            if (data.accountName) {
-                accountName.value = data.accountName;
-            }
-            if (data.target) {
-                target.value = data.target;
-            }
-            if (data.warning) {
-                warning.value = data.warning;
-            }
             if (data.receipt) {
                 visualizedParams.value = JSON.parse(data.receipt.visualizedParams);
             }
             if (data.request) {
                 request.value = data.request;
+                chain.value = data.request.payload.chain;
                 moreRequest.value = JSON.stringify(data.request, undefined, 4);
             }
             if (data.result) {
-                result.value = data.result;
                 moreResult.value = JSON.stringify(data.result, undefined, 4);
+
+                result.value = data.result;
+                resultID.value = data.result[0].id;
+                resultBlockNum.value = data.result[0].block_num;
+                resultTrxNum.value = data.result[0].trx_num;
+                resultExpiration.value = data.result[0].trx.expiration;
+                resultSignatures.value = data.result[0].trx.signatures;
             }
             if (data.payload) {
                 payload.value = JSON.parse(data.payload);
@@ -90,48 +86,31 @@
                 const filteredAccounts = parsedAccounts.filter(account => parsedRequest.payload.chain === account.chain);
                 accounts.value = filteredAccounts;
             }
-            if (data.existingLinks) {
-                existingLinks.value = JSON.parse(data.existingLinks);
-            }
             if (data.notifyTXT) {
                 notifyTXT.value = data.notifyTXT;
             }
         });
     })
 
-    let openOPReq = ref(false);
-    let openOPRes = ref(false);
-    let openOpDetails = ref(false);
-    let page = ref(1);
+    watch(
+        [page, visualizedParams, result],
+        ([newPage, newVisualizedParams, newResult]) => {
+            const currentPageValue = newPage > 0 ? newPage - 1 : 0;
 
-    let jsonData = ref("");
-    let resultData = ref("");
-    let resultID = ref("");
-    let resultBlockNum = ref(1);
-    let resultTrxNum = ref(1);
-    let resultExpiration = ref("");
-    let resultSignatures = ref("");
-    watchEffect(() => {
-        const currentPageValue = page.value > 0 ? page.value - 1 : 0;
+            if (newVisualizedParams && newVisualizedParams.length) {
+                jsonData.value = JSON.stringify(
+                    newVisualizedParams[currentPageValue].op, undefined, 4
+                );
+            }
 
-        if (visualizedParams.value && visualizedParams.value.length) {
-            jsonData.value = JSON.stringify(
-                visualizedParams.value[currentPageValue].op, undefined, 4
-            );
-        }
-
-        if (result.value && result.value.length) {
-            resultData.value = JSON.stringify(
-                result.value[0].trx.operation_results[currentPageValue], undefined, 4
-            );
-
-            resultID.value = result.value[0].id;
-            resultBlockNum.value = result.value[0].block_num;
-            resultTrxNum.value = result.value[0].trx_num;
-            resultExpiration.value = result.value[0].trx.expiration;
-            resultSignatures.value = result.value[0].trx.signatures;
-        }
-    });
+            if (newResult && newResult.length) {
+                resultData.value = JSON.stringify(
+                    newResult[0].trx.operation_results[currentPageValue], undefined, 4
+                );
+            }
+        },
+        { immediate: true }
+    );
 
     let openMoreRequest = ref(false);
     let openResult = ref(false);

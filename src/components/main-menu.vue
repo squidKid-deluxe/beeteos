@@ -243,11 +243,11 @@
                     window.electron.signNFTError({id: request.id, result: {isError: true, method: "signNFT.getBeetApp", error: 'No beetApp'}});
                     return;
                 }
-            
+          
                 let account = store.getters['AccountStore/getSafeAccount'](JSON.parse(JSON.stringify(shownBeetApp)));
                 store.dispatch("WalletStore/notifyUser", {notify: "request", message: t('common.apiUtils.signNFT')});
 
-                window.electron.createPopup(request.id, {
+                window.electron.createPopup({
                     request: request,
                     accounts: [account]
                 });
@@ -257,7 +257,13 @@
                     try {
                         retrievedKey = store.getters['AccountStore/getSigningKey'](request);
                     } catch (error) {
+                        console.log(error);
                         window.electron.signNFTError({id: request.id, result: {isError: true, method: "signNFT.getSigningKey", error: error}});
+                        return;
+                    }
+
+                    if (!retrievedKey) {
+                        window.electron.signNFTError({id: request.id, result: {isError: true, method: "signNFT.getSigningKey", error: "No retrievedKey"}});
                         return;
                     }
             
@@ -265,18 +271,36 @@
                     try {
                         processedKey = await decryptKey(retrievedKey)
                     } catch (error) {
+                        console.log(error);
                         window.electron.signNFTError({id: request.id, result: {isError: true, method: "signNFT.getKey", error: error}});
                         return;
                     }
-            
+
+                    if (!processedKey) {
+                        window.electron.signNFTError({id: request.id, result: {isError: true, method: "signNFT.getKey", error: "No processedKey"}});
+                        return;
+                    }
+
                     let signedNFT;
                     try {
-                        signedNFT = await window.electron.signNFT(processedKey, request.payload.params);
+                        signedNFT = await window.electron.blockchainRequest({
+                            methods: ["signNFT"],
+                            account: null,
+                            chain: store.getters['AccountStore/getChain'],
+                            key: processedKey,
+                            parameters: request.payload.params
+                        });
                     } catch (error) {
+                        console.log(error);
                         window.electron.signNFTError({id: request.id, result: {isError: true, method: "signNFT.executeSignNFT", error: error}});
                         return;
                     }
             
+                    if (!signedNFT) {
+                        window.electron.signNFTError({id: request.id, result: {isError: true, method: "signNFT.executeSignNFT", error: "No signedNFT"}});
+                        return;
+                    }
+
                     window.electron.signNFTResponse({result: signedNFT});
                 });
 
@@ -459,19 +483,18 @@
                         notifyTXT = t('common.apiUtils.signAndBroadcast');
                     }
 
-                    if (!finalResult) {
+                    if (!finalResult || !finalResult.signAndBroadcast) {
                         window.electron.injectedCallError({id: request.id, result: {isError: true, method: "injectedCall.finalResult", error: 'No final result'}});
                         return;
                     }
                     
-                    console.log({finalResult});
                     store.dispatch("WalletStore/notifyUser", {notify: "request", message: notifyTXT});
 
                     if (args?.result?.receipt) {
                         try {
                             window.electron.createReceipt({
                                 request: request,
-                                result: finalResult,
+                                result: finalResult.signAndBroadcast,
                                 notifyTXT: notifyTXT,
                                 receipt: {
                                     visualizedAccount: popupContents.visualizedAccount,
@@ -609,7 +632,7 @@
         if (isUnlocked) {
             window.electron.timer(() => startLogoutTimer(lastIndex.value));
             window.electron.setNode((data) => {
-                const _currentChain = store.getters['SettingsStore/getChain'];
+                const _currentChain = store.getters['AccountStore/getChain'];
                 store.dispatch("SettingsStore/setNode", {
                     chain: _currentChain,
                     node: data
