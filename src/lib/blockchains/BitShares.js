@@ -1232,8 +1232,7 @@ export default class BitShares extends BlockchainAPI {
                 JSON.parse(contents)
             );
         } catch (error) {
-            console.log(error);
-            return;
+            console.log({error, location: "handleQR"});
         }
 
         return parsedTransaction;
@@ -1276,7 +1275,7 @@ export default class BitShares extends BlockchainAPI {
      * @param {Class||Object} incoming
      * @returns {Class} TransactionBuilder
      */
-    _parseTransactionBuilder(incoming) {
+    async _parseTransactionBuilder(incoming) {
         if (incoming instanceof TransactionBuilder) {
             return incoming;
         } else if (
@@ -1286,6 +1285,10 @@ export default class BitShares extends BlockchainAPI {
                 incoming[0] == "sign" ||
                 incoming[0] == "broadcast")
         ) {
+            console.log({
+                location: 1,
+                incoming,
+            })
             if (incoming.length <= 3) {
                 return new TransactionBuilder(JSON.parse(incoming[1]));
             } else {
@@ -1302,6 +1305,11 @@ export default class BitShares extends BlockchainAPI {
                 return tr;
             }
         } else if (typeof incoming == "object" && incoming.operations) {
+            console.log({
+                location: 2,
+                operations: incoming.operations,
+                incoming
+            })
             let tr = new TransactionBuilder();
 
             tr.expiration = incoming.expiration;
@@ -1313,11 +1321,49 @@ export default class BitShares extends BlockchainAPI {
                 tr.ref_block_num = incoming.ref_block_num;
                 tr.ref_block_prefix = incoming.ref_block_prefix;
             } else {
-                tr.finalize();
+
+                try {
+                    await tr.update_head_block();
+                } catch (error) {
+                    console.log(error);
+                }
+              
+                try {
+                    await tr.set_required_fees();
+                } catch (error) {
+                    console.log(error);
+                }
+
+                try {
+                    tr.finalize();
+                } catch (error) {
+                    console.log(error);
+                }
+              
+
+                /*
+                try {
+                    //tr.set_required_fees().then(() => {
+                        tr.finalize();
+                    //});
+                } catch (error) {
+                    console.log({error, location: "set_required_fees"});
+                }
+
+                try {
+                    tr.finalize();
+                } catch (error) {
+                    console.log({error, location: "finalize"});
+                }
+                */
             }
 
             return tr;
         } else if (incoming.type) {
+            console.log({
+                location: 3,
+                incoming,
+            })
             let tr = new TransactionBuilder();
             tr.add_type_operation(incoming.type, incoming.data);
             return tr;
@@ -1544,9 +1590,9 @@ export default class BitShares extends BlockchainAPI {
      * @param {Object} object
      * @returns {String}
      */
-    getExplorer(object) {
+    getExplorer(object, chain) {
         if (object.accountName) {
-            return "https://blocksights.info/#/accounts/" + object.accountName;
+            return `https://blocksights.info/#/accounts/${object.accountName}${chain && chain === "BTS_TEST" ? `?network=testnet` : ``}`;
         } else if (object.opid) {
             // 1.11.833380474
             return "https://blocksights.info/#/operations/" + object.opid;

@@ -299,9 +299,9 @@ ipcMain.on('modalError', (event, arg) => {
   }
 });
 
-
 function _parseDeeplink(
     requestContent,
+    type,
     chain,
     blockchain,
     blockchainActions,
@@ -309,23 +309,24 @@ function _parseDeeplink(
     currentCode
 ) {
     let processedRequest;
-    try {
-        processedRequest = decodeURIComponent(requestContent);
-    } catch (error) {
-        console.log('Processing request failed');
-        return;
-    }
-    
     let parsedRequest;
-    try {
-        parsedRequest = Base64.parse(processedRequest).toString(ENC)
-    } catch (error) {
-        console.log('Parsing request failed');
-        return;
-    }
-
     let request;
-    if (currentCode) {
+
+    if (type === "totp") {
+        try {
+            processedRequest = decodeURIComponent(requestContent);
+        } catch (error) {
+            console.log('Processing request failed');
+            return;
+        }
+        
+        try {
+            parsedRequest = Base64.parse(processedRequest).toString(ENC)
+        } catch (error) {
+            console.log({msg: 'Parsing request failed', error, processedRequest, requestContent});
+            return;
+        }
+
         let decryptedBytes;
         try {
             decryptedBytes = aes.decrypt(parsedRequest, currentCode);
@@ -348,9 +349,23 @@ function _parseDeeplink(
             console.log(error);
             return;
         }
+    } else if (type === "raw") {
+        try {
+            processedRequest = decodeURIComponent(requestContent);
+        } catch (error) {
+            console.log('Processing request failed');
+            return;
+        }
+
+        try {
+            request = JSON.parse(processedRequest);
+        } catch (error) {
+            console.log(error);
+            return;
+        }
     } else {
         try {
-            request = JSON.parse(parsedRequest);
+            request = JSON.parse(requestContent);
         } catch (error) {
             console.log(error);
             return;
@@ -393,15 +408,14 @@ function _parseDeeplink(
     }
 
     if (request.payload.method === Actions.INJECTED_CALL) {
-        let tr;
-        try {
-            tr = blockchain._parseTransactionBuilder(request.payload.params);
-        } catch (error) {
-            console.log(error)
-        }
-
         let authorizedUse = false;
-        if (tr && ["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
+        if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
+            let tr;
+            try {
+                tr = blockchain._parseTransactionBuilder(request.payload.params);
+            } catch (error) {
+                console.log(error)
+            }
             for (let i = 0; i < tr.operations.length; i++) {
                 let operation = tr.operations[i];
                 if (settingsRows && settingsRows.includes(operation[0])) {
@@ -409,12 +423,14 @@ function _parseDeeplink(
                     break;
                 }
             }
-        } else if (tr && ["EOS", "BEOS", "TLOS"].includes(chain)) {
-            for (let i = 0; i < tr.actions.length; i++) {
-                let operation = tr.actions[i];
-                if (settingsRows && settingsRows.includes(operation.name)) {
-                    authorizedUse = true;
-                    break;
+        } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
+            if (request.payload.params.actions) {
+                for (let i = 0; i < request.payload.params.actions.length; i++) {
+                    let operation = request.payload.params.actions[i];
+                    if (settingsRows && settingsRows.includes(operation.name)) {
+                        authorizedUse = true;
+                        break;
+                    }
                 }
             }
         }
@@ -618,7 +634,8 @@ const createWindow = async () => {
         let _explorer;
         try {
             _explorer = await blockchain.getExplorer({
-                accountName: account.name ? account.name : account.accountName
+                accountName: account.name ? account.name : account.accountName,
+                chain
             });
         } catch (error) {
             console.log({error, location: "getExplorer"});
@@ -742,6 +759,7 @@ const createWindow = async () => {
       try {
         apiobj = _parseDeeplink(
             requestContent,
+            'totp',
             chain,
             blockchain,
             blockchainActions,
@@ -761,7 +779,7 @@ const createWindow = async () => {
         }
   
         if (status && status.result && !status.result.isError && !status.result.canceled) {
-            responses['getRawLink'] = status;
+            responses['getRawLink'] = status.result;
         }      
       }
     }
@@ -769,10 +787,13 @@ const createWindow = async () => {
     if (methods.includes("getRawLink")) {
         const { requestBody, allowedOperations } = arg;
 
+        console.log({requestBody});
+
         let apiobj;
         try {
             apiobj = _parseDeeplink(
                 requestBody,
+                'raw',
                 chain,
                 blockchain,
                 blockchainActions,
@@ -789,9 +810,11 @@ const createWindow = async () => {
             } catch (error) {
                 console.log({error: error || "No status"});
             }
+
+            console.log({status, location: "background.js"});
     
             if (status && status.result && !status.result.isError && !status.result.canceled) {
-                responses['getRawLink'] = status;
+                responses['getRawLink'] = status.result;
             }
         }
     }
@@ -800,16 +823,17 @@ const createWindow = async () => {
       const {allowedOperations, filePath} = arg;
       fs.readFile(filePath, 'utf-8', async (error, data) => {
         if (!error) {
-            const { requestBody } = data;
-    
             let apiobj;
             try {
                 apiobj = _parseDeeplink(
-                    requestBody,
+                    data,
+                    'local',
                     chain,
                     blockchain,
                     blockchainActions,
-                    allowedOperations
+                    allowedOperations,
+                    null, // avoid TOTP
+                    true  // changes request parsing
                 );
             } catch (error) {
                 console.log(error);
@@ -824,7 +848,7 @@ const createWindow = async () => {
                 }
         
                 if (status && status.result && !status.result.isError && !status.result.canceled) {
-                    responses['localFileUpload'] = status;
+                    responses['localFileUpload'] = status.result;
                 }
             }            
         } else {
@@ -841,7 +865,7 @@ const createWindow = async () => {
             ? await blockchain.handleQR(qrData)
             : JSON.parse(qrData);
       } catch (error) {
-          console.log(error);
+          console.log({error, location: "background"});
       }
 
       if (qrTX) {
@@ -887,11 +911,11 @@ const createWindow = async () => {
           try {
               status = await inject(blockchain, apiobj, mainWindow.webContents);
           } catch (error) {
-              console.log(error);
+              console.log({error, location: 'processQR'});
           }
 
           if (status && status.result && !status.result.isError && !status.result.canceled) {
-            responses['qrData'] = status;
+            responses['qrData'] = status.result;
           }
         }
       }

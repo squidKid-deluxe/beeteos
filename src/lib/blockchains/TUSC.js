@@ -61,7 +61,7 @@ export default class TUSC extends BitShares {
         }
     }
 
-    getExplorer(object) {
+    getExplorer(object, chain) {
         return "https://wallet.tusc.network/wallet/explorer";
     }
 

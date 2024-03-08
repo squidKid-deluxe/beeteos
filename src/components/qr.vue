@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed, watchEffect, inject, onMounted } from 'vue';
+    import { ref, computed, watchEffect, inject, onMounted, toRaw } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -38,8 +38,7 @@
         return store.getters['AccountStore/getChain'];
     });
 
-    const emitter = inject('emitter');
-    emitter.on('detectedQR', async (data) => {
+    async function evaluateQR (data) {
         window.electron.resetTimer();
         qrInProgress.value = true;
 
@@ -50,7 +49,7 @@
                 chain: chain.value,
                 qrChoice: qrChoice.value,
                 qrData: data,
-                allowedOperations: selectedRows.value,
+                allowedOperations: toRaw(selectedRows.value),
                 location: 'qrData'
             });
         } catch (error) {
@@ -60,13 +59,18 @@
             return;
         }
 
-        if (blockchainResponse) {
-            console.log({ blockchainResponse });
-            window.electron.notify(t("common.qr.prompt_success"));
+        if (!blockchainResponse || !blockchainResponse.processQR) {
+            console.log("QR code processing error");
+            window.electron.notify(t("common.qr.promptFailure"));
+            qrInProgress.value = false;
+            return;
         }
-        qrInProgress.value = false;
-    });
 
+        console.log({ qr: blockchainResponse.processQR });
+        window.electron.notify(t("common.qr.prompt_success"));
+        qrInProgress.value = false;
+    }
+    
     let compatible = ref(false);
     let operationTypes = ref([]);
     watchEffect(() => {
@@ -185,21 +189,21 @@
             
             <span v-if="chosenScope && selectedRows">
                 <span v-if="qrChoice && qrChoice === 'Scan'">
-                    <QRScan />
+                    <QRScan @detection="(qr) => evaluateQR(qr)" />
                     <br>
                     <ui-button @click="undoQRChoice()">
                         {{ t('common.qr.back') }}
                     </ui-button>
                 </span>
                 <span v-else-if="qrChoice && qrChoice === 'Drag'">
-                    <QRDrag />
+                    <QRDrag @detection="(qr) => evaluateQR(qr)" />
                     <br>
                     <ui-button @click="undoQRChoice()">
                         {{ t('common.qr.back') }}
                     </ui-button>
                 </span>
                 <span v-else-if="qrChoice && qrChoice === 'Upload'">
-                    <QRUpload />
+                    <QRUpload @detection="(qr) => evaluateQR(qr)" />
                     <br>
                     <ui-button @click="undoQRChoice()">
                         {{ t('common.qr.back') }}

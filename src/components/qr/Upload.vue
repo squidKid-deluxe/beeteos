@@ -1,9 +1,9 @@
 <script setup>
-    import { ref, inject } from 'vue';
+    import { ref } from 'vue';
     import { useI18n } from 'vue-i18n';
     import { QrcodeCapture } from 'vue-qrcode-reader'
 
-    const emitter = inject('emitter');
+    const emit = defineEmits(['detection']);
     const { t } = useI18n({ useScope: 'global' });
     let selected = ref();
     let qrContent = ref();
@@ -11,7 +11,7 @@
     function onDecode (result) {
         if (result) {
             qrContent.value = true;
-            emitter.emit('detectedQR', result);
+            emit('detection', result);
         }
     }
 

@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed, onMounted } from 'vue';
+    import { ref, computed, onMounted, toRaw } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -94,7 +94,7 @@
                 methods: ['localFileUpload'],
                 chain: chain.value,
                 filePath: a[0].sourceFile.path,
-                allowedOperations: selectedRows.value,
+                allowedOperations: toRaw(selectedRows.value)
             });
         } catch (error) {
             console.log({error});
@@ -103,19 +103,15 @@
             return;
         }
 
-        if (!blockchainResponse) {
+        if (!blockchainResponse || !blockchainResponse.localFileUpload) {
             console.log("No blockchain response");
             inProgress.value = false;
             window.electron.notify(t("common.local.promptFailure"));
             return;
         }
 
-        if (blockchainResponse.localFileUpload) {
-            const { success } = blockchainResponse.localFileUpload;
-            inProgress.value = false;
-            window.electron.notify(t("common.local.promptSuccess"));
-            console.log({success});
-        }
+        inProgress.value = false;
+        window.electron.notify(t("common.local.promptSuccess"));
     }
 
     onMounted(() => {

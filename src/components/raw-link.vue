@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed, watchEffect, onMounted } from 'vue';
+    import { ref, computed, watchEffect, onMounted, toRaw } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -96,23 +96,26 @@
                     methods: ['getRawLink'],
                     chain: account.chain,
                     requestBody: args.request,
-                    allowedOperations: selectedRows.value
+                    allowedOperations: toRaw(selectedRows.value)
                 }
             );
         } catch (error) {
-            console.error(error);
+            console.log({error});
             deepLinkInProgress.value = false;
             window.electron.notify(t("common.raw.promptFailure"));
             return;
         }
 
-        if (blockchainRequest) {
-            const { success } = blockchainRequest;
-            if (success) {
-                console.log({success})
-            }
+        if (!blockchainRequest || !blockchainRequest.getRawLink) {
+            console.log("Raw link processing error");
+            window.electron.notify(t("common.raw.promptFailure"));
+            deepLinkInProgress.value = false;
+            return;
         }
         
+        
+        console.log({result: blockchainRequest.getRawLink});
+        window.electron.notify(t("common.local.promptSuccess"));
         deepLinkInProgress.value = false;
     });
 

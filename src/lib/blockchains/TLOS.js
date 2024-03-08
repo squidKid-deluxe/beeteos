@@ -2,7 +2,7 @@ import EOSmainnet from "./EOSmainnet.js";
 
 export default class TLOS extends EOSmainnet {
 
-    getExplorer(object) {
+    getExplorer(object, chain) {
         if (object.accountName) {
             return "https://telos.eosx.io/account/" + object.accountName;
         } else if (object.txid) {

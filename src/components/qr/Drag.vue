@@ -1,37 +1,24 @@
 <script setup>
-    import { ref, inject } from 'vue';
+    import { ref } from 'vue';
     import { useI18n } from 'vue-i18n';
     import { QrcodeDropZone } from 'vue-qrcode-reader'
-
-    const emitter = inject('emitter');
 
     const { t } = useI18n({ useScope: 'global' });
     let result = ref();
     let error = ref();
     let dragover = ref(false);
 
+    const emit = defineEmits(['detection']);
+
     /**
      * Dragged image QR attempt
      * @param {Promise} promise 
      */
-    async function onDetect (promise) {
-        let detectedQR;
-        try {
-            detectedQR = await promise
-        } catch (error) {
-            if (error.name === 'DropImageFetchError') {
-                error.value = t('common.qr.drag.error1')
-            } else if (error.name === 'DropImageDecodeError') {
-                error.value = t('common.qr.drag.error2')
-            } else {
-                error.value = t('common.qr.drag.error3')
-            }
-        }
-      
-        if (detectedQR && detectedQR.content) {
+    async function onDetect (detectedCodes) {     
+        if (detectedCodes && detectedCodes.length) {
             error.value = null;
             result.value = true;
-            emitter.emit('detectedQR', detectedQR.content);
+            emit('detection', detectedCodes[0].rawValue);
         }
     }
 
@@ -42,17 +29,22 @@
         dragover.value = isDraggingOver;
     }
 
-    /**
-     * @param {Promise} promise 
-     */
-    function logErrors (promise) {
-        promise.catch((error) => {console.log(error)});
-    }
-
     function tryAgain() {
         result.value = null;
         error.value = null;
     }
+
+    function onError(error) {
+        // Handle error event
+        if (error.name === 'DropImageFetchError') {
+            error.value = t('common.qr.drag.error1')
+        } else if (error.name === 'DropImageDecodeError') {
+            error.value = t('common.qr.drag.error2')
+        } else {
+            error.value = t('common.qr.drag.error3')
+        }
+    }
+
 </script>
 
 <template>
@@ -89,7 +81,7 @@
                 <qrcode-drop-zone
                     @detect="onDetect"
                     @dragover="onDragOver"
-                    @init="logErrors"
+                    @error="onError"
                 >
                     <div
                         class="drop-area"

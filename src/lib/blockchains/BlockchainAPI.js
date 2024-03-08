@@ -575,7 +575,7 @@ export default class BlockchainAPI {
      * Placeholder for retrieving a blockchain explorer URL
      * @returns {String}
      */
-    getExplorer(account) {
+    getExplorer(account, chain) {
         return false;
     }
 

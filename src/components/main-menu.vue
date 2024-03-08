@@ -281,14 +281,14 @@
                         return;
                     }
 
-                    let signedNFT;
+                    let _request;
                     try {
-                        signedNFT = await window.electron.blockchainRequest({
+                        _request = await window.electron.blockchainRequest({
                             methods: ["signNFT"],
                             account: null,
                             chain: store.getters['AccountStore/getChain'],
                             key: processedKey,
-                            parameters: request.payload.params
+                            target: request.payload.params
                         });
                     } catch (error) {
                         console.log(error);
@@ -296,12 +296,12 @@
                         return;
                     }
             
-                    if (!signedNFT) {
+                    if (!_request || !_request.signNFT) {
                         window.electron.signNFTError({id: request.id, result: {isError: true, method: "signNFT.executeSignNFT", error: "No signedNFT"}});
                         return;
                     }
 
-                    window.electron.signNFTResponse({result: signedNFT});
+                    window.electron.signNFTResponse({result: _request.signNFT});
                 });
 
                 window.electron.popupRejected(request.id, (result) => { // `popupRejected_${request.id}`
@@ -372,7 +372,6 @@
                 store.dispatch("WalletStore/notifyUser", {notify: "request", message: t('common.apiUtils.inject')});
 
                 window.electron.popupApproved(request.id, async (args) => {
-                    let memoObject;
                     let _request = request;
                     if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {        
                         if (request.payload.memo) {
@@ -389,8 +388,9 @@
                                 to = request.payload.issue_to_account;
                             }
 
+                            let _blockchainRequest;
                             try {
-                                memoObject = await window.electron.blockchainRequest({
+                                _blockchainRequest = await window.electron.blockchainRequest({
                                     methods: ["createMemoObject"],
                                     account: null,
                                     chain: chain,
@@ -403,7 +403,9 @@
                                 console.log(error);
                             }
 
-                            _request.payload.memo = memoObject;
+                            if (_blockchainRequest && _blockchainRequest.createMemoObject) {
+                                _request.payload.memo = _blockchainRequest.createMemoObject;
+                            }
                         }
                     }
 
@@ -424,11 +426,17 @@
                             window.electron.injectedCallError({id: _request.id, result: {isError: true, method: "injectedCall.blockchain.broadcast", error: error}});
                             return;
                         }
+
+                        if (!finalResult || !finalResult.broadcastTransaction) {
+                            window.electron.injectedCallError({id: _request.id, result: {isError: true, method: "injectedCall.finalResult", error: 'No final result'}});
+                            return;
+                        }
+
                         store.dispatch(
                             "WalletStore/notifyUser",
                             {notify: "request", message: t('common.apiUtils.broadcast')}
                         );
-                        window.electron.injectedCallResponse({id: _request.id, result: {result: finalResult}});
+                        window.electron.injectedCallResponse({id: _request.id, result: {result: finalResult.broadcastTransaction}});
                         return;
                     }
 

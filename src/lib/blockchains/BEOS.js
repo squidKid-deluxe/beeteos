@@ -2,7 +2,7 @@ import EOSmainnet from "./EOSmainnet.js";
 
 export default class BEOS extends EOSmainnet {
 
-    getExplorer(object) {
+    getExplorer(object, chain) {
         if (object.accountName) {
             return "https://explore.beos.world/accounts/" + object.accountName;
         } else if (object.txid && object.blocknum) {

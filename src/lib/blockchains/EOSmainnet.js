@@ -515,7 +515,7 @@ export default class EOS extends BlockchainAPI {
         );
     }
 
-    getExplorer(object) {
+    getExplorer(object, chain) {
         if (object.accountName) {
             return "https://bloks.io/account/" + object.accountName;
         } else if (object.txid) {

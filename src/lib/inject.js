@@ -97,16 +97,25 @@ export async function inject(
         visualizedAccount = _actions[0].authorization[0].actor; 
     }
 
-    const _injectedCall = async (_request, _blockchain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs) => {
+    const _injectedCall = (_apiobj, _chain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs) => {
         return new Promise((resolve, reject) => {
-            console.log("sending injectedCall")
-            webContents.send('injectedCall', _request, _blockchain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs);
+            webContents.send(
+                'injectedCall',
+                {
+                    request: _apiobj,
+                    chain: _chain,
+                    account: _account,
+                    visualizedAccount: _visualizedAccount,
+                    visualizedParams: _visualizedParams,
+                    isBlocked: _isBlocked,
+                    blockedAccounts: _blockedAccounts,
+                    foundIDs: _foundIDs
+                }
+            );
             ipcMain.once('injectedCallResponse', (event, arg) => {
-                console.log("injectedCallResponse")
                 return resolve(arg);
             });
             ipcMain.once('injectedCallError', (event, error) => {
-                console.log("injectedCallError")
                 return reject(error);
             });
         });
@@ -125,10 +134,8 @@ export async function inject(
             foundIDs
         );
     } catch (error) {
-        console.log(error);
+        console.log({error, location: "_injectedCall"});
     }
-
-    console.log({ injectedCallResult });
 
     return injectedCallResult;
 }

@@ -1,5 +1,5 @@
 <script setup>
-    import { watchEffect, ref, computed, onMounted } from 'vue';
+    import { watchEffect, ref, computed, onMounted, toRaw } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -165,7 +165,7 @@
                 methods: ["totpDeeplink"],
                 chain: chain.value,
                 currentCode: currentCode.value,
-                allowedOperations: selectedRows.value,
+                allowedOperations: toRaw(selectedRows.value),
                 requestContent: args.request
             });
         } catch (error) {
@@ -182,10 +182,8 @@
             return;
         }
 
-        const { totpDeeplink } = blockchainResponse;
-        if (totpDeeplink) {
-            console.log({totpDeeplink})
-        }
+        console.log({result: blockchainResponse.totpDeeplink})
+        window.electron.notify(t("common.local.promptSuccess"));
         deepLinkInProgress.value = false;
     });
 
