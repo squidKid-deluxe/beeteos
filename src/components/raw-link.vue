@@ -113,7 +113,6 @@
             return;
         }
         
-        
         console.log({result: blockchainRequest.getRawLink});
         window.electron.notify(t("common.local.promptSuccess"));
         deepLinkInProgress.value = false;

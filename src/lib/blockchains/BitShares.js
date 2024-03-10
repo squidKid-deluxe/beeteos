@@ -483,7 +483,6 @@ export default class BitShares extends BlockchainAPI {
         });
 
         let connectionPromise = new Promise(async (resolve, reject) => {
-            //console.log(`Testing: ${url}`);
             let before = new Date();
             let beforeTS = before.getTime();
 
@@ -492,12 +491,10 @@ export default class BitShares extends BlockchainAPI {
                 let now = new Date();
                 let nowTS = now.getTime();
                 socket.destroy();
-                //console.log(`Success: ${url} (${nowTS - beforeTS}ms)`);
                 return resolve({ url: url, lag: nowTS - beforeTS });
             });
 
             socket.on("error", (error) => {
-                //console.log(`Failure: ${url}`);
                 socket.destroy();
                 return resolve(null);
             });
@@ -1225,12 +1222,14 @@ export default class BitShares extends BlockchainAPI {
      * Supported QR codes: Bitshares-ui reference QRs
      * @param {Object} contents
      */
-    handleQR(contents) {
+    async handleQR(contents) {
         let parsedTransaction;
         try {
-            parsedTransaction = this._parseTransactionBuilder(
-                JSON.parse(contents)
-            );
+            parsedTransaction = await this._parseTransactionBuilder([
+                'signAndBroadcast',
+                contents,
+                []
+            ]);
         } catch (error) {
             console.log({error, location: "handleQR"});
         }
@@ -1275,7 +1274,7 @@ export default class BitShares extends BlockchainAPI {
      * @param {Class||Object} incoming
      * @returns {Class} TransactionBuilder
      */
-    async _parseTransactionBuilder(incoming) {
+    async _parseTransactionBuilder(incoming) {       
         if (incoming instanceof TransactionBuilder) {
             return incoming;
         } else if (
@@ -1285,85 +1284,16 @@ export default class BitShares extends BlockchainAPI {
                 incoming[0] == "sign" ||
                 incoming[0] == "broadcast")
         ) {
-            console.log({
-                location: 1,
-                incoming,
-            })
             if (incoming.length <= 3) {
-                return new TransactionBuilder(JSON.parse(incoming[1]));
-            } else {
-                console.warn(
-                    "This way of parsing TransactionBuilder is deprecated, use new constructor"
-                );
-                let tr = new TransactionBuilder();
-                tr.ref_block_num = incoming[1];
-                tr.ref_block_prefix = incoming[2];
-                tr.expiration = incoming[3];
-                incoming[4].forEach((op) => {
-                    tr.add_operation(tr.get_type_operation(op[0], op[1]));
-                });
+                const _incoming = JSON.parse(incoming[1]);
+                const tr = new TransactionBuilder(_incoming);
+
                 return tr;
             }
         } else if (typeof incoming == "object" && incoming.operations) {
-            console.log({
-                location: 2,
-                operations: incoming.operations,
-                incoming
-            })
-            let tr = new TransactionBuilder();
-
-            tr.expiration = incoming.expiration;
-            tr.extensions = incoming.extensions;
-            tr.signatures = incoming.signatures;
-            tr.operations = incoming.operations;
-
-            if (incoming.ref_block_num && incoming.ref_block_prefix) {
-                tr.ref_block_num = incoming.ref_block_num;
-                tr.ref_block_prefix = incoming.ref_block_prefix;
-            } else {
-
-                try {
-                    await tr.update_head_block();
-                } catch (error) {
-                    console.log(error);
-                }
-              
-                try {
-                    await tr.set_required_fees();
-                } catch (error) {
-                    console.log(error);
-                }
-
-                try {
-                    tr.finalize();
-                } catch (error) {
-                    console.log(error);
-                }
-              
-
-                /*
-                try {
-                    //tr.set_required_fees().then(() => {
-                        tr.finalize();
-                    //});
-                } catch (error) {
-                    console.log({error, location: "set_required_fees"});
-                }
-
-                try {
-                    tr.finalize();
-                } catch (error) {
-                    console.log({error, location: "finalize"});
-                }
-                */
-            }
-
+            let tr = new TransactionBuilder(incoming);
             return tr;
         } else if (incoming.type) {
-            console.log({
-                location: 3,
-                incoming,
-            })
             let tr = new TransactionBuilder();
             tr.add_type_operation(incoming.type, incoming.data);
             return tr;
@@ -1380,8 +1310,13 @@ export default class BitShares extends BlockchainAPI {
     sign(operation, key) {
         return new Promise((resolve, reject) => {
             this.ensureConnection()
-                .then(() => {
-                    let tr = this._parseTransactionBuilder(operation);
+                .then(async () => {
+                    let tr;
+                    try {
+                        tr = await this._parseTransactionBuilder(operation);
+                    } catch (error) {
+                        console.log({error, location: "sign"});
+                    }
                     Promise.all([
                         tr.set_required_fees(),
                         tr.update_head_block(),
@@ -1419,21 +1354,30 @@ export default class BitShares extends BlockchainAPI {
     broadcast(transaction) {
         return new Promise((resolve, reject) => {
             this.ensureConnection()
-                .then(() => {
-                    transaction = this._parseTransactionBuilder(transaction);
-                    transaction
-                        .broadcast()
+                .then(async () => {
+                    let tr;
+                    try {
+                        tr = await this._parseTransactionBuilder(transaction);
+                    } catch (error) {
+                        console.log({error, location: "broadcast"});
+                    }
+
+                    if (!tr) {
+                        return reject("Transaction processing error");
+                    }
+
+                    tr.broadcast()
                         .then((id) => {
-                            resolve(id);
+                            return resolve(id);
                         })
                         .catch((error) => {
                             console.log(error);
-                            reject(error);
+                            return reject(error);
                         });
                 })
                 .catch((error) => {
                     console.log(error);
-                    reject(error);
+                    return reject(error);
                 });
         });
     }

@@ -39,6 +39,9 @@
     });
 
     async function evaluateQR (data) {
+        if (!data) {
+            return;
+        }
         window.electron.resetTimer();
         qrInProgress.value = true;
 
@@ -66,7 +69,6 @@
             return;
         }
 
-        console.log({ qr: blockchainResponse.processQR });
         window.electron.notify(t("common.qr.prompt_success"));
         qrInProgress.value = false;
     }

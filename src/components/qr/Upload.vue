@@ -9,9 +9,9 @@
     let qrContent = ref();
 
     function onDecode (result) {
-        if (result) {
+        if (result && result.length) {
             qrContent.value = true;
-            emit('detection', result);
+            emit('detection', result[0].rawValue);
         }
     }
 
@@ -24,7 +24,7 @@
 <template>
     <span v-if="qrContent">
         <p>
-            {{ t('common.qr.scan.detected') }}
+            {{ t('common.qr.scan.scanned') }}
         </p>
         <ui-button @click="uploadAnother">
             {{ t('common.qr.scan.another') }}
@@ -41,7 +41,7 @@
         >
             <qrcode-capture
                 :capture="selected"
-                @decode="onDecode"
+                @detect="onDecode"
             />
         </ui-card>
     </span>

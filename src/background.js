@@ -1,12 +1,8 @@
-// This is main process of Electron, started as first thing when your
-// app starts. It runs through entire life of your application.
-// It doesn't have any windows which you can see on screen, but we can open
-// window from here.
 import path from "path";
 import url from "url";
 import fs from 'fs';
 import os from 'os';
-//import { argv } from 'node:process';
+
 import queryString from "query-string";
 import {PrivateKey} from "bitsharesjs";
 
@@ -299,7 +295,7 @@ ipcMain.on('modalError', (event, arg) => {
   }
 });
 
-function _parseDeeplink(
+async function _parseDeeplink(
     requestContent,
     type,
     chain,
@@ -412,15 +408,17 @@ function _parseDeeplink(
         if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
             let tr;
             try {
-                tr = blockchain._parseTransactionBuilder(request.payload.params);
+                tr = await blockchain._parseTransactionBuilder(request.payload.params);
             } catch (error) {
                 console.log(error)
             }
-            for (let i = 0; i < tr.operations.length; i++) {
-                let operation = tr.operations[i];
-                if (settingsRows && settingsRows.includes(operation[0])) {
-                    authorizedUse = true;
-                    break;
+            if (tr) {
+                for (let i = 0; i < tr.operations.length; i++) {
+                    let operation = tr.operations[i];
+                    if (settingsRows && settingsRows.includes(operation[0])) {
+                        authorizedUse = true;
+                        break;
+                    }
                 }
             }
         } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
@@ -757,7 +755,7 @@ const createWindow = async () => {
 
       let apiobj;
       try {
-        apiobj = _parseDeeplink(
+        apiobj = await _parseDeeplink(
             requestContent,
             'totp',
             chain,
@@ -787,11 +785,9 @@ const createWindow = async () => {
     if (methods.includes("getRawLink")) {
         const { requestBody, allowedOperations } = arg;
 
-        console.log({requestBody});
-
         let apiobj;
         try {
-            apiobj = _parseDeeplink(
+            apiobj = await _parseDeeplink(
                 requestBody,
                 'raw',
                 chain,
@@ -825,7 +821,7 @@ const createWindow = async () => {
         if (!error) {
             let apiobj;
             try {
-                apiobj = _parseDeeplink(
+                apiobj = await _parseDeeplink(
                     data,
                     'local',
                     chain,
@@ -858,21 +854,14 @@ const createWindow = async () => {
     }
 
     if (methods.includes("processQR")) {
-      const { qrChoice, qrData, allowedOperations } = arg;
-      let qrTX;
-      try {
-          qrTX = ["BTS", "BTS_TEST", "TUSC"].includes(chain)
-            ? await blockchain.handleQR(qrData)
-            : JSON.parse(qrData);
-      } catch (error) {
-          console.log({error, location: "background"});
-      }
+        const { qrChoice, qrData, allowedOperations } = arg;
 
-      if (qrTX) {
+        let parsedData = JSON.parse(qrData);
         let authorizedUse = false;
         if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
-            for (let i = 0; i < qrTX.operations.length; i++) {
-                let operation = qrTX.operations[i];
+            const ops = parsedData.operations[0].operations;
+            for (let i = 0; i < ops.length; i++) {
+                let operation = ops[i];
                 if (allowedOperations && allowedOperations.includes(operation[0])) {
                     authorizedUse = true;
                     break;
@@ -881,45 +870,53 @@ const createWindow = async () => {
         } else if (
             ["EOS", "BEOS", "TLOS"].includes(chain)
         ) {
-            for (let i = 0; i < qrTX.actions.length; i++) {
-                let operation = qrTX.actions[i];
+            const ops = parsedData.operations[0].actions;
+            for (let i = 0; i < ops.length; i++) {
+                let operation = ops[i];
                 if (allowedOperations && allowedOperations.includes(operation.name)) {
                     authorizedUse = true;
                     break;
                 }
             }
         }
-  
+
         if (authorizedUse) {
-          console.log('Authorized use of QR codes');
-  
-          let apiobj = {
-              type: Actions.INJECTED_CALL,
-              id: await uuidv4(),
-              payload: {
-                  origin: 'localhost',
-                  appName: 'qr',
-                  browser: qrChoice,
-                  params: ["BTS", "BTS_TEST", "TUSC"].includes(chain)
-                    ? qrTX.toObject()
-                    : qrTX,
-                  chain: chain
-              }
-          }
+            let qrTX;
+            try {
+                qrTX = ["BTS", "BTS_TEST", "TUSC"].includes(chain)
+                    ? await blockchain.handleQR(JSON.stringify(parsedData.operations[0]))
+                    : parsedData.operations[0].actions;
+            } catch (error) {
+                console.log({error, location: "background"});
+            }
 
-          let status;
-          try {
-              status = await inject(blockchain, apiobj, mainWindow.webContents);
-          } catch (error) {
-              console.log({error, location: 'processQR'});
-          }
+            console.log('Authorized use of QR codes');
 
-          if (status && status.result && !status.result.isError && !status.result.canceled) {
-            responses['qrData'] = status.result;
-          }
+            let apiobj = {
+                type: Actions.INJECTED_CALL,
+                id: await uuidv4(),
+                payload: {
+                    origin: 'localhost',
+                    appName: 'qr',
+                    browser: qrChoice,
+                    params: ["BTS", "BTS_TEST", "TUSC"].includes(chain)
+                        ? qrTX.toObject()
+                        : qrTX,
+                    chain: chain
+                }
+            }
+
+            let status;
+            try {
+                status = await inject(blockchain, apiobj, mainWindow.webContents);
+            } catch (error) {
+                console.log({error, location: 'processQR'});
+            }
+
+            if (status && status.result && !status.result.isError && !status.result.canceled) {
+                responses['qrData'] = status.result;
+            }
         }
-      }
-
     }
 
     if (methods.includes("verifyAccount")) {

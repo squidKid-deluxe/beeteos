@@ -42,7 +42,6 @@
     onMounted(() => {
         if (props.visualizedParams) {
             const _parsedparsedParameters = JSON.parse(props.visualizedParams);
-            //console.log({parsed: _parsedparsedParameters});
             parsedParameters.value = _parsedparsedParameters;
             total.value = _parsedparsedParameters.length;
         }
