@@ -10,7 +10,12 @@
         "error": "Couldn't to connect to blockchain"
     },
     "settings": {
-        "exit": "Exit settings menu"
+        "exit": "Return to dashboard",
+        "deleted": "Successfully deleted account from your wallet.",
+        "label": "Remove account from wallet?",
+        "prompt": "Confirm your password below to irreversibly remove this account from your wallet.",
+        "button": "Delete account",
+        "insufficient": "Cannot delete the last account in a wallet, sorry."
     },
     "start": {
         "wallet_name": "Wallet name",
@@ -35,11 +40,27 @@
         "duplicate": "A wallet with the same name already exists, aborting wallet restoration" 
     },
     "raw": {
-        "label": "Raw deep link page",
-        "promptFailure": "A Raw deeplink was rejected. If intended, navigate to the Raw link page and try again."
+        "label": "Raw deeplink page",
+        "desc": "This page processes incoming deeplink prompts without time-sensitive encryption.",
+        "promptFailure": "A Raw deeplink was rejected. If intended, navigate to the Raw link page and try again.",
+        "exit": "Exit deeplink page"
+    },
+    "www": {
+        "label": "Web request page",
+        "description": "This page processes incoming web requests via locally hosted websocket services. Internet service provider compatibility may vary.",
+        "chosen": "operations chosen",
+        "ready": "Ready for web requests!",
+        "loading": "Loading socket services...",
+        "exit": "Exit web request page",
+        "unsupported": "Web requests are not yet supported for this chain, sorry.",
+        "init": "This page uses locally hosted websockets to process incoming web requests. Internet service provider compatibility may vary. Do you want to proceed?",
+        "yes": "Proceed",
+        "no": "Go back",
+        "prompt": "Ready to process external web requests. Third party apps are now able to launch prompts to link and then broadcast operations."
     },
     "totp": {
-        "label": "Time-based one-time passwords",
+        "label": "Time-limited and encrypted deeplink prompt page",
+        "desc": "This page processes incoming deeplink prompts which have been encrypted in a time sensitive manner.",
         "promptFailure": "A TOTP deeplink was rejected. If intended, navigate to the TOTP page and try again.",
         "prompt": "Select your required operations below",
         "chosen": "operations chosen",
@@ -53,12 +74,13 @@
         "warning": "Do not share the code above with anyone",
         "inProgress": "A deeplink is being processed"
     },
-    "opPermissions": {
+    "chosenScope": {
         "title": {
             "local": "Do you wish to configure the scope of scannable JSON files?",
             "qr": "Do you wish to configure the scope of scannable QR codes?",
             "rawLink": "Do you wish to configure the scope of incoming raw deeplinks?",
-            "totp": "Do you wish to configure the scope of incoming deeplinks?"
+            "totp": "Do you wish to configure the scope of incoming deeplinks?",
+            "www": "Do you wish to configure the scope of incoming web requests?"
         },
         "yes": "Yes - customize scope",
         "no": "No - allow all operations"
@@ -72,13 +94,26 @@
             "upload": "Upload a QR image"
         },
         "scan": {
-            "title": "Scan a QR code with your webcam"
+            "title": "Scan a QR code with your webcam",
+            "switch": "Switch camera",
+            "initFail": "Your webcam failed to initialize, please try again.",
+            "again": "Try again",
+            "scanned": "QR code scanned!",
+            "another": "Scan another"
         },
         "drag": {
-            "title": "Drag and drop an image containing a QR code"
+            "title": "Drag and drop an image containing a QR code",
+            "error1": "Cross-origin images like this are unsupported.",
+            "error2": "Couldn't decode QR in image.",
+            "error3": "QR detection error",
+            "successPrompt": "Successfully scanned image for QR",
+            "successBtn": "Scan another image",
+            "prompt": "DROP YOUR IMAGE HERE"
         }, 
         "upload": {
-            "title": "Upload an image file to scan for QR codes"
+            "title": "Upload an image file to scan for QR codes",
+            "detected": "QR detected in upload",
+            "another": "Upload another QR"
         },
         "exit": "Exit QR page",
         "back": "Back",
@@ -89,7 +124,8 @@
     },
     "local": {
         "label": "Local file op scanner",
-        "upload": "Upload proposed operation JSON file",
+        "desc": "This page enables evaluating and broadcasting transactions from locally stored JSON files.",
+        "upload": "To proceed, please upload a JSON file which contains your proposed transaction.",
         "exit": "Exit local file page",
         "failed": "Failed to process JSON",
         "back": "Back",
@@ -101,6 +137,7 @@
     "actionBar": {
         "Home": "Home",
         "New": "New",
+        "WWW": "Web request",
         "TOTP": "TOTP",
         "Local": "Local",
         "RAW": "Raw Link",
@@ -227,5 +264,7 @@
     "backup_btn": "Download Backup",
     "backup_txt": "Click the 'Download Backup' button below to save an encrypted file with all your wallet keys. The backup file will be encrypted with your wallet password and you will need your password to import the backup to a new wallet installation.",
     "tooltip_lock": "Click to lock this wallet / logout and return to the wallet selection screen.",
-    "tooltip_refresh": "Reconnect to the blockchain and refresh the account balance"
+    "tooltip_refresh": "Reconnect to the blockchain and refresh the account balance",
+    "invalidFile": "Invalid file type, please select another file.",
+    "invalidPass": "Invalid password, please try again."
 }

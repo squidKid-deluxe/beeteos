@@ -1,185 +1,140 @@
 <script setup>
-    import { ref, computed, inject } from 'vue';
+    import { ref, computed, watchEffect, inject, onMounted, toRaw } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import { ipcRenderer } from "electron";
-    import { v4 as uuidv4 } from 'uuid';
 
     import AccountSelect from "./account-select";
     import Operations from "./blockchains/operations";
     import QRDrag from "./qr/Drag";
     import QRScan from "./qr/Scan";
     import QRUpload from "./qr/Upload";
-    import * as Actions from '../lib/Actions';
 
-    import { injectedCall } from '../lib/apiUtils.js';
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
-    import store from '../store/index';
+    import store from '../store/index.js';
+    import router from '../router/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
 
-    let opPermissions = ref();
+    let chosenScope = ref();
     let qrInProgress = ref(false);
-    let isValidQR = ref();
-
-    emitter.on('detectedQR', async (data) => {
-        qrInProgress.value = true;
-        // check if valid operation in QR code
-        let refChain = store.getters['AccountStore/getChain'];
-        let blockchain = getBlockchainAPI(refChain);
-
-        let qrTX;
-        try {
-            qrTX = refChain === "BTS" ? await blockchain.handleQR(data) : JSON.parse(data);
-        } catch (error) {
-            console.log(error);
-            ipcRenderer.send("notify", t("common.qr.promptFailure"));
-            qrInProgress.value = false;
-            return;
-        }
-
-        if (!qrTX) {
-            console.log("Couldn't process scanned QR code, sorry.")
-            ipcRenderer.send("notify", t("common.qr.promptFailure"));
-            qrInProgress.value = false;
-            return;
-        }
-
-        let authorizedUse = false;
-        if (refChain === "BTS") {
-            for (let i = 0; i < qrTX.operations.length; i++) {
-                let operation = qrTX.operations[i];
-                if (settingsRows.value && settingsRows.value.includes(operation[0])) {
-                    authorizedUse = true;
-                    break;
-                }
-            }
-        } else if (
-            refChain === "EOS" ||
-            refChain === "BEOS" ||
-            refChain === "TLOS"
-        ) {
-            for (let i = 0; i < qrTX.actions.length; i++) {
-                let operation = qrTX.actions[i];
-                if (settingsRows.value && settingsRows.value.includes(operation.name)) {
-                    authorizedUse = true;
-                    break;
-                }
-            }
-        }
-
-        if (!authorizedUse) {
-            console.log(`Unauthorized QR use of ${refChain} blockchain operation`);
-            ipcRenderer.send("notify", t("common.qr.promptFailure"));
-            qrInProgress.value = false;
-            return;
-        }
-
-        isValidQR.value = true;
-        console.log('Authorized use of QR codes');
-
-        let apiobj = {
-            type: Actions.INJECTED_CALL,
-            id: await uuidv4(),
-            payload: {
-                origin: 'localhost',
-                appName: 'qr',
-                browser: qrChoice.value,
-                params: refChain === "BTS" ? qrTX.toObject() : qrTX,
-                chain: refChain
-            }
-        }
-
-        let status;
-        try {
-            status = await injectedCall(apiobj, blockchain);
-        } catch (error) {
-            console.log(error)
-            ipcRenderer.send("notify", t("common.qr.promptFailure"));
-            qrInProgress.value = false;
-            return;
-        }
-
-        if (!status || !status.result || status.result.isError || status.result.canceled) {
-            console.log("Issue occurred in approved prompt");
-            ipcRenderer.send("notify", t("common.qr.promptFailure"));
-            qrInProgress.value = false;
-            return;
-        }
-
-        console.log(status);
-        ipcRenderer.send("notify", t("common.qr.prompt_success"));
-        qrInProgress.value = false;
-    });
-
     let qrChoice = ref();
     let selectedRows = ref();
 
-    emitter.on('selectedRows', (data) => {
-        selectedRows.value = data;
-    })
-
-    emitter.on('exitOperations', () => {
-        opPermissions.value = null;
-        selectedRows.value = null;
-    })
-
     function goBack() {
-        opPermissions.value = null;
+        window.electron.resetTimer();
+        chosenScope.value = null;
         selectedRows.value = null;
     }
 
     function undoQRChoice () {
+        window.electron.resetTimer();
         qrChoice.value = null;
     }
  
     function setChoice(choice) {
+        window.electron.resetTimer();
         qrChoice.value = choice;
     }
 
-    let settingsRows = computed(() => { // last approved operation rows for this chain
-        if (!store.state.WalletStore.isUnlocked) {
+    const chain = computed(() => {
+        return store.getters['AccountStore/getChain'];
+    });
+
+    async function evaluateQR (data) {
+        if (!data) {
+            return;
+        }
+        window.electron.resetTimer();
+        qrInProgress.value = true;
+
+        let blockchainResponse;
+        try {
+            blockchainResponse = await window.electron.blockchainRequest({
+                methods: ["processQR"],
+                chain: chain.value,
+                qrChoice: qrChoice.value,
+                qrData: data,
+                allowedOperations: toRaw(selectedRows.value),
+                location: 'qrData'
+            });
+        } catch (error) {
+            console.log({error});
+            window.electron.notify(t("common.qr.promptFailure"));
+            qrInProgress.value = false;
             return;
         }
 
-        let chain = store.getters['AccountStore/getChain']
-        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain);
-        if (!rememberedRows || !rememberedRows.length) {
-            return [];
+        if (!blockchainResponse || !blockchainResponse.processQR) {
+            console.log("QR code processing error");
+            window.electron.notify(t("common.qr.promptFailure"));
+            qrInProgress.value = false;
+            return;
         }
 
-        return rememberedRows;
-    });
+        window.electron.notify(t("common.qr.prompt_success"));
+        qrInProgress.value = false;
+    }
+    
+    let compatible = ref(false);
+    let operationTypes = ref([]);
+    watchEffect(() => {
+        async function initialize() {
+            let blockchainResponse;
+            try {
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ["supportsQR", "getOperationTypes"],
+                    chain: chain.value
+                });
+            } catch (error) {
+                console.log({error});
+                return;
+            }
 
-    let supportsQR = computed(() => {
-        let chain = store.getters['AccountStore/getChain'];
-        return getBlockchainAPI(chain).supportsQR();
+            if (!blockchainResponse) {
+                return;
+            }
+
+            const { supportsQR, getOperationTypes } = blockchainResponse;
+            if (supportsQR) {
+                compatible.value = supportsQR;
+            }
+            if (getOperationTypes) {
+                operationTypes.value = getOperationTypes;
+            }
+        }
+        
+        if (chain.value) {
+            initialize();
+        }
     });
 
     function setScope(newValue) {
-        opPermissions.value = newValue;
+        window.electron.resetTimer();
+        chosenScope.value = newValue;
         if (newValue === 'AllowAll') {
-            selectedRows.value = true;
-            let chain = store.getters['AccountStore/getChain'];
-            let types = getBlockchainAPI(chain).getOperationTypes();
+            const _rows = operationTypes.value.map(type => type.id)
+            selectedRows.value = _rows
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
-                    chain: chain,
-                    rows: types.map(type => type.id)
+                    chain: chain.value,
+                    rows: _rows
                 }
-            );
+            )
         }
     }
 
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
+    });
 </script>
 
 <template>
-    <div
-        v-if="settingsRows"
-        class="bottom p-0"
-    >
-        <span v-if="supportsQR">
+    <div class="bottom p-0">
+        <span v-if="compatible">
             <span v-if="qrInProgress">
                 <p>
                     {{ t('common.qr.progress') }}
@@ -189,7 +144,7 @@
             <span v-else>
                 <AccountSelect />
                 <p
-                    v-if="!opPermissions"
+                    v-if="!chosenScope"
                     style="marginBottom:0px;"
                 >
                     {{ t('common.qr.label') }}
@@ -200,49 +155,57 @@
                     outlined
                     style="marginTop: 5px;"
                 >
-                    <span v-if="!opPermissions">
+                    <span v-if="!chosenScope">
                         <p>
-                            {{ t('common.opPermissions.title.qr') }}
+                            {{ t('common.chosenScope.title.qr') }}
                         </p>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('Configure')"
                         >
-                            {{ t('common.opPermissions.yes') }}
+                            {{ t('common.chosenScope.yes') }}
                         </ui-button>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('AllowAll')"
                         >
-                            {{ t('common.opPermissions.no') }}
+                            {{ t('common.chosenScope.no') }}
                         </ui-button>
                     </span>
-                    <span v-else-if="opPermissions == 'Configure' && !selectedRows">
-                        <Operations />
+                    <span v-else-if="chosenScope == 'Configure' && !selectedRows">
+                        <Operations
+                            :ops="operationTypes"
+                            :chain="chain"
+                            @selected="(ops) => selectedRows = ops"
+                            @exit="() => {
+                                chosenScope = null;
+                                selectedRows = null;
+                            }"
+                        />
                     </span>
                 </ui-card>
             </span>
 
             
-            <span v-if="opPermissions && settingsRows && selectedRows">
+            <span v-if="chosenScope && selectedRows">
                 <span v-if="qrChoice && qrChoice === 'Scan'">
-                    <QRScan />
+                    <QRScan @detection="(qr) => evaluateQR(qr)" />
                     <br>
                     <ui-button @click="undoQRChoice()">
                         {{ t('common.qr.back') }}
                     </ui-button>
                 </span>
                 <span v-else-if="qrChoice && qrChoice === 'Drag'">
-                    <QRDrag />
+                    <QRDrag @detection="(qr) => evaluateQR(qr)" />
                     <br>
                     <ui-button @click="undoQRChoice()">
                         {{ t('common.qr.back') }}
                     </ui-button>
                 </span>
                 <span v-else-if="qrChoice && qrChoice === 'Upload'">
-                    <QRUpload />
+                    <QRUpload @detection="(qr) => evaluateQR(qr)" />
                     <br>
                     <ui-button @click="undoQRChoice()">
                         {{ t('common.qr.back') }}
@@ -281,7 +244,7 @@
 
             <br>
             <ui-button
-                v-if="opPermissions && selectedRows"
+                v-if="chosenScope && selectedRows && !qrChoice"
                 style="margin-right:5px"
                 icon="arrow_back_ios"
                 @click="goBack"

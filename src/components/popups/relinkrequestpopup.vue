@@ -1,11 +1,8 @@
 <script setup>
-    import { ipcRenderer } from 'electron';
-    import { onMounted, computed} from "vue";
+    import { computed} from "vue";
     import { useI18n } from 'vue-i18n';
-    import RendererLogger from "../../lib/RendererLogger";
 
     const { t } = useI18n({ useScope: 'global' });
-    const logger = new RendererLogger();
 
     const props = defineProps({
         request: {
@@ -42,38 +39,28 @@
         );
     });
 
-    onMounted(() => {
-        logger.debug("Relink Popup initialised");
-    });
-
     function _clickedAllow() {
-        ipcRenderer.send(
-            "clickedAllow",
-            {
-                result: {
-                    identityhash: props.request.payload.identityhash,
-                    name: props.accounts[0].accountName,
-                    chain: props.accounts[0].chain,
-                    id: props.accounts[0].accountID
-                        ? props.accounts[0].accountID
-                        : props.accounts[0].accountName,
-                    success: true
-                },
-                request: {
-                    id: props.request.id
-                }
+        window.electron.clickedAllow({
+            result: {
+                identityhash: props.request.payload.identityhash,
+                name: props.accounts[0].accountName,
+                chain: props.accounts[0].chain,
+                id: props.accounts[0].accountID
+                    ? props.accounts[0].accountID
+                    : props.accounts[0].accountName,
+                success: true
+            },
+            request: {
+                id: props.request.id
             }
-        );
+        });
     }
 
     function _clickedDeny() {
-        ipcRenderer.send(
-            "clickedDeny",
-            {
-                result: {canceled: true},
-                request: {id: props.request.id}
-            }
-        );
+        window.electron.clickedDeny({
+            result: {canceled: true},
+            request: {id: props.request.id}
+        });
     }
 </script>
 

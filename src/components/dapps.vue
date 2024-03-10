@@ -1,18 +1,13 @@
 <script setup>
-    import { onMounted, watchEffect, ref, computed } from 'vue';
+    import { watchEffect, ref, computed, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import store from '../store/index';
-    import RendererLogger from "../lib/RendererLogger";
-    import {formatAccount} from "../lib/formatter";
-    import getBlockchainAPI from '../lib/blockchains/blockchainFactory';
+
+    import store from '../store/index.js';
+    import router from '../router/index.js';
+    import {formatAccount} from "../lib/formatter.js";
 
     const { t } = useI18n({ useScope: 'global' });
-    const logger = new RendererLogger();
     let tableData = ref();
-
-    onMounted(() => {
-        logger.debug("Settings Mounted");
-    });
 
     function fetchDapps() {
         let storedDapps = [];
@@ -55,8 +50,6 @@
         if (dapps.value && dapps.value.length) {
             tableData.value = {
                 data: dapps.value.map(dapp => {
-                    let types = getBlockchainAPI(dapp.chain).getOperationTypes();
-
                     return {
                         appName: dapp.appName,
                         origin: dapp.origin,
@@ -64,7 +57,7 @@
                         chain: dapp.chain,
                         injectables: dapp.injectables && dapp.injectables.length
                             ? dapp.injectables.length
-                            : types.length,
+                            : '100%',
                         actions: dapp.id
                     }
                 }),
@@ -82,9 +75,19 @@
     });
 
     async function deleteDapp(dapp_id) {
+        window.electron.resetTimer();
         await store.dispatch('OriginStore/removeApp', dapp_id);
         dapps.value = fetchDapps();
     }
+
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
+    });
 </script>
 
 <template>

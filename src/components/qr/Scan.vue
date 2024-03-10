@@ -1,35 +1,31 @@
 <script setup>
-    import { ref, computed, inject, onMounted } from 'vue';
+    import { ref, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
     import { QrcodeStream } from 'vue-qrcode-reader'
 
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
+    const emit = defineEmits(['detection']);
 
     let camera = ref('auto');
+    let paused = ref(false);
+
     let cameraInitializing = ref(false);
     let cameraError = ref();
     let videoDevices = ref();
 
-    /**
-     * Initializing the chosen camera
-     * @param {Promise} promise 
-     */
-    function onInit (promise) {
-        if (cameraError.value) {
-            cameraError.value = false;
-        }
+    function onCameraOn () {
         cameraInitializing.value = true;
-        promise
-            .catch((error) => {
-                console.log(error)
-                camera.value = 'off';
-                cameraError.value = true;
-                cameraInitializing.value = false;
-            })
-            .then(() => {
-                cameraInitializing.value = false;
-            })
+    }
+
+    function onCameraOff () {
+        cameraInitializing.value = false;
+    }
+
+    function onError (error) {
+        console.log(error)
+        paused.value = true;
+        cameraError.value = true;
+        cameraInitializing.value = false;
     }
 
     let QRresult = ref();
@@ -37,12 +33,12 @@
      * Parsing the contents of the scanned QR code
      * @param {String} content
      */
-    async function onDecode (content) {
-        if (!QRresult.value) {
+    async function onDetect (detectedBarcodes) {
+        if (!QRresult.value && detectedBarcodes.length > 0) {
             await timeout(1000);
-            QRresult.value = content;
-            camera.value = 'off';
-            emitter.emit('detectedQR', content);
+            QRresult.value = detectedBarcodes[0].rawValue;
+            paused.value = true;
+            emit('detection', detectedBarcodes[0].rawValue);
         }
     }
 
@@ -133,8 +129,10 @@
                         :camera="camera"
                         :track="paintQR"
                         class="qrcode-stream-wrapper"
-                        @init="onInit"
-                        @decode="onDecode"
+                        @camera-on="onCameraOn"
+                        @camera-off="onCameraOff"
+                        @error="onError"
+                        @detect="onDetect"
                     >
                         <span v-if="cameraInitializing">
                             <ui-spinner
@@ -163,24 +161,24 @@
                 v-if="videoDevices && videoDevices.length > 1"
                 @click="switchCamera"
             >
-                Switch camera
+                {{ t('common.qr.scan.switch') }}
             </ui-button>
         </span>
         <span v-else>
             <span v-if="cameraError">
                 <p>
-                    Your webcam failed to initialize, please try again.
+                    {{ t('common.qr.scan.initFail') }}
                 </p>
                 <ui-button @click="switchCamera">
-                    Try again
+                    {{ t('common.qr.scan.again') }}
                 </ui-button>
             </span>
             <span v-else>
                 <p>
-                    QR code scanned!
+                    {{ t('common.qr.scan.scanned') }}
                 </p>
                 <ui-button @click="switchCamera">
-                    Scan another
+                    {{ t('common.qr.scan.another') }}
                 </ui-button>
             </span>
 

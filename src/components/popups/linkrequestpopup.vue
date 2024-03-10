@@ -1,12 +1,9 @@
 <script setup>
-    import { ipcRenderer } from 'electron';
-    import { ref, onMounted, computed } from "vue";
-    import RendererLogger from "../../lib/RendererLogger";
-    import {formatChain, formatAccount} from "../../lib/formatter";
+    import { ref, computed, onMounted } from "vue";
+    import {formatChain, formatAccount} from "../../lib/formatter.js";
 
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n({ useScope: 'global' });
-    const logger = new RendererLogger();
 
     let chosenAccount = ref(-1);
 
@@ -70,36 +67,24 @@
         });
     });
 
-    onMounted(() => {
-        logger.debug("Link Popup initialised");
-    })
-
     function _clickedAllow() {
         let approvedAccount = props.accounts[chosenAccount.value];
 
-        ipcRenderer.send(
-            "clickedAllow",
-            {
-                result: {
-                    name: approvedAccount.accountName,
-                    chain: approvedAccount.chain,
-                    id: approvedAccount.accountID
-                },
-                request: {
-                    id: props.request.id
-                }
-            }
-        );
+        window.electron.clickedAllow({
+            result: {
+                name: approvedAccount.accountName,
+                chain: approvedAccount.chain,
+                id: approvedAccount.accountID
+            },
+            request: {id: props.request.id}
+        });
     }
 
     function _clickedDeny() {
-        ipcRenderer.send(
-            "clickedDeny",
-            {
-                result: {canceled: true},
-                request: {id: props.request.id}
-            }
-        );
+        window.electron.clickedDeny({
+            result: {canceled: true},
+            request: {id: props.request.id}
+        });
     }
 </script>
 
@@ -109,7 +94,7 @@
             {{ requestText }}
         </div>
         <br>
-        <div v-if="existingLinks.length > 0">
+        <div v-if="existingLinks && existingLinks.length > 0">
             {{ secondText }}
         </div>
         <br>

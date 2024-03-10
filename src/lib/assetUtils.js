@@ -2,6 +2,9 @@ const lookupPrecision = {
     "EOS": 4,
     "TLOS": 4,
     "BEOS": 4,
+    "BTS": 5,
+    "BTS_TEST": 5,
+    "TUSC": 5
 };
 
 export function humanReadableFloat(satoshis, precision) {

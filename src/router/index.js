@@ -1,19 +1,21 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
-import HeaderGuest from "../components/header-guest";
-import HeaderSmall from "../components/header-small";
-import Start from "../components/start";
-import Dashboard from "../components/dashboard";
-import Restore from "../components/restore";
-import AddAccount from "../components/add-account";
-import Dapps from "../components/dapps";
-import Backup from "../components/backup";
-import Totp from "../components/totp";
-import RawLink from "../components/raw-link";
-import Qr from "../components/qr";
-import Popups from "../components/popups";
-import Receipt from "../components/receipt";
-import Local from "../components/local";
+import HeaderGuest from "../components/header-guest.vue";
+import HeaderSmall from "../components/header-small.vue";
+import Start from "../components/start.vue";
+import Dashboard from "../components/dashboard.vue";
+import Restore from "../components/restore.vue";
+import AddAccount from "../components/add-account.vue";
+import Dapps from "../components/dapps.vue";
+import Backup from "../components/backup.vue";
+import Totp from "../components/totp.vue";
+import RawLink from "../components/raw-link.vue";
+import Web from "../components/web.vue";
+import Qr from "../components/qr.vue";
+import Popups from "../components/popups.vue";
+import Receipt from "../components/receipt.vue";
+import Local from "../components/local.vue";
+import Settings from "../components/settings.vue";
 
 const router = createRouter({
   routes: [{
@@ -22,6 +24,13 @@ const router = createRouter({
         default: Start,
         header: HeaderGuest
       }
+    },
+    {
+        path: '/www',
+        components: {
+            default: Web,
+            header: HeaderSmall
+        }
     },
     {
       path: '/backup',
@@ -92,6 +101,13 @@ const router = createRouter({
         default: Dashboard,
         header: HeaderSmall
       }
+    },
+    {
+        path: '/settings',
+        components: {
+            default: Settings,
+            header: HeaderSmall
+        }
     },
     {
       path: '/modal',

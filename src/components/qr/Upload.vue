@@ -1,17 +1,17 @@
 <script setup>
-    import { ref, inject } from 'vue';
+    import { ref } from 'vue';
     import { useI18n } from 'vue-i18n';
     import { QrcodeCapture } from 'vue-qrcode-reader'
 
-    const emitter = inject('emitter');
+    const emit = defineEmits(['detection']);
     const { t } = useI18n({ useScope: 'global' });
     let selected = ref();
     let qrContent = ref();
 
     function onDecode (result) {
-        if (result) {
+        if (result && result.length) {
             qrContent.value = true;
-            emitter.emit('detectedQR', result);
+            emit('detection', result[0].rawValue);
         }
     }
 
@@ -24,10 +24,10 @@
 <template>
     <span v-if="qrContent">
         <p>
-            QR detected in upload
+            {{ t('common.qr.scan.scanned') }}
         </p>
         <ui-button @click="uploadAnother">
-            Upload another QR
+            {{ t('common.qr.scan.another') }}
         </ui-button>
     </span>
     <span v-else>
@@ -41,7 +41,7 @@
         >
             <qrcode-capture
                 :capture="selected"
-                @decode="onDecode"
+                @detect="onDecode"
             />
         </ui-card>
     </span>

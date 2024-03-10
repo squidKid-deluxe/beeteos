@@ -1,31 +1,28 @@
 <script setup>
     import { computed, watchEffect, ref } from "vue";
-    import { ipcRenderer } from 'electron';
     import queryString from "query-string";
     import { useI18n } from 'vue-i18n';
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
 
     import * as Actions from '../lib/Actions';
 
     import LinkRequestPopup from "./popups/linkrequestpopup";
     import ReLinkRequestPopup from "./popups/relinkrequestpopup";
     import IdentityRequestPopup from "./popups/identityrequestpopup";
-    import GenericRequestPopup from "./popups/genericrequestpopup";
     import SignMessageRequestPopup from "./popups/signedmessagepopup";
     import TransactionRequestPopup from "./popups/transactionrequestpopup";
-    import TransferRequestPopup from "./popups/transferrequestpopup";
     import langSelect from "./lang-select.vue";
 
     const { t } = useI18n({ useScope: 'global' });
 
     function handleProp(target) {
-        if (!global || !global.location || !global.location.search) {
+        let search = window.electron.getLocationSearch();
+        if (!search) {
             return '';
         }
 
         let qs;
         try {
-            qs = queryString.parse(global.location.search);
+            qs = queryString.parse(search);
         } catch (error) {
             console.log(error);
             return;
@@ -40,6 +37,8 @@
         return decoded;
     }
 
+    let chainOperations = ref([]);
+    let types = ref();
     let type = ref();
     let toSend = ref();
     let chain = ref();
@@ -57,9 +56,85 @@
     watchEffect(() => {
         const id = handleProp('id');
 
-        ipcRenderer.send(`get:prompt:${id}`);
+        window.electron.getPrompt(id); // Requesting the data from the main process
+        window.electron.onPrompt(id, async (data) => {
+            // Main process responded with prompt data
+            window.electron.resetTimer();
 
-        ipcRenderer.on(`respond:prompt:${id}`, (event, data) => {
+            function initialize() {
+                return new Promise(async (resolve, reject) => {
+                    let requestContents;
+                    try {
+                        requestContents = await window.electron.blockchainRequest({
+                            methods: ["getOperationTypes"],
+                            chain: data.chain
+                        });
+                    } catch (error) {
+                        console.log(error);
+                        return reject(error);
+                    }
+
+                    if (requestContents && requestContents.getOperationTypes) {
+                        resolve(requestContents.getOperationTypes);
+                    } else {
+                        resolve([]);
+                    }
+                });
+            }
+
+            const _initializedTypes = await initialize();
+            types.value = _initializedTypes;
+
+            if (_initializedTypes) {
+                let thisType = type.value ?? payload.value?.type;
+                if (thisType !== Actions.REQUEST_LINK) {
+                    chainOperations.value = [];
+                } else {
+                    let thisChain = chain.value ?? request.value.chain;
+                    let thisRequest = request.value ?? payload.value.request;
+
+                    if (_initializedTypes && (!thisRequest.injectables || !thisRequest.injectables.length)) {
+                        // All operations are required
+                        chainOperations.value = _initializedTypes.map(type => {
+                            return {
+                                text: !type.id === type.method
+                                    ? `${type.id}: ${type.method.replaceAll("_", " ")}`
+                                    : type.method.replaceAll("_", " "),
+                                tooltip: t(
+                                    `operations.injected.${thisChain === "BTS_TEST" ? "BTS" : thisChain}.${type.method}.tooltip`
+                                )
+                            }
+                        });
+                    } else {
+                        let injectChips = [];
+                        for (let i = 0; i < thisRequest.injectables.length; i++) {
+                            // Subset of operations are required
+                            const currentInjection = thisRequest.injectables[i]; // id
+                            let foundCurrent = _initializedTypes
+                                ? _initializedTypes.find(type => type.id === currentInjection.id)
+                                : null;
+                            if (!foundCurrent) {
+                                injectChips = []; // invalid op will nullify link request
+                                break;
+                            } else {
+                                injectChips.push({
+                                    text: `${foundCurrent.id}: ` + t(`operations.injected.${thisChain === "BTS_TEST" ? "BTS" : thisChain}.${foundCurrent.method}`),
+                                    tooltip: t(`operations.injected.${thisChain === "BTS_TEST" ? "BTS" : thisChain}.${foundCurrent.method}.tooltip`)
+                                })
+                            }   
+                        }
+                        if (!injectChips || !injectChips.length) {
+                            // Avoid rendering warning
+                            console.log('No valid operations found, skipping chain operations');
+                            chainOperations.value = null;
+                        } else {
+                            chainOperations.value = injectChips;
+                        }
+                    }
+                }
+            }
+
+
             if (data.type) {
                 type.value = data.type;
             }
@@ -102,51 +177,6 @@
             }
         });
     })
-
-    let chainOperations = computed(() => {
-        let thisType = type.value ?? payload.value?.type;
-        if (thisType !== Actions.REQUEST_LINK) {
-            return [];
-        }
-
-        let thisChain = chain.value ?? request.value.chain;
-        let thisRequest = request.value ?? payload.value.request;
-
-        let types = getBlockchainAPI(thisChain).getOperationTypes();
-        if (!thisRequest.injectables || !thisRequest.injectables.length) {
-            // All operations are required
-            return types.map(type => {
-                return {
-                    text: !type.id === type.method
-                        ? `${type.id}: ${type.method.replaceAll("_", " ")}`
-                        : type.method.replaceAll("_", " "),
-                    tooltip: t(`operations.injected.${thisChain}.${type.method}.tooltip`)
-                }
-            });
-        }
-
-        let injectChips = [];
-        for (let i = 0; i < thisRequest.injectables.length; i++) {
-            // Subset of operations are required
-            const currentInjection = thisRequest.injectables[i]; // id
-            let foundCurrent = types.find(type => type.id === currentInjection.id);
-            if (!foundCurrent) {
-                injectChips = []; // invalid op will nullify link request
-                break;
-            } else {
-                injectChips.push({
-                    text: `${foundCurrent.id}: ` + t(`operations.injected.${thisChain}.${foundCurrent.method}`),
-                    tooltip: t(`operations.injected.${thisChain}.${foundCurrent.method}.tooltip`)
-                })
-            }   
-        }
-        if (!injectChips || !injectChips.length) {
-            // Avoid rendering warning
-            console.log('No valid operations found, skipping chain operations');
-            return null;
-        }
-        return injectChips;
-    });
 </script>
 
 <template>
@@ -178,11 +208,6 @@
                 :request="request"
                 :accounts="accounts"
             />
-            <GenericRequestPopup
-                v-else-if="type === Actions.VOTE_FOR && request && payload"
-                :request="request"
-                :payload="payload"
-            />
             <SignMessageRequestPopup
                 v-else-if="
                     (type === Actions.SIGN_MESSAGE || type === Actions.SIGN_NFT)
@@ -190,22 +215,6 @@
                 "
                 :request="request"
                 :accounts="accounts"
-            />
-            <TransferRequestPopup
-                v-else-if="
-                    type === Actions.TRANSFER
-                        && request
-                        && chain
-                        && accountName
-                        && target
-                        && toSend
-                "
-                :request="request"
-                :chain="chain"
-                :account-name="accountName"
-                :target="target"
-                :warning="warning"
-                :to-send="toSend"
             />
             <div
                 v-else-if="
@@ -220,6 +229,7 @@
                     :request="request"
                     :visualized-params="visualizedParams"
                     :visualized-account="visualizedAccount"
+                    :warning="warning"
                 />
             </div>
         </ui-collapse>

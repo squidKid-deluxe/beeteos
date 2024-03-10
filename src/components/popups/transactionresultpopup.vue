@@ -1,12 +1,9 @@
 <script setup>
-    import { ipcRenderer } from 'electron';
-    import { computed, onMounted, ref, watchEffect } from "vue";
+    import { computed, ref, watchEffect, onMounted } from "vue";
     import { useI18n } from 'vue-i18n';
-    import {formatChain} from "../../lib/formatter";
-    import RendererLogger from "../../lib/RendererLogger";
+    import { formatChain } from "../../lib/formatter.js";
 
     const { t } = useI18n({ useScope: 'global' });
-    const logger = new RendererLogger();
 
     const props = defineProps({
         request: {
@@ -39,14 +36,17 @@
         }
     });
 
-    let visualizedParams = computed(() => {
-        if (!props.visualizedParams) {
-            return {};
+    let total = ref(0);
+    let parsedParameters = ref({});
+
+    onMounted(() => {
+        if (props.visualizedParams) {
+            const _parsedparsedParameters = JSON.parse(props.visualizedParams);
+            parsedParameters.value = _parsedparsedParameters;
+            total.value = _parsedparsedParameters.length;
         }
-        return JSON.parse(props.visualizedParams);
     });
 
-    let total = ref(visualizedParams.value.length);
     let open = ref(false);
     let page = ref(1);
     let receipt = ref(false);
@@ -79,13 +79,9 @@
             : t('operations.rawsig.sign_and_broadcast_btn')
     })
 
-    onMounted(() => {
-        logger.debug("Transaction result popup initialised");
-    });
-
     let jsonData = ref("");
     watchEffect(() => {
-        jsonData.value = JSON.stringify(visualizedParams.value[page.value - 1].op, undefined, 4)
+        jsonData.value = JSON.stringify(parsedParameters.value[page.value - 1].op, undefined, 4)
     });
 </script>
 <template>
@@ -94,13 +90,13 @@
     </div>
     <div>
         {{ 
-            visualizedParams && visualizedParams.length > 1
-                ? t('operations.rawsig.summary', {numOps: visualizedParams.length})
+            parsedParameters && parsedParameters.length > 1
+                ? t('operations.rawsig.summary', {numOps: parsedParameters.length})
                 : t('operations.rawsig.summary_single')
         }}
     </div>
     <div
-        v-if="!!visualizedParams"
+        v-if="!!parsedParameters"
         class="text-left custom-content"
         style="margin-top: 10px;"
     >
@@ -111,23 +107,23 @@
                         v-if="total > 1"
                         :class="$tt('subtitle1')"
                     >
-                        <b>{{ t(visualizedParams[page - 1].title) }}</b> ({{ page }}/{{ total }})
+                        <b>{{ t(parsedParameters[page - 1].title) }}</b> ({{ page }}/{{ total }})
                     </div>
                     <div
                         v-else
                         :class="$tt('subtitle1')"
                     >
-                        <b>{{ t(visualizedParams[page - 1].title) }}</b>
+                        <b>{{ t(parsedParameters[page - 1].title) }}</b>
                     </div>
                     <div>
-                        {{ t(`operations.injected.${props.request.payload.chain}.${visualizedParams[page - 1].method}.headers.result`) }}
+                        {{ t(`operations.injected.${props.request.payload.chain === "BTS_TEST" ? "BTS" : props.request.payload.chain}.${parsedParameters[page - 1].method}.headers.result`) }}
                     </div>
                     <div
-                        v-for="row in visualizedParams[page - 1].rows"
+                        v-for="row in parsedParameters[page - 1].rows"
                         :key="row.key"
                         :class="$tt('subtitle2')"
                     >
-                        {{ t(`operations.injected.${props.request.payload.chain}.${visualizedParams[page - 1].method}.rows.${row.key}`, row.params) }}
+                        {{ t(`operations.injected.${props.request.payload.chain === "BTS_TEST" ? "BTS" : props.request.payload.chain}.${parsedParameters[page - 1].method}.rows.${row.key}`, row.params) }}
                     </div>
                 </ui-card-text>
             </ui-card-content>
@@ -171,7 +167,7 @@
             {{ t('operations.rawsig.request_cta') }}
         </h4>
         <div
-            v-if="!!visualizedParams"
+            v-if="!!parsedParameters"
             style="padding-bottom: 25px;"
         >
             <ui-button
@@ -221,10 +217,10 @@
         fullscreen
     >
         <ui-dialog-title v-if="total > 1">
-            {{ t(visualizedParams[page - 1].title) }} ({{ page }}/{{ total }})
+            {{ t(parsedParameters[page - 1].title) }} ({{ page }}/{{ total }})
         </ui-dialog-title>
         <ui-dialog-title v-else>
-            {{ t(visualizedParams[page - 1].title) }}
+            {{ t(parsedParameters[page - 1].title) }}
         </ui-dialog-title>
         <ui-dialog-content>
             <ui-textfield

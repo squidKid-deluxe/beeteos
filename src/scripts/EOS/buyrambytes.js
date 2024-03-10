@@ -40,7 +40,7 @@ let run = async function () {
         console.log(error);
     }
 
-    console.log(`rawbeet://api?chain=EOS&request=${encodedPayload}`);
+    console.log(`rawbeeteos://api?chain=EOS&request=${encodedPayload}`);
     process.exit(0);
 }
 

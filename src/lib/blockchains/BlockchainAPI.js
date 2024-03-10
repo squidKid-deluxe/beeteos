@@ -1,12 +1,6 @@
-import store from "../../store";
-import {formatAsset, humanReadableFloat} from "../assetUtils";
-import RendererLogger from "../RendererLogger";
-import * as Actions from '../Actions';
+import { formatAsset } from "../assetUtils.js";
+import * as Actions from '../Actions.js';
 
-const logger = new RendererLogger();
-
-import mitt from 'mitt';
-const emitter = mitt();
 
 export default class BlockchainAPI {
 
@@ -79,11 +73,9 @@ export default class BlockchainAPI {
         this._isConnectedToNode = node;
         this._isConnected = true;
         this._isConnectingInProgress = false;
-        store.dispatch("SettingsStore/setNode", {
-            chain: this._config.identifier,
-            node: node
-        });
-        resolveCallback(node);
+        if (resolveCallback) {
+            resolveCallback(node);
+        }
     }
 
     /*
@@ -93,7 +85,6 @@ export default class BlockchainAPI {
      * @returns {String} node
      */
     _connectionFailed(resolveCallback, node, error) {
-        logger.debug(this._config.name + " Failed to connect to " + node, error);
         console.log(this._config.name + " Failed to connect to " + node, error);
         this._tempBanned.push(node);
         this._isConnected = false;
@@ -425,11 +416,6 @@ export default class BlockchainAPI {
                 method: Actions.INJECTED_CALL
             },
             {
-                id: Actions.VOTE_FOR,
-                from: '',
-                method: Actions.VOTE_FOR
-            },
-            {
                 id: Actions.SIGN_MESSAGE,
                 from: '',
                 method: Actions.SIGN_MESSAGE
@@ -443,11 +429,6 @@ export default class BlockchainAPI {
                 id: Actions.VERIFY_MESSAGE,
                 from: '',
                 method: Actions.VERIFY_MESSAGE
-            },
-            {
-                id: Actions.TRANSFER,
-                from: '',
-                method: Actions.TRANSFER
             }
         ];
     }
@@ -560,9 +541,11 @@ export default class BlockchainAPI {
      * Placeholder for performing a blockchain transfer transaction
      * @returns {String}
      */
+    /*
     transfer(key, from, to, amount, asset, memo = null, broadcast = true) {
         throw "Needs implementation!"
     }
+    */
 
     /*
      * Placeholder for checking fee calculation support
@@ -592,7 +575,7 @@ export default class BlockchainAPI {
      * Placeholder for retrieving a blockchain explorer URL
      * @returns {String}
      */
-    getExplorer(account) {
+    getExplorer(account, chain) {
         return false;
     }
 

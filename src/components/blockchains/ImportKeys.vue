@@ -1,73 +1,92 @@
 <script setup>
-    import {ref, inject, computed} from "vue";
-    import { ipcRenderer } from 'electron';
+    import {ref, inject, computed, watchEffect} from "vue";
 
-    const emitter = inject('emitter');
     import { useI18n } from 'vue-i18n';
+    import store from '../../store/index.js';
     const { t } = useI18n({ useScope: 'global' });
-    import getBlockchainAPI from "../../lib/blockchains/blockchainFactory";
 
     const props = defineProps({
         chain: {
             type: String,
             required: true,
             default: ''
+        },
+    });
+
+    const emit = defineEmits(['back', 'continue', 'imported']);
+
+    let accessType = ref();
+    let requiredFields = ref();
+    watchEffect(() => {
+        async function initialize() {
+            let blockchainRequest;
+            try {
+                blockchainRequest = await window.electron.blockchainRequest({
+                    methods: ["getAccessType", "getSignUpInput"],
+                    chain: props.chain
+                });
+            } catch (error) {
+                console.log(error);
+                return;
+            }
+            
+            if (blockchainRequest && blockchainRequest.getAccessType) {
+                accessType.value = blockchainRequest.getAccessType;
+            }
+
+            if (blockchainRequest && blockchainRequest.getSignUpInput) {
+                requiredFields.value = blockchainRequest.getSignUpInput;
+            }
+
+        }
+        if (props.chain) {
+            initialize();
         }
     });
 
     let accountname = ref("");
     let privateKey = ref("");
-
-    let accessType = computed(() => {
-        if (!props.chain) {
-            return null;
-        }
-        let blockchain = getBlockchainAPI(props.chain);
-        return blockchain.getAccessType();
-    });
-
-    let requiredFields = computed(() => {
-        if (!props.chain) {
-            return null;
-        }
-        let blockchain = getBlockchainAPI(props.chain);
-        return blockchain.getSignUpInput();
-    });
-
-    function back() {
-        emitter.emit('back', true);
-    }
-
     async function next() {
-        let blockchain = await getBlockchainAPI(props.chain);
-
         let authorities = {};
         if (requiredFields.value.privateKey != null) {
             authorities.privateKey = privateKey.value;
         }
 
-        let account;
+        console.log("Verifying account");
+
+        let blockchainRequest;
         try {
-            account = await blockchain.verifyAccount(accountname.value, authorities.privateKey, props.chain);
+            blockchainRequest = await window.electron.blockchainRequest({
+                methods: ["verifyAccount"],
+                accountname: accountname.value,
+                chain: props.chain,
+                authorities: authorities.privateKey
+            });
         } catch (error) {
             console.log(error);
-            ipcRenderer.send("notify", t("common.unverified_account_error"));
+            console.log("Account verification error, check your key and try again");
+            window.electron.notify(t("common.unverified_account_error"));
             return;
         }
 
-        if (!account) {
-            console.log("Account not found");
-            return;
-        }
+        if (blockchainRequest && blockchainRequest.verifyAccount) {
+            console.log("Account verified");
+            privateKey.value = "";
 
-        emitter.emit('accounts_to_import', [{
-            account: {
-                accountName: accountname.value,
-                storedAccount: account,
-                chain: props.chain,
-                keys: authorities
+            if (store.state.WalletStore.isUnlocked) {
+                window.electron.resetTimer();
             }
-        }]);
+            emit('continue');
+            emit('imported', [{
+                account: {
+                    accountName: accountname.value,
+                    accountID: blockchainRequest.verifyAccount.id,
+                    chain: props.chain,
+                    keys: authorities
+                }
+            }]);
+        }
+
     }
 </script>
 
@@ -107,7 +126,7 @@
                 <ui-button
                     outlined
                     class="step_btn"
-                    @click="back"
+                    @click="emit('back')"
                 >
                     {{ t('common.back_btn') }}
                 </ui-button>

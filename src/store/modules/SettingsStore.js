@@ -1,10 +1,8 @@
 import {
     defaultLocale
 } from '../../config/i18n.js'
-
 import BeetDB from '../../lib/BeetDB.js';
-import RendererLogger from "../../lib/RendererLogger";
-const logger = new RendererLogger();
+
 const LOAD_SETTINGS = 'LOAD_SETTINGS';
 
 const mutations = {
@@ -19,14 +17,15 @@ const actions = {
     }) {
         return new Promise(async (resolve, reject) => {
             try {
-                let settings = localStorage.getItem("settings");
-
-                if (settings && settings.length > 0) {
-                    commit(LOAD_SETTINGS, JSON.parse(settings));
-                } else {
-                    localStorage.setItem("settings", JSON.stringify(initialState.settings));
-                    commit(LOAD_SETTINGS, JSON.parse(initialState.settings));
-                }
+                BeetDB.settings.get({id: 'settings'}).then((settings) => {
+                    if (settings && settings.length > 0) {
+                        commit(LOAD_SETTINGS, JSON.parse(settings));
+                    } else {
+                        BeetDB.settings.put({id: 'settings', value: JSON.stringify(initialState.settings)}).then(() => {
+                            commit(LOAD_SETTINGS, JSON.parse(initialState.settings));
+                        })
+                    }
+                });
                 resolve();
             } catch (error) {
                 console.log(error)
@@ -38,59 +37,56 @@ const actions = {
         commit
     }, payload) {
         return new Promise(async (resolve, reject) => {
-              let settings;
-              try {
-                  settings = localStorage.getItem("settings");
-              } catch (error) {
-                  console.log(error)
-                  reject(error);
-              }
 
-              if (settings && settings.length > 0) {
-                  settings = JSON.parse(settings)
-              } else {
-                  settings = initialState.settings;
-              }
-
-              // backwards compatibility
-              if (typeof settings.selected_node === "string")
-              {
-                  settings.selected_node = {}
-              }
-
-              try {
-                settings.selected_node[payload.chain] = payload.node;
-              } catch (error) {
+            BeetDB.settings.get({id: 'settings'}).then((settings) => {
+                if (settings && settings.length > 0) {
+                    settings = JSON.parse(settings)
+                } else {
+                    settings = initialState.settings;
+                }
+  
+                // backwards compatibility
+                if (typeof settings.selected_node === "string") {
+                    settings.selected_node = {}
+                }
+  
+                try {
+                  settings.selected_node[payload.chain] = payload.node;
+                } catch (error) {
+                  console.log(`setNode: ${error}`)
+                }
+                BeetDB.settings.put({id: 'settings', value: JSON.stringify(settings)}).then(() => {
+                    commit(LOAD_SETTINGS, settings);
+                    resolve();
+                })
+            }).catch((error) => {
                 console.log(`setNode: ${error}`)
-              }
-
-              localStorage.setItem("settings", JSON.stringify(settings));
-              commit(LOAD_SETTINGS, settings);
-              resolve();
+                reject(error);
+            });
         });
     },
     setLocale({
         commit
     }, payload) {
         return new Promise(async (resolve, reject) => {
-            let settings;
-            try {
-                settings = localStorage.getItem("settings");
-            } catch (error) {
-                console.log(error)
+
+            BeetDB.settings.get({id: 'settings'}).then((settings) => {
+                if (settings && settings.length > 0) {
+                    settings = JSON.parse(settings)
+                } else {
+                    settings = initialState.settings;
+                }
+
+                settings.locale = payload.locale;
+
+                BeetDB.settings.put({id: 'settings', value: JSON.stringify(settings)}).then(() => {
+                    commit(LOAD_SETTINGS, settings);
+                    resolve();
+                })
+            }).catch((error) => {
+                console.log(`setLocale: ${error}`)
                 reject(error);
-            }
-
-            if (settings && settings.length > 0) {
-                settings = JSON.parse(settings)
-            } else {
-                settings = initialState.settings;
-            }
-
-            settings.locale = payload.locale;
-            localStorage.setItem("settings", JSON.stringify(settings));
-            commit(LOAD_SETTINGS, settings);
-            resolve();
+            });
         });
     },
     /**
@@ -101,33 +97,32 @@ const actions = {
         commit
     }, payload) {
         return new Promise(async (resolve, reject) => {
-            let settings;
-            try {
-                settings = localStorage.getItem("settings");
-            } catch (error) {
-                console.log(error)
-                reject(error);
-            }
-
-            if (settings && settings.length > 0) {
-                settings = JSON.parse(settings)
-            } else {
-                settings = initialState.settings;
-            }
-
-            if (!settings.hasOwnProperty('chainPermissions')) {
-                settings['chainPermissions'] = {
-                    BTS: [],
-                    BTS_TEST: [],
-                    TUSC: [],
-                    BTC: [],
-                    BTC_TEST: []
+            BeetDB.settings.get({id: 'settings'}).then((settings) => {
+                if (settings && settings.length > 0) {
+                    settings = JSON.parse(settings)
+                } else {
+                    settings = initialState.settings;
                 }
-            }
-            settings.chainPermissions[payload.chain] = payload.rows;
-            localStorage.setItem("settings", JSON.stringify(settings));
-            commit(LOAD_SETTINGS, settings);
-            resolve();
+    
+                if (!settings.hasOwnProperty('chainPermissions')) {
+                    settings['chainPermissions'] = {
+                        BTS: [],
+                        BTS_TEST: [],
+                        TUSC: [],
+                        EOS: [],
+                        BEOS: [],
+                        TLOS: []
+                    }
+                }
+                settings.chainPermissions[payload.chain] = payload.rows;
+                BeetDB.settings.put({id: 'settings', value: JSON.stringify(settings)}).then(() => {
+                    commit(LOAD_SETTINGS, settings);
+                    resolve();
+                })
+            }).catch((error) => {
+                console.log(`setChainPermissions: ${error}`)
+                reject(error);
+            });
         });
     }
 }
@@ -151,6 +146,9 @@ const initialState = {
         chainPermissions: {
             BTS: [],
             BTS_TEST: [],
+            EOS: [],
+            BEOS: [],
+            TLOS: [],
             TUSC: [],
             BTC: [],
             BTC_TEST: []

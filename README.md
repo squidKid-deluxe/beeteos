@@ -4,13 +4,13 @@ Interacting with any blockchain can be cumbersome if you are not familiar with h
 
 In general, every action on a blockchain requires a cryptographic signature of the required private keys for the action, and when you are using third party tools (especially closed source ones), the question about trust quickly arises ("Are they gonna steal my private keys?").
 
-BeetEOS aims to solve these trust concerns, whilst additionally facilitating private key managament for the everyday EOS user.
+BeetEOS aims to solve these trust concerns, whilst additionally facilitating private key managament for the everyday EOS/Bitshares based blockchain user.
 
 A general rule of thumb for the inexperienced: Never ever expose your private keys on the internet, and if that is ever needed, stay vigilant and do your due diligence.
 
 # BeetEOS - Your EOS blockchain companion
 
-BeetEOS is a locally installed stand-alone key and identity manager and signing app for EOS based blockchains, originally evolved from the BitShares Blockchains and influenced by the [Beet](https://github.com/bitshares/beet) and [Scatter](https://github.com/GetScatter) wallets.
+BeetEOS is a locally installed stand-alone key and identity manager and signing app for both Bitshares and EOS based blockchains influenced by the [Beet](https://github.com/bitshares/beet) and [Scatter](https://github.com/GetScatter) wallets.
 
 BeetEOS allows separate account management while being in full control of what data to expose to third parties.
 
@@ -44,11 +44,11 @@ Releases are bundled as installers and are available at https://github.com/bitsh
 
     ATTENTION
 
-Beet binaries will never be hosted anywhere but within GitHub releases. If you find Beet binaries anywhere else, it is likely a phishing attempt.
+BeetEOS binaries will never be hosted anywhere but within GitHub releases. If you find Beet binaries anywhere else, it is likely a phishing attempt.
 
 ## For developers
 
-Beet is an [electron-based app](https://www.electronjs.org) for [cross-platform compatibility](https://www.electron.build), utilising the [VueJS framework](https://blog.vuejs.org/posts/vue-3-as-the-new-default.html), [BalmUI design system](https://material.balmjs.com) and the [Socket.IO](https://socket.io) libraries.
+BeetEOS is an [electron-based app](https://www.electronjs.org) for [cross-platform compatibility](https://www.electron.build), utilising the [VueJS framework](https://blog.vuejs.org/posts/vue-3-as-the-new-default.html), [BalmUI design system](https://material.balmjs.com) and the [Socket.IO](https://socket.io) libraries.
 
 To run Beet it's simply a case of
 
@@ -68,7 +68,8 @@ If you are in linux you may need to do: `sudo apt-get install libudev-dev` befor
 
 ## Current Limitations
 
-BeetEOS currently only supports single-sig accounts (one private key to unlock the blockchain action), and depending on the blockchain different import options may be available.
+BeetEOS currently only supports single-signature accounts (one private key to unlock the blockchain action), and depending on the blockchain different import options may be available.
+
 Please open an issue to add support for your desired way.
 
 ## Encountered an issue? Want a new feature?

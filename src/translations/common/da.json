@@ -10,8 +10,13 @@
       "error": "Kunne ikke oprette forbindelse til blockchain"
     },
     "settings": {
-      "exit": "Afslut indstillingsmenuen"
-    },
+        "exit": "Tilbage til instrumentbræt",
+        "deleted": "Kontoen er blevet slettet fra din tegnebog.",
+        "label": "Vil du fjerne kontoen fra tegnebogen?",
+        "prompt": "Bekræft din adgangskode nedenfor for uigenkaldeligt at fjerne denne konto fra din tegnebog.",
+        "button": "Slet konto",
+        "insufficient": "Kan ikke slette den sidste konto i en tegnebog, beklager."
+      },
     "start": {
       "wallet_name": "Tegnebogsnavn",
       "invalid_password": "Et forsøg på at låse din tegnebog op med en ugyldig adgangskode."
@@ -35,30 +40,47 @@
       "duplicate": "En pung med samme navn findes allerede, hvilket afbryder punggendannelse"
     },
     "raw": {
-      "label": "Rå dybt link-side",
-      "promptFailure": "Et råt dybt link blev afvist. "
-    },
+        "label": "Rå deeplink-side",
+        "desc": "Denne side behandler indgående deeplink-prompter uden tidsfølsom kryptering.",
+        "promptFailure": "Et råt dybt link blev afvist. ",
+        "exit": "Afslut dyblink-siden"
+      },
+    "www": {
+        "label": "Webanmodningsside",
+        "description": "Klar til at behandle eksterne webanmodninger. Tredjeparts apps er nu i stand til at starte prompter om at linke og derefter udsende operationer.",
+        "chosen": "operationer valgt",
+        "ready": "Klar til webforespørgsler!",
+        "loading": "Indlæser stiktjenester...",
+        "exit": "Afslut webanmodningssiden",
+        "unsupported": "Webanmodninger er endnu ikke understøttet for denne kæde, beklager.",
+        "init": "Denne side bruger lokalt hostede websockets til at behandle indgående webanmodninger. Internetudbyderens kompatibilitet kan variere. Vil du fortsætte?",
+        "yes": "Fortsæt",
+        "no": "Gå tilbage",
+        "prompt": "Klar til at behandle eksterne webanmodninger. Tredjeparts apps er nu i stand til at starte prompter om at linke og derefter udsende operationer."
+      },
     "totp": {
-      "label": "Tidsbaserede engangsadgangskoder",
-      "promptFailure": "Et TOTP-dybt link blev afvist. ",
-      "prompt": "Vælg dine nødvendige handlinger nedenfor",
-      "chosen": "operationer valgt",
-      "request": "Anmod om adgangskode",
-      "failed": "Indgående TOTP-anmodning mislykkedes. ",
-      "default": "Utilstrækkelige operationer",
-      "time": "Resterende tid",
-      "exit": "Afslut TOTP-siden",
-      "save": "Gemme",
-      "unsupported": "TOTP er endnu ikke understøttet for denne kæde, beklager.",
-      "warning": "Del ikke koden ovenfor med nogen",
-      "inProgress": "Et dybt link behandles"
-    },
-    "opPermissions": {
+        "label": "Tidsbegrænset og krypteret deeplink-promptside",
+        "desc": "Denne side behandler indgående deeplink-prompts, som er blevet krypteret på en tidsfølsom måde.",
+        "promptFailure": "Et TOTP-dybt link blev afvist. ",
+        "prompt": "Vælg dine nødvendige handlinger nedenfor",
+        "chosen": "operationer valgt",
+        "request": "Anmod om adgangskode",
+        "failed": "Indgående TOTP-anmodning mislykkedes. ",
+        "default": "Utilstrækkelige operationer",
+        "time": "Resterende tid",
+        "exit": "Afslut TOTP-siden",
+        "save": "Gemme",
+        "unsupported": "TOTP er endnu ikke understøttet for denne kæde, beklager.",
+        "warning": "Del ikke koden ovenfor med nogen",
+        "inProgress": "Et dybt link behandles"
+      },
+    "chosenScope": {
       "title": {
         "local": "Ønsker du at konfigurere omfanget af scanbare JSON-filer?",
         "qr": "Ønsker du at konfigurere omfanget af scanbare QR-koder?",
         "rawLink": "Ønsker du at konfigurere omfanget af indgående rå deeplinks?",
-        "totp": "Ønsker du at konfigurere omfanget af indgående dybe links?"
+        "totp": "Ønsker du at konfigurere omfanget af indgående dybe links?",
+        "www": "Ønsker du at konfigurere omfanget af indgående webanmodninger?"
       },
       "yes": "Ja - tilpas omfanget",
       "no": "Nej - tillad alle operationer"
@@ -72,13 +94,26 @@
         "upload": "Upload et QR-billede"
       },
       "scan": {
-        "title": "Scan en QR-kode med dit webcam"
+        "title": "Scan en QR-kode med dit webcam",
+        "switch": "Skift kamera",
+        "initFail": "Dit webcam kunne ikke initialiseres. Prøv venligst igen.",
+        "again": "Prøv igen",
+        "scanned": "QR-kode scannet!",
+        "another": "Scan en anden"
       },
       "drag": {
-        "title": "Træk og slip et billede, der indeholder en QR-kode"
+        "title": "Træk og slip et billede, der indeholder en QR-kode",
+        "error1": "Billeder med krydsoprindelse som dette understøttes ikke.",
+        "error2": "Kunne ikke afkode QR i billedet.",
+        "error3": "QR-detekteringsfejl",
+        "successPrompt": "Billedet blev scannet til QR",
+        "successBtn": "Scan et andet billede",
+        "prompt": "SLIP DIT BILLEDE HER"
       },
       "upload": {
-        "title": "Upload en billedfil for at scanne efter QR-koder"
+        "title": "Upload en billedfil for at scanne efter QR-koder",
+        "detected": "QR fundet i upload",
+        "another": "Upload endnu en QR"
       },
       "exit": "Afslut QR-siden",
       "back": "Tilbage",
@@ -89,7 +124,8 @@
     },
     "local": {
       "label": "Lokal fil op scanner",
-      "upload": "Upload foreslået operation JSON-fil",
+      "desc": "Denne side gør det muligt at evaluere og udsende transaktioner fra lokalt lagrede JSON-filer.",
+      "upload": "For at fortsætte skal du uploade en JSON-fil, som indeholder din foreslåede transaktion.",
       "exit": "Afslut lokal filside",
       "failed": "Kunne ikke behandle JSON",
       "back": "Tilbage",
@@ -101,6 +137,7 @@
     "actionBar": {
       "Home": "Hjem",
       "New": "Ny",
+      "WWW": "Webanmodning",
       "TOTP": "TOTP",
       "Local": "Lokal",
       "RAW": "Rå link",
@@ -227,5 +264,7 @@
     "backup_btn": "Download sikkerhedskopi",
     "backup_txt": "Klik på knappen 'Download Backup' nedenfor for at gemme en krypteret fil med alle dine tegnebogsnøgler. ",
     "tooltip_lock": "Klik for at låse denne tegnebog/log ud og vende tilbage til skærmen til valg af tegnebog.",
-    "tooltip_refresh": "Genopret forbindelse til blockchain og opdater kontosaldoen"
+    "tooltip_refresh": "Genopret forbindelse til blockchain og opdater kontosaldoen",
+    "invalidFile": "Ugyldig filtype, vælg venligst en anden fil.",
+    "invalidPass": "Ugyldig adgangskode, prøv venligst igen."
   }

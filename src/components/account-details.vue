@@ -1,7 +1,6 @@
 <script setup>
     import { computed } from 'vue';
-    import {formatChain} from "../lib/formatter";
-    import { shell } from 'electron';
+    import {formatChain} from "../lib/formatter.js";
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n({ useScope: 'global' });
 
@@ -13,12 +12,15 @@
                 return {}
             }
         },
-        blockchain: {
-            type: Object,
+        explorer: {
+            type: String,
             required: true,
-            default() {
-                return {}
-            }
+            default: ""
+        },
+        type: {
+            type: String,
+            required: true,
+            default: ""
         }
     });
 
@@ -26,26 +28,17 @@
         return formatChain(props.account.chain);
     });
 
-    let explorer = computed(() => {
-        if (!props.blockchain) {
-            return;
-        }
-        return props.blockchain.getExplorer(props.account);
-    });
-
     let accessType = computed(() => {
-        if (!props.blockchain) {
+        if (!props.type) {
             return;
         }
-        let type = props.blockchain.getAccessType();
-        return type == "account"
+        return props.type == "account"
             ? t('common.account_details_name_lbl')
             : t('common.account_details_address_lbl');
     });
 
-    function openExplorer(account) {
-        // TODO: Copy/Paste link for external browser instead?
-        shell.openExternal(explorer.value);
+    function openExplorer() {
+        window.electron.openURL(props.explorer);
     }
 
 </script>
@@ -58,7 +51,7 @@
                 v-if="explorer"
                 class="step_btn"
                 outline
-                @click="openExplorer(account)"
+                @click="openExplorer()"
             >
                 {{ t('common.account_details_explorer_lbl') }}
             </ui-button>

@@ -1,14 +1,7 @@
 <script setup>
-    import { onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
     import langSelect from "./lang-select.vue";
-    import RendererLogger from "../lib/RendererLogger";
-    const logger = new RendererLogger();
     const { t } = useI18n({ useScope: 'global' });
-
-    onMounted(() => {
-        logger.debug("Standard Header mounted");
-    });
 </script>
 
 <template>

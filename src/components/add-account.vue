@@ -1,19 +1,18 @@
 <script setup>
-    import { watch, ref, computed, onMounted, inject } from "vue";
-    import { ipcRenderer } from 'electron';
+    import { watch, ref, computed } from "vue";
     import { useI18n } from 'vue-i18n';
 
+    import ImportCloudPass from "./blockchains/bitshares/ImportCloudPass";
+    import ImportBinFile from "./blockchains/bitshares/ImportBinFile";
+    import ImportMemo from "./blockchains/bitshares/ImportMemo";
     import ImportKeys from "./blockchains/ImportKeys";
 
-    import store from '../store/index';
+    import store from '../store/index.js';
     import router from '../router/index.js';
     import { blockchains } from "../config/config.js";
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
-    import RendererLogger from "../lib/RendererLogger";
+    import { watchEffect } from "vue";
 
-    const logger = new RendererLogger();
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
 
     let importMethod = ref(null);
     let walletname = ref("");
@@ -23,6 +22,9 @@
 
     watch(step, async (newVal, oldVal) => {
         if (newVal !== oldVal) {
+            if (store.state.WalletStore.isUnlocked) {
+                window.electron.resetTimer();
+            }
             stepMessage.value = t('common.step_counter', {step_no: newVal});
         }
     }, {immediate: true});
@@ -32,24 +34,7 @@
     let selectedImport = ref(0);
 
     let accounts_to_import = ref(null);
-    let import_accounts = ref(null);
-    let enterPassword = ref(null);
     let confirmPassword = ref(null);
-
-    emitter.on('accounts_to_import', response => {
-        if (response) {
-            accounts_to_import.value = response;
-            step.value = 3;
-        }
-    });
-
-    emitter.on('back', response => {
-        step.value -= 1;
-    });
-
-    onMounted(() => {
-        logger.debug("Account-Add wizard Mounted");
-    });
 
     /*
      * Check if the user has a wallet already
@@ -84,15 +69,28 @@
         return !store.state.WalletStore.isUnlocked;
     });
 
-    /*
-     * Array of chain import methods for select menu
-     */
-    let selectedImportOptions = computed(() => {
-        if (!selectedChain.value || !selectedChain.value) {
-            return [];
+    let selectedImportOptions = ref([]);
+    watchEffect(() => {
+        async function lookup() {
+            let blockchainResponse;
+            try {
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ["getImportOptions"],
+                    chain: selectedChain.value
+                });
+            } catch (error) {
+                console.log(error);
+                return;
+            }
+            
+            if (blockchainResponse.getImportOptions) {
+                selectedImportOptions.value = blockchainResponse.getImportOptions;
+            }
         }
 
-        return getBlockchainAPI(selectedChain.value, null).getImportOptions();
+        if (selectedChain.value) {
+            lookup();
+        }
     });
 
     /*
@@ -100,6 +98,9 @@
      */
     watch(selectedChain, async (newVal, oldVal) => {
         if (newVal !== oldVal) {
+            if (store.state.WalletStore.isUnlocked) {
+                window.electron.resetTimer();
+            }
             selectedImport.value = 0;
         }
     }, {immediate: true});
@@ -116,9 +117,7 @@
             ? selectedImportOptions.value[0]
             : selectedImport.value;
 
-        return getBlockchainAPI(selectedChain.value)
-            .getImportOptions()
-            .find(option => { return option.type == useImport.type; });
+        return selectedImportOptions.value.find(option => { return option.type == useImport.type; });
     });
 
     /*
@@ -148,14 +147,14 @@
         }
 
         if (walletname.value.trim() == "") {
-            ipcRenderer.send("notify", t("common.empty_wallet_error"));
+            window.electron.notify(t("common.empty_wallet_error"));
             s1c.value = "is-invalid";
             return;
         }
 
         let walletList = store.getters['WalletStore/getWalletList'];
         if (walletList.map(wallet => wallet.name).includes(walletname.value.trim())) {
-            ipcRenderer.send("notify", t("common.duplicate_wallet_error"));
+            window.electron.notify(t("common.duplicate_wallet_error"));
             s1c.value = "is-invalid";
             return;
         }
@@ -169,13 +168,13 @@
      */
     function _handleError(err) {
         if (err == "invalid") {
-            ipcRenderer.send("notify", t("common.invalid_password"));
+            window.electron.notify(t("common.invalid_password"));
         } else if (err == "update_failed") {
-            ipcRenderer.send("notify", t("common.update_failed"));
+            window.electron.notify(t("common.update_failed"));
         } else if (err.key) {
-            ipcRenderer.send("notify", t(`common.${err.key}`));
+            window.electron.notify(t(`common.${err.key}`));
         } else {
-            ipcRenderer.send("notify", err.toString());
+            window.electron.notify(err.toString());
         }
     }
 
@@ -184,23 +183,24 @@
      */
     async function addAccounts() {
         if (!accounts_to_import.value) {
-            ipcRenderer.send("notify", t(`common.addAccount.none_selected`));
+            window.electron.notify(t(`common.addAccount.none_selected`));
             return;
         }
 
-        if (password.value == "") {
-            ipcRenderer.send("notify", t(`common.confirm_pass_error`));
+        if (!password.value || password.value === "") {
+            window.electron.notify(t(`common.confirm_pass_error`));
             return;
         }
 
         if ((!userHasWallet.value || createNewWallet.value) && password.value !== confirmPassword.value) {
-            ipcRenderer.send("notify", t(`common.confirm_pass_error`));
+            window.electron.notify(t(`common.confirm_pass_error`));
             return;
         }
 
         for (let i in accounts_to_import.value) {
             let account = accounts_to_import.value[i];
             if (!userHasWallet.value || createNewWallet.value) {
+                // User is creating a new wallet
                 try {
                     await store.dispatch("WalletStore/saveWallet", {
                         walletname: walletname.value,
@@ -212,6 +212,7 @@
                     _handleError(error);
                 }
             } else {
+                // User is adding an account to an existing wallet
                 account.password = password.value;
                 account.walletname = walletname.value;
 
@@ -224,6 +225,9 @@
             }
         }
 
+        if (store.state.WalletStore.isUnlocked) {
+            store.dispatch("WalletStore/logout");
+        }
         router.replace("/");
     }
 </script>
@@ -387,6 +391,33 @@
                     v-if="selectedImportOption.type == 'ImportKeys'"
                     v-model="importMethod"
                     :chain="selectedChain"
+                    @back="() => step -= 1"
+                    @continue="() => step = 3"
+                    @imported="(x) => accounts_to_import = x"
+                />
+                <ImportCloudPass
+                    v-else-if="selectedImportOption.type == 'bitshares/ImportCloudPass'"
+                    v-model="importMethod"
+                    :chain="selectedChain"
+                    @back="() => step -= 1"
+                    @continue="() => step = 3"
+                    @imported="(x) => accounts_to_import = x"
+                />
+                <ImportBinFile
+                    v-else-if="selectedImportOption.type == 'bitshares/ImportBinFile'"
+                    v-model="importMethod"
+                    :chain="selectedChain"
+                    @back="() => step -= 1"
+                    @continue="() => step = 3"
+                    @imported="(x) => accounts_to_import = x"
+                />
+                <ImportMemo
+                    v-else-if="selectedImportOption.type == 'bitshares/ImportMemo'"
+                    v-model="importMethod"
+                    :chain="selectedChain"
+                    @back="() => step -= 1"
+                    @continue="() => step = 3"
+                    @imported="(x) => accounts_to_import = x"
                 />
                 <div v-else>
                     No import option found

@@ -10,7 +10,12 @@
     "error": "Impossible de se connecter à la blockchain"
   },
   "settings": {
-    "exit": "Quitter le menu des paramètres"
+    "exit": "Retour au tableau de bord",
+    "deleted": "Compte supprimé avec succès de votre portefeuille.",
+    "label": "Supprimer le compte du portefeuille ?",
+    "prompt": "Confirmez votre mot de passe ci-dessous pour supprimer de manière irréversible ce compte de votre portefeuille.",
+    "button": "Supprimer le compte",
+    "insufficient": "Impossible de supprimer le dernier compte d'un portefeuille, désolé."
   },
   "start": {
     "wallet_name": "Nom du portefeuille",
@@ -35,13 +40,29 @@
     "duplicate": "Un portefeuille portant le même nom existe déjà, abandon de la restauration du portefeuille"
   },
   "raw": {
-    "label": "Page de liens profonds bruts",
-    "promptFailure": "Un lien profond brut a été rejeté. "
+    "label": "Page de lien profond brut",
+    "desc": "Cette page traite les invites de liens profonds entrantes sans cryptage temporaire.",
+    "promptFailure": "Un lien profond brut a été rejeté. ",
+    "exit": "Quitter la page de lien profond"
+  },
+  "www": {
+    "label": "Page de demande Web",
+    "description": "Prêt à traiter les demandes Web externes. Les applications tierces sont désormais capables de lancer des invites pour lier puis diffuser des opérations.",
+    "chosen": "opérations choisies",
+    "ready": "Prêt pour les requêtes Web!",
+    "loading": "Chargement des services de socket...",
+    "exit": "Quitter la page de demande Web",
+    "unsupported": "Les requêtes Web ne sont pas encore prises en charge pour cette chaîne, désolé.",
+    "init": "Cette page utilise des websockets hébergés localement pour traiter les requêtes Web entrantes. La compatibilité des fournisseurs de services Internet peut varier. Voulez-vous poursuivre?",
+    "yes": "Procéder",
+    "no": "Retourner",
+    "prompt": "Prêt à traiter les demandes Web externes. Les applications tierces sont désormais capables de lancer des invites pour lier puis diffuser des opérations."
   },
   "totp": {
-    "label": "Mots de passe à usage unique basés sur le temps",
+    "label": "Page d'invite de lien profond chiffrée et limitée dans le temps",
+    "desc": "Cette page traite les invites de liens profonds entrantes qui ont été cryptées de manière temporelle.",
     "promptFailure": "Un lien profond TOTP a été rejeté. ",
-    "prompt": "Sélectionnez les opérations requises ci-dessous",
+    "prompt": "Sélectionnez ci-dessous les opérations requises",
     "chosen": "opérations choisies",
     "request": "Demander un mot de passe",
     "failed": "La demande TOTP entrante a échoué. ",
@@ -53,12 +74,13 @@
     "warning": "Ne partagez le code ci-dessus avec personne",
     "inProgress": "Un lien profond est en cours de traitement"
   },
-  "opPermissions": {
+  "chosenScope": {
     "title": {
       "local": "Souhaitez-vous configurer la portée des fichiers JSON analysables ?",
       "qr": "Vous souhaitez paramétrer le périmètre des QR codes scannables ?",
       "rawLink": "Souhaitez-vous paramétrer la portée des deeplinks bruts entrants ?",
-      "totp": "Souhaitez-vous configurer la portée des liens profonds entrants ?"
+      "totp": "Souhaitez-vous configurer la portée des liens profonds entrants ?",
+      "www": "Souhaitez-vous configurer la portée des requêtes Web entrantes ?"
     },
     "yes": "Oui - personnaliser la portée",
     "no": "Non - autoriser toutes les opérations"
@@ -72,14 +94,27 @@
       "upload": "Télécharger une image QR"
     },
     "scan": {
-      "title": "Scannez un code QR avec votre webcam"
-    },
-    "drag": {
-      "title": "Faites glisser et déposez une image contenant un code QR"
-    },
-    "upload": {
-      "title": "Téléchargez un fichier image pour scanner les codes QR"
-    },
+        "title": "Scannez un code QR avec votre webcam",
+        "switch": "Changer de caméra",
+        "initFail": "Votre webcam n'a pas pu s'initialiser, veuillez réessayer.",
+        "again": "Essayer à nouveau",
+        "scanned": "Code QR scanné !",
+        "another": "Scanner un autre"
+      },
+      "drag": {
+        "title": "Glissez et déposez une image contenant un code QR",
+        "error1": "Les images d'origine croisée comme celle-ci ne sont pas prises en charge.",
+        "error2": "Impossible de décoder le QR dans l'image.",
+        "error3": "Erreur de détection QR",
+        "successPrompt": "Image numérisée avec succès pour QR",
+        "successBtn": "Numériser une autre image",
+        "prompt": "DÉPOSEZ VOTRE IMAGE ICI"
+      },
+      "upload": {
+        "title": "Téléchargez un fichier image pour rechercher des codes QR",
+        "detected": "QR détecté lors du téléchargement",
+        "another": "Téléchargez un autre QR"
+      },
     "exit": "Quitter la page QR",
     "back": "Dos",
     "progress": "Traitement du code QR",
@@ -89,7 +124,8 @@
   },
   "local": {
     "label": "Analyseur d'opérations de fichiers locaux",
-    "upload": "Charger le fichier JSON de l'opération proposée",
+    "desc": "Cette page permet d'évaluer et de diffuser des transactions à partir de fichiers JSON stockés localement.",
+    "upload": "Pour continuer, veuillez télécharger un fichier JSON contenant la transaction proposée.",
     "exit": "Quitter la page du fichier local",
     "failed": "Échec du traitement de JSON",
     "back": "Dos",
@@ -101,6 +137,7 @@
   "actionBar": {
     "Home": "Maison",
     "New": "Nouveau",
+    "WWW": "Demande Web",
     "TOTP": "TOTP",
     "Local": "Local",
     "RAW": "Lien brut",
@@ -227,5 +264,7 @@
   "backup_btn": "Télécharger la sauvegarde",
   "backup_txt": "Cliquez sur le bouton \"Télécharger la sauvegarde\" ci-dessous pour enregistrer un fichier crypté avec toutes les clés de votre portefeuille. ",
   "tooltip_lock": "Cliquez pour verrouiller ce portefeuille/déconnexion et revenir à l'écran de sélection du portefeuille.",
-  "tooltip_refresh": "Reconnectez-vous à la blockchain et actualisez le solde du compte"
+  "tooltip_refresh": "Reconnectez-vous à la blockchain et actualisez le solde du compte",
+  "invalidFile": "Type de fichier invalide, veuillez sélectionner un autre fichier.",
+  "invalidPass": "Mot de passe invalide, réessayez."
 }

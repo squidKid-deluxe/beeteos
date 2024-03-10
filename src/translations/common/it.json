@@ -10,7 +10,12 @@
     "error": "Impossibile connettersi alla blockchain"
   },
   "settings": {
-    "exit": "Uscire dal menu delle impostazioni"
+    "exit": "Ritorna alla dashboard",
+    "deleted": "Account eliminato dal tuo portafoglio con successo.",
+    "label": "Rimuovere l'account dal portafoglio?",
+    "prompt": "Conferma la tua password qui sotto per rimuovere irreversibilmente questo account dal tuo portafoglio.",
+    "button": "Eliminare l'account",
+    "insufficient": "Impossibile eliminare l'ultimo account in un portafoglio, mi spiace."
   },
   "start": {
     "wallet_name": "Nome del portafoglio",
@@ -36,29 +41,46 @@
   },
   "raw": {
     "label": "Pagina di collegamento diretto non elaborata",
-    "promptFailure": "Un deeplink Raw è stato rifiutato. "
+    "desc": "Questa pagina elabora le richieste di collegamento diretto in entrata senza crittografia sensibile al tempo.",
+    "promptFailure": "Un collegamento diretto non elaborato è stato rifiutato. ",
+    "exit": "Esci dalla pagina del collegamento diretto"
+  },
+  "www": {
+    "label": "Pagina di richiesta web",
+    "description": "Pronto per elaborare richieste web esterne. Le app di terze parti sono ora in grado di avviare richieste di collegamento e quindi di trasmissione di operazioni.",
+    "chosen": "operazioni scelte",
+    "ready": "Pronto per le richieste web!",
+    "loading": "Caricamento servizi socket...",
+    "exit": "Esci dalla pagina di richiesta web",
+    "unsupported": "Le richieste web non sono ancora supportate per questa catena, siamo spiacenti.",
+    "init": "Questa pagina utilizza websocket ospitati localmente per elaborare le richieste web in entrata. La compatibilità del provider di servizi Internet può variare. Vuoi procedere?",
+    "yes": "Procedere",
+    "no": "Torna indietro",
+    "prompt": "Pronto per elaborare richieste web esterne. Le app di terze parti sono ora in grado di avviare richieste di collegamento e quindi di trasmissione di operazioni."
   },
   "totp": {
-    "label": "Password monouso basate sul tempo",
-    "promptFailure": "Un collegamento diretto TOTP è stato rifiutato. ",
+    "label": "Pagina di richiesta del deeplink crittografata e limitata nel tempo",
+    "desc": "Questa pagina elabora le richieste di collegamento diretto in arrivo che sono state crittografate in modo sensibile al tempo.",
+    "promptFailure": "Un deeplink TOTP è stato rifiutato. ",
     "prompt": "Seleziona le operazioni richieste di seguito",
     "chosen": "operazioni scelte",
-    "request": "Richiedi codice di accesso",
-    "failed": "Richiesta TOTP in entrata non riuscita. ",
+    "request": "Richiedi il codice di accesso",
+    "failed": "La richiesta TOTP in entrata non è riuscita. ",
     "default": "Operazioni insufficienti",
     "time": "Tempo rimanente",
     "exit": "Esci dalla pagina TOTP",
     "save": "Salva",
-    "unsupported": "TOTP non è ancora supportato per questa catena, mi dispiace.",
+    "unsupported": "TOTP non è ancora supportato per questa catena, siamo spiacenti.",
     "warning": "Non condividere il codice sopra con nessuno",
-    "inProgress": "Un collegamento diretto è in fase di elaborazione"
+    "inProgress": "È in corso l'elaborazione di un collegamento diretto"
   },
-  "opPermissions": {
+  "chosenScope": {
     "title": {
       "local": "Desideri configurare l'ambito dei file JSON analizzabili?",
       "qr": "Desideri configurare l'ambito dei codici QR scansionabili?",
       "rawLink": "Desideri configurare l'ambito dei deeplink non elaborati in entrata?",
-      "totp": "Desideri configurare l'ambito dei deeplink in entrata?"
+      "totp": "Desideri configurare l'ambito dei deeplink in entrata?",
+      "www": "Desideri configurare l'ambito delle richieste web in entrata?"
     },
     "yes": "Sì, personalizza l'ambito",
     "no": "No - consenti tutte le operazioni"
@@ -72,14 +94,27 @@
       "upload": "Carica un'immagine QR"
     },
     "scan": {
-      "title": "Scansiona un codice QR con la tua webcam"
-    },
-    "drag": {
-      "title": "Trascina e rilascia un'immagine contenente un codice QR"
-    },
-    "upload": {
-      "title": "Carica un file immagine per cercare i codici QR"
-    },
+        "title": "Scansiona un codice QR con la tua webcam",
+        "switch": "Cambia fotocamera",
+        "initFail": "Impossibile inizializzare la webcam, riprova.",
+        "again": "Riprova",
+        "scanned": "Codice QR scansionato!",
+        "another": "Scansiona un altro"
+      },
+      "drag": {
+        "title": "Trascina e rilascia un'immagine contenente un codice QR",
+        "error1": "Immagini multiorigine come questa non sono supportate.",
+        "error2": "Impossibile decodificare il QR nell'immagine.",
+        "error3": "Errore di rilevamento QR",
+        "successPrompt": "Immagine scansionata per QR riuscita",
+        "successBtn": "Scansiona un'altra immagine",
+        "prompt": "LASCIA QUI LA TUA IMMAGINE"
+      },
+      "upload": {
+        "title": "Carica un file immagine per scansionare i codici QR",
+        "detected": "QR rilevato durante il caricamento",
+        "another": "Carica un altro QR"
+      },
     "exit": "Esci dalla pagina QR",
     "back": "Indietro",
     "progress": "Elaborazione codice QR",
@@ -89,7 +124,8 @@
   },
   "local": {
     "label": "Scanner operativo file locale",
-    "upload": "Carica il file JSON dell'operazione proposta",
+    "desc": "Questa pagina consente di valutare e trasmettere transazioni da file JSON archiviati localmente.",
+    "upload": "Per procedere, carica un file JSON che contiene la transazione proposta.",
     "exit": "Esci dalla pagina del file locale",
     "failed": "Impossibile elaborare JSON",
     "back": "Indietro",
@@ -101,6 +137,7 @@
   "actionBar": {
     "Home": "Casa",
     "New": "Nuovo",
+    "WWW": "Richiesta web",
     "TOTP": "TOP",
     "Local": "Locale",
     "RAW": "Collegamento grezzo",
@@ -227,5 +264,7 @@
   "backup_btn": "Scarica Sostegno",
   "backup_txt": "Fai clic sul pulsante \"Scarica backup\" in basso per salvare un file crittografato con tutte le chiavi del tuo portafoglio. ",
   "tooltip_lock": "Fare clic per bloccare questo portafoglio/disconnettersi e tornare alla schermata di selezione del portafoglio.",
-  "tooltip_refresh": "Riconnettiti alla blockchain e aggiorna il saldo del conto"
+  "tooltip_refresh": "Riconnettiti alla blockchain e aggiorna il saldo del conto",
+  "invalidFile": "Tipo di file non valido, seleziona un altro file.",
+  "invalidPass": "Password non valida, riprova."
 }

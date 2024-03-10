@@ -1,266 +1,197 @@
 <script setup>
-    import { ref, computed, inject } from 'vue';
+    import { ref, computed, onMounted, toRaw } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import { ipcRenderer } from "electron";
-    import { v4 as uuidv4 } from 'uuid';
-    import fs from 'fs';
 
     import AccountSelect from "./account-select";
     import Operations from "./blockchains/operations";
-    import * as Actions from '../lib/Actions';
-
-    import { injectedCall, voteFor, transfer } from '../lib/apiUtils.js';
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
-    import store from '../store/index';
+    
+    import store from '../store/index.js';
+    import router from '../router/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
 
-    let opPermissions = ref();
+    let chosenScope = ref();
     let selectedRows = ref();
     let inProgress = ref(false);
 
-    emitter.on('selectedRows', (data) => {
-        selectedRows.value = data;
-    })
-
-    emitter.on('exitOperations', () => {
-        opPermissions.value = null;
-        selectedRows.value = null;
-    })
-
     function goBack() {
-        opPermissions.value = null;
+        window.electron.resetTimer();
+        chosenScope.value = null;
         selectedRows.value = null;
     }
 
-    let settingsRows = computed(() => { // last approved operation rows for this chain
-        if (!store.state.WalletStore.isUnlocked) {
-            return;
-        }
-
-        let chain = store.getters['AccountStore/getChain']
-        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain);
-        if (!rememberedRows || !rememberedRows.length) {
-            return [];
-        }
-
-        return rememberedRows;
+    let chain = computed(() => {
+        return store.getters['AccountStore/getChain'];
     });
 
-    let supportsLocal = computed(() => {
-        let chain = store.getters['AccountStore/getChain'];
-        return getBlockchainAPI(chain).supportsLocal();
+    let supportsLocal = ref(false);
+    let operationTypes = ref([]);
+    onMounted(async () => {
+        async function initialize() {
+            let blockchainResponse;
+            try {
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ['supportsLocal', 'getOperationTypes'],
+                    chain: chain.value,
+                    location: 'local'
+                });
+            } catch (error) {
+                console.log({error});
+                inProgress.value = false;
+                window.electron.notify(t("common.local.promptFailure"));
+                return;
+            }
+
+            if (!blockchainResponse) {
+                console.log("No blockchain response");
+                inProgress.value = false;
+                window.electron.notify(t("common.local.promptFailure"));
+                return;
+            }
+            
+            if (blockchainResponse.supportsLocal) {
+                supportsLocal.value = blockchainResponse.supportsLocal;
+            }
+
+            if (blockchainResponse.getOperationTypes) {
+                operationTypes.value = blockchainResponse.getOperationTypes;
+            }
+        }
+
+        initialize();
     });
 
     function setScope(newValue) {
-        opPermissions.value = newValue;
+        window.electron.resetTimer();
+        chosenScope.value = newValue;
         if (newValue === 'AllowAll') {
-            selectedRows.value = true;
-            let chain = store.getters['AccountStore/getChain'];
-            let types = getBlockchainAPI(chain).getOperationTypes();
+            const _ids = operationTypes.value.map(type => type.id);
+            selectedRows.value = _ids;
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
-                    chain: chain,
-                    rows: types.map(type => type.id)
+                    chain: chain.value,
+                    rows: _ids
                 }
             );
         }
     }
 
-    function onChange(a) {
-        fs.readFile(a[0].sourceFile.path, 'utf-8', async (err, data) => {
-            inProgress.value = true;
-            if (err) {
-                alert("An error ocurred reading the file :" + err.message);
-                return;
-            }
+    async function onFileUpload(a) {
+        window.electron.resetTimer();
+        inProgress.value = true;
 
-            let request;
-            try {
-                request = JSON.parse(data);
-            } catch (error) {
-                console.log(error);
-                inProgress.value = false;
-                return;
-            }
-
-            if (
-                !request
-                || !request.id
-                || !request.payload
-                || !request.payload.chain
-                || !request.payload.method
-                || request.payload.method === Actions.INJECTED_CALL && !request.payload.params
-            ) {
-                console.log('invalid request format')
-                inProgress.value = false;
-                return;
-            }
-
-            let requestedChain = request.payload.chain;
-            let chain = store.getters['AccountStore/getChain'];
-            if (!requestedChain || chain !== requestedChain) {
-                console.log("Incoming uploaded request for wrong chain");
-                ipcRenderer.send("notify", t("common.local.promptFailure"));
-                inProgress.value = false;
-                return;
-            }
-
-            if (!Object.keys(Actions).map(key => Actions[key]).includes(request.payload.method)) {
-                console.log("Unsupported request type rejected");
-                return;
-            }
-
-            
-            let blockchainActions = [
-                Actions.TRANSFER,
-                Actions.VOTE_FOR,
-                Actions.INJECTED_CALL
-            ];
-
-            let apiobj = {
-                id: request.id,
-                type: request.payload.method,
-                payload: request.payload
-            };
-
-            let blockchain;
-            if (blockchainActions.includes(apiobj.type)) {
-                try {
-                    blockchain = await getBlockchainAPI(chain);
-                } catch (error) {
-                    console.log(error);
-                    inProgress.value = false;
-                    return;
-                }
-            }
-
-            if (!blockchain) {
-                console.log('no blockchain')
-                inProgress.value = false;
-                return;
-            }
-
-            if (!settingsRows.value.includes(apiobj.type)) {
-                console.log("Unauthorized beet operation")
-                inProgress.value = false;
-                return;
-            }
-
-            if (apiobj.type === Actions.INJECTED_CALL) {
-                let tr;
-                try {
-                    tr = blockchain._parseTransactionBuilder(request.payload.params);
-                } catch (error) {
-                    console.log(error)
-                }
-
-                let authorizedUse = false;
-                for (let i = 0; i < tr.operations.length; i++) {
-                    let operation = tr.operations[i];
-                    if (settingsRows.value && settingsRows.value.includes(operation[0])) {
-                        authorizedUse = true;
-                        break;
-                    }
-                }
-
-                if (!authorizedUse) {
-                    console.log(`Unauthorized use of local ${chain} blockchain operation`);              
-                    inProgress.value = false;
-                    return;
-                }
-                console.log("Authorized use of local json upload")
-            }
-
-            let account = store.getters['AccountStore/getCurrentSafeAccount']();
-            if (!account) {
-                console.log('No account')
-                inProgress.value = false;
-                return;
-            }
-
-            let status;
-            try {
-                if (apiobj.type === Actions.INJECTED_CALL) {
-                    status = await injectedCall(apiobj, blockchain);
-                } else if (apiobj.type === Actions.VOTE_FOR) {
-                    status = await voteFor(apiobj, blockchain);
-                } else if (apiobj.type === Actions.TRANSFER) {
-                    status = await transfer(apiobj, blockchain);
-                }
-            } catch (error) {
-                console.log(error || "No status")
-                inProgress.value = false;
-                return;
-            }
-
-            if (!status || !status.result || status.result.isError || status.result.canceled) {
-                console.log("Issue occurred in approved prompt");
-                inProgress.value = false;
-                return;
-            }
-
-            ipcRenderer.send("notify", t("common.local.promptSuccess"));
+        let account = store.getters['AccountStore/getCurrentSafeAccount']();
+        if (!account) {
+            console.log('No account selected')
             inProgress.value = false;
-        });
+            return;
+        }
+
+        let blockchainResponse;
+        try {
+            blockchainResponse = await window.electron.blockchainRequest({
+                methods: ['localFileUpload'],
+                chain: chain.value,
+                filePath: a[0].sourceFile.path,
+                allowedOperations: toRaw(selectedRows.value)
+            });
+        } catch (error) {
+            console.log({error});
+            inProgress.value = false;
+            window.electron.notify(t("common.local.promptFailure"));
+            return;
+        }
+
+        if (!blockchainResponse || !blockchainResponse.localFileUpload) {
+            console.log("No blockchain response");
+            inProgress.value = false;
+            window.electron.notify(t("common.local.promptFailure"));
+            return;
+        }
+
+        inProgress.value = false;
+        window.electron.notify(t("common.local.promptSuccess"));
     }
 
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
+    });
 </script>
 
 <template>
-    <div
-        v-if="settingsRows"
-        class="bottom p-0"
-    >
+    <div class="bottom p-0">
         <span v-if="supportsLocal">
             <span>
                 <AccountSelect />
                 <p
-                    v-if="!opPermissions"
+                    v-if="!chosenScope"
                     style="marginBottom:0px;"
                 >
                     {{ t('common.local.label') }}
                 </p>
+                <p
+                    v-if="!chosenScope"
+                    style="marginBottom:0px;"
+                >
+                    {{ t('common.local.desc') }}
+                </p>
+
                 <ui-card
                     v-if="!selectedRows"
                     v-shadow="3"
                     outlined
                     style="marginTop: 5px;"
                 >
-                    <span v-if="!opPermissions">
+                    <span v-if="!chosenScope">
                         <p>
-                            {{ t('common.opPermissions.title.local') }}
+                            {{ t('common.chosenScope.title.local') }}
                         </p>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('Configure')"
                         >
-                            {{ t('common.opPermissions.yes') }}
+                            {{ t('common.chosenScope.yes') }}
                         </ui-button>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('AllowAll')"
                         >
-                            {{ t('common.opPermissions.no') }}
+                            {{ t('common.chosenScope.no') }}
                         </ui-button>
                     </span>
-                    <span v-else-if="opPermissions == 'Configure' && !selectedRows">
-                        <Operations />
+                    <span v-else-if="chosenScope == 'Configure' && !selectedRows">
+                        <Operations
+                            :ops="operationTypes"
+                            :chain="chain"
+                            @selected="(ops) => selectedRows = ops"
+                            @exit="() => {
+                                chosenScope = null;
+                                selectedRows = null;
+                            }"
+                        />
                     </span>
                 </ui-card>
             </span>
 
             
-            <span v-if="opPermissions && settingsRows && selectedRows">
+            <span v-if="chosenScope && selectedRows">
                 <span v-if="!inProgress">
-                    <h3>{{ t('common.local.upload') }}</h3>
+                    <p>{{ t('common.local.label') }}</p>
+
+                    <p>{{ t('common.local.desc') }}</p>
+
+                    <h4>{{ t('common.local.upload') }}</h4>
                     <ui-file
                         accept="application/json"
-                        @change="onChange($event)"
+                        @change="onFileUpload($event)"
                     />
                 </span>
                 <span v-else>
@@ -271,7 +202,7 @@
 
             <br>
             <ui-button
-                v-if="opPermissions && selectedRows"
+                v-if="chosenScope && selectedRows"
                 style="margin-right:5px"
                 icon="arrow_back_ios"
                 @click="goBack"

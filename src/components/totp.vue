@@ -1,78 +1,74 @@
 <script setup>
-    import { onMounted, watchEffect, watch, ref, computed, inject } from 'vue';
+    import { watchEffect, ref, computed, onMounted, toRaw } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import { ipcRenderer } from "electron";
-    import { v4 as uuidv4 } from 'uuid';
 
-    import sha512 from "crypto-js/sha512.js";
-    import aes from "crypto-js/aes.js";
-    import ENC from 'crypto-js/enc-utf8.js';
-    import Base64 from 'crypto-js/enc-base64';
-
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
     import AccountSelect from "./account-select";
-    import * as Actions from '../lib/Actions';
-    import store from '../store/index';
-    import router from '../router/index.js';
-
-    import {
-        injectedCall,
-        voteFor,
-        transfer
-    } from '../lib/apiUtils.js';
-
     import Operations from "./blockchains/operations";
 
+    import store from '../store/index.js';
+    import router from '../router/index.js';
+
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
 
-    let settingsRows = computed(() => { // last approved TOTP rows for this chain
-        if (!store.state.WalletStore.isUnlocked) {
-            return;
-        }
-
-        let chain = store.getters['AccountStore/getChain']
-        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain);
-        if (!rememberedRows || !rememberedRows.length) {
-            return [];
-        }
-
-        return rememberedRows;
+    let chain = computed(() => {
+        return store.getters['AccountStore/getChain'];
     });
     
-    let supportsTOTP = computed(() => {
-        let chain = store.getters['AccountStore/getChain'];
-        return getBlockchainAPI(chain).supportsTOTP();
-    });
+    let compatible = ref(false);
+    let operationTypes = ref([]);
+    watchEffect(() => {
+        async function initialize() {
+            let blockchainResponse;
+            try {
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ["supportsTOTP", "getOperationTypes"],
+                    chain: chain.value
+                });
+            } catch (error) {
+                console.log(error);
+                return;
+            }
 
-    let selectedRows = ref();
-    emitter.on('selectedRows', (data) => {
-        selectedRows.value = data;
+            if (!blockchainResponse) {
+                console.log("No blockchain response");
+                return;
+            }
+
+            const { supportsTOTP, getOperationTypes } = blockchainResponse;
+            if (supportsTOTP) {
+                compatible.value = supportsTOTP;
+            }
+            if (getOperationTypes) {
+                operationTypes.value = getOperationTypes;
+            }
+        }
+
+        if (chain.value) {
+            initialize();
+        }
     })
 
-    let opPermissions = ref();
+    let selectedRows = ref();
+    let chosenScope = ref();
     function setScope(newValue) {
-        opPermissions.value = newValue;
+        window.electron.resetTimer();
+        chosenScope.value = newValue;
         if (newValue === 'AllowAll') {
-            selectedRows.value = true;
-            let chain = store.getters['AccountStore/getChain'];
-            let types = getBlockchainAPI(chain).getOperationTypes();
+            const _ids = operationTypes.value.map(type => type.id);
+            selectedRows.value = _ids;
             store.dispatch(
                 "SettingsStore/setChainPermissions",
                 {
-                    chain: chain,
-                    rows: types.map(type => type.id)
+                    chain: chain.value,
+                    rows: _ids
                 }
             );
         }
     }
-    emitter.on('exitOperations', () => {
-        opPermissions.value = null;
-        selectedRows.value = null;
-    })
 
     function goBack() {
-        opPermissions.value = null;
+        window.electron.resetTimer();
+        chosenScope.value = null;
         selectedRows.value = null;
         //
         timestamp.value = null;
@@ -84,6 +80,7 @@
     let timestamp = ref();
     let newCodeRequested = ref(false);
     function requestCode() {
+        window.electron.resetTimer();
         newCodeRequested.value = true;
         timestamp.value = new Date();
     }
@@ -116,222 +113,93 @@
     let currentCode = ref();
     let copyContents = ref();
     watchEffect(() => {
+        async function getNewCode() {
+            window.electron.resetTimer();
+            let blockchainResponse;
+            try {
+                blockchainResponse = await window.electron.blockchainRequest({
+                    methods: ["totpCode"],
+                    chain: chain.value,
+                    timestamp: timestamp.value
+                });
+            } catch (error) {
+                console.log(error);
+                return;
+            }
+
+            if (!blockchainResponse || !blockchainResponse.code) {
+                console.log("No blockchain response");
+                return;
+            }
+
+            const { code } = blockchainResponse;
+            currentCode.value = code;
+            copyContents.value = {text: code, success: () => {console.log('copied code')}};
+        }
+
         if (timestamp && timestamp.value) {
-            let msg = uuidv4();
-            let shaMSG = sha512(msg + timestamp.value.getTime()).toString().substring(0, 15);
-            currentCode.value = shaMSG;
-            copyContents.value = {text: shaMSG, success: () => {console.log('copied code')}};
+            getNewCode();
         }
     });
 
     let deepLinkInProgress = ref(false);
-    ipcRenderer.on('deeplink', async (event, args) => {
-        /**
-         * Deeplink
-         */
+    window.electron.onDeepLink(async (args) => {
         if (!store.state.WalletStore.isUnlocked || router.currentRoute.value.path != "/totp") {
             console.log("Wallet must be unlocked for deeplinks to work.");
-            ipcRenderer.send("notify", t("common.totp.promptFailure"));
+            window.electron.notify(t("common.totp.promptFailure"));
             return;
-        }
-
-        deepLinkInProgress.value = true;
-        if (!currentCode.value) {
-            console.log('No auth key')
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        let processedRequest;
-        try {
-            processedRequest = decodeURIComponent(args.request);
-        } catch (error) {
-            console.log('Processing request failed')
-            deepLinkInProgress.value = false;
-            return;
-        }
-        
-        let parsedRequest;
-        try {
-            parsedRequest = Base64.parse(processedRequest).toString(ENC)
-        } catch (error) {
-            console.log('Parsing request failed')
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        let decryptedBytes;
-        try {
-            decryptedBytes = aes.decrypt(parsedRequest, currentCode.value);
-        } catch (error) {
-            console.log(error);
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        let decryptedData;
-        try {
-            decryptedData = decryptedBytes.toString(ENC);
-        } catch (error) {
-            console.log(error);
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        let request;
-        try {
-            request = JSON.parse(decryptedData);
-        } catch (error) {
-            console.log(error);
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        if (
-            !request
-            || !request.id
-            || !request.payload
-            || !request.payload.chain
-            || !request.payload.method
-            || request.payload.method === Actions.INJECTED_CALL && !request.payload.params
-        ) {
-            console.log('invalid request format')
-            deepLinkInProgress.value = false;
-            return;
-        }
-        
-        let requestedChain = args.chain || request.payload.chain;
-        let chain = store.getters['AccountStore/getChain'];
-        if (!requestedChain || chain !== requestedChain) {
-            console.log("Incoming deeplink request for wrong chain");
-            ipcRenderer.send("notify", t("common.totp.failed"));
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        if (!Object.keys(Actions).map(key => Actions[key]).includes(request.payload.method)) {
-            console.log("Unsupported request type rejected");
-            return;
-        }
-
-        let blockchainActions = [
-            Actions.TRANSFER,
-            Actions.VOTE_FOR,
-            Actions.INJECTED_CALL
-        ];
-
-        let apiobj = {
-            id: request.id,
-            type: request.payload.method,
-            payload: request.payload
-        };
-
-        let blockchain;
-        if (blockchainActions.includes(apiobj.type)) {
-            try {
-                blockchain = await getBlockchainAPI(chain);
-            } catch (error) {
-                console.log(error);
-                deepLinkInProgress.value = false;
-                return;
-            }
-        } else {
-            console.log({
-                msg: "Unsupported request type rejected",
-                apiobj
-            })
-        }
-
-        if (!blockchain) {
-            console.log('no blockchain')
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        if (!settingsRows.value.includes(apiobj.type)) {
-            console.log("Unauthorized beet operation")
-            deepLinkInProgress.value = false;
-            return;
-        }
-
-        if (apiobj.type === Actions.INJECTED_CALL) {
-            let tr;
-            try {
-                tr = blockchain._parseTransactionBuilder(request.payload.params);
-            } catch (error) {
-                console.log(error)
-            }
-
-            let authorizedUse = false;
-            if (chain === "BTS") {
-                for (let i = 0; i < tr.operations.length; i++) {
-                    let operation = tr.operations[i];
-                    if (settingsRows.value && settingsRows.value.includes(operation[0])) {
-                        authorizedUse = true;
-                        break;
-                    }
-                }
-            } else if (
-                chain === "EOS" ||
-                chain === "BEOS" ||
-                chain === "TLOS"
-            ) {
-                for (let i = 0; i < tr.actions.length; i++) {
-                    let operation = tr.actions[i];
-                    if (settingsRows.value && settingsRows.value.includes(operation.name)) {
-                        authorizedUse = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!authorizedUse) {
-                console.log(`Unauthorized use of deeplinked ${chain} blockchain operation`);              
-                deepLinkInProgress.value = false;
-                return;
-            }
-            console.log("Authorized use of deeplinks")
         }
 
         let account = store.getters['AccountStore/getCurrentSafeAccount']();
-        if (!account) {
-            console.log('No account')
-            deepLinkInProgress.value = false;
+        if (!account || !currentCode.value) {
+            console.log('Insufficient state to proceed')
+            window.electron.notify(t("common.totp.promptFailure"));
             return;
         }
 
-        let status;
+        window.electron.resetTimer();
+        deepLinkInProgress.value = true;
+        let blockchainResponse;
         try {
-            if (apiobj.type === Actions.INJECTED_CALL) {
-                status = await injectedCall(apiobj, blockchain);
-            } else if (apiobj.type === Actions.VOTE_FOR) {
-                status = await voteFor(apiobj, blockchain);
-            } else if (apiobj.type === Actions.TRANSFER) {
-                status = await transfer(apiobj, blockchain);
-            }
+            blockchainResponse = await window.electron.blockchainRequest({
+                methods: ["totpDeeplink"],
+                chain: chain.value,
+                currentCode: currentCode.value,
+                allowedOperations: toRaw(selectedRows.value),
+                requestContent: args.request
+            });
         } catch (error) {
-            console.log({error: error || "No status"});
+            console.log(error);
             deepLinkInProgress.value = false;
+            window.electron.notify(t("common.totp.failed"));
             return;
         }
 
-        if (!status || !status.result || status.result.isError || status.result.canceled) {
-            console.log("Issue occurred in approved prompt");
+        if (!blockchainResponse || !blockchainResponse.totpDeeplink) {
+            console.log("No blockchain response");
             deepLinkInProgress.value = false;
+            window.electron.notify(t("common.totp.failed"));
             return;
         }
 
-        console.log(status);
+        console.log({result: blockchainResponse.totpDeeplink})
+        window.electron.notify(t("common.local.promptSuccess"));
         deepLinkInProgress.value = false;
-    })
+    });
+
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
+    });
 </script>
 
 <template>
-    <div
-        v-if="settingsRows"
-        class="bottom p-0"
-    >
-        <span v-if="supportsTOTP">
+    <div class="bottom p-0">
+        <span v-if="compatible">
             <AccountSelect />
             <span v-if="deepLinkInProgress">
                 <p style="marginBottom:0px;">
@@ -351,35 +219,46 @@
                 <p style="marginBottom:0px;">
                     {{ t('common.totp.label') }}
                 </p>
+                <p style="marginBottom:0px;">
+                    {{ t('common.totp.desc') }}
+                </p>
                 <ui-card
                     v-shadow="3"
                     outlined
                     style="marginTop: 5px;"
                 >
-                    <span v-if="!opPermissions">
+                    <span v-if="!chosenScope">
                         <p>
-                            {{ t('common.opPermissions.title.totp') }}
+                            {{ t('common.chosenScope.title.totp') }}
                         </p>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('Configure')"
                         >
-                            {{ t('common.opPermissions.yes') }}
+                            {{ t('common.chosenScope.yes') }}
                         </ui-button>
                         <ui-button
                             raised
                             style="margin-right:5px; margin-bottom: 5px;"
                             @click="setScope('AllowAll')"
                         >
-                            {{ t('common.opPermissions.no') }}
+                            {{ t('common.chosenScope.no') }}
                         </ui-button>
                     </span>
-                    <span v-else-if="opPermissions == 'Configure' && !selectedRows">
-                        <Operations />
+                    <span v-else-if="chosenScope == 'Configure' && !selectedRows">
+                        <Operations
+                            :ops="operationTypes"
+                            :chain="chain"
+                            @selected="(ops) => selectedRows = ops"
+                            @exit="() => {
+                                chosenScope = null;
+                                selectedRows = null;
+                            }"
+                        />
                     </span>
 
-                    <span v-if="opPermissions && settingsRows && selectedRows">
+                    <span v-if="chosenScope && selectedRows">
                         <ui-chips
                             id="input-chip-set"
                             type="input"
@@ -388,17 +267,17 @@
                                 icon="security"
                                 style="margin-left:30px;"
                             >
-                                {{ settingsRows ? settingsRows.length : 0 }} {{ t('common.totp.chosen') }}
+                                {{ selectedRows ? selectedRows.length : 0 }} {{ t('common.totp.chosen') }}
                             </ui-chip>
                             <ui-chip
-                                v-if="settingsRows && settingsRows.length && newCodeRequested"
+                                v-if="selectedRows && selectedRows.length && newCodeRequested"
                                 icon="access_time"
                             >
                                 {{ t('common.totp.time') }}: {{ timeLimit - progress.toFixed(0) }}s
                             </ui-chip>
                         </ui-chips>
                         <span
-                            v-if="!newCodeRequested && settingsRows && settingsRows.length > 0 && !timeLimit"
+                            v-if="!newCodeRequested && selectedRows && selectedRows.length > 0 && !timeLimit"
                             style="padding-left: 20px;"
                         >
                             <ui-button
@@ -425,7 +304,7 @@
                         </span>
                         <span>
                             <ui-button
-                                v-if="!newCodeRequested && settingsRows && settingsRows.length > 0 && timeLimit"
+                                v-if="!newCodeRequested && selectedRows && selectedRows.length > 0 && timeLimit"
                                 icon="generating_tokens"
                                 raised
                                 style="margin-left: 30px; margin-right:5px; margin-bottom: 10px;"
@@ -458,7 +337,7 @@
             </span>
 
             <ui-button
-                v-if="opPermissions && selectedRows"
+                v-if="chosenScope && selectedRows"
                 style="margin-right:5px"
                 icon="arrow_back_ios"
                 @click="goBack"

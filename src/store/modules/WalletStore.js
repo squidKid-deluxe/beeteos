@@ -1,12 +1,4 @@
-import {ipcRenderer} from 'electron';
-import {v4 as uuid} from "uuid";
-import sha512 from "crypto-js/sha512.js";
-import aes from "crypto-js/aes.js";
-import ENC from 'crypto-js/enc-utf8.js';
-
 import BeetDB from '../../lib/BeetDB.js';
-import RendererLogger from "../../lib/RendererLogger";
-const logger = new RendererLogger();
 
 const GET_WALLET = 'GET_WALLET';
 const CREATE_WALLET = 'CREATE_WALLET';
@@ -16,6 +8,7 @@ const SET_WALLET_UNLOCKED = 'SET_WALLET_UNLOCKED';
 const SET_WALLETLIST = 'SET_WALLETLIST';
 const REQ_NOTIFY = 'REQ_NOTIFY';
 const CLOSE_WALLET = 'CLOSE_WALLET';
+const SET_SELECTED_WALLET_INDEX = 'SET_SELECTED_WALLET_INDEX';
 
 const wallet = {};
 
@@ -33,7 +26,6 @@ const mutations = {
         state.walletlist = [];
         state.unlocked = {};
         state.isUnlocked = false;
-        ipcRenderer.send('seeding',  '');
     },
     [SET_WALLET_STATUS](state, status) {
         state.hasWallet = status;
@@ -45,14 +37,20 @@ const mutations = {
         state.walletlist = walletlist;
     },
     [REQ_NOTIFY](state, notify) {
-        state.ipc.send("notify", notify);
+        window.electron.notify(notify);
     },
     [CREATE_WALLET](state, wallet) {
         state.wallet = wallet;
-    }
+    },
+    [SET_SELECTED_WALLET_INDEX](state, index) {
+        state.selectedWalletIndex = index;
+    },
 };
 
 const actions = {
+    setSelectedWalletIndex({ commit }, index) {
+        commit(SET_SELECTED_WALLET_INDEX, index);
+    },
     getWallet({
         dispatch,
         commit,
@@ -61,23 +59,40 @@ const actions = {
         return new Promise((resolve, reject) => {
             BeetDB.wallets_encrypted.get({
                 id: payload.wallet_id
-            }).then((wallet) => {
-                    let bytes = aes.decrypt(
-                      wallet.data,
-                      payload.legacy ? payload.wallet_pass : sha512(payload.wallet_pass).toString()
-                    );
-                    let decrypted_wallet = JSON.parse(bytes.toString(ENC));
-                    let public_wallets = state.walletlist.filter((x) => {
-                        return x.id == payload.wallet_id
-                    });
+            }).then(async (wallet) => {
+                let _hash;
+                try {
+                    _hash = await window.electron.sha512({data: payload.wallet_pass});
+                } catch (error) {
+                    console.log({error});
+                    return reject('hash_failure');
+                }
 
-                    commit(GET_WALLET, public_wallets[0]);
-                    let accountlist = decrypted_wallet;
-                    ipcRenderer.send('seeding', sha512(payload.wallet_pass).toString());
-                    dispatch('AccountStore/loadAccounts', accountlist, {
-                        root: true
-                    });
-                    resolve();
+                let decryptedWallet;
+                try {
+                    decryptedWallet = await window.electron.aesDecrypt({data: wallet.data, seed: _hash});
+                } catch (error) {
+                    console.log({error});
+                    return reject(error);
+                }
+
+                window.electron.seed(_hash);
+
+                let public_wallets = state.walletlist.filter((x) => {
+                    return x.id == payload.wallet_id
+                });
+
+                commit(GET_WALLET, public_wallets[0]);
+                dispatch(
+                    'AccountStore/loadAccounts',
+                    Array.isArray(decryptedWallet)
+                        ? decryptedWallet
+                        : [decryptedWallet],
+                    {root: true}
+                ).catch(error => {
+                    console.error('Error loading accounts:', error);
+                });
+                resolve();
             }).catch((e) => {
                 reject(e);
             });
@@ -93,10 +108,15 @@ const actions = {
         commit,
         dispatch
     }, payload) {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
+            let walletid;
+            try {
+                walletid = await window.electron.id();
+            } catch (error) {
+                console.log({error});
+                reject('uuid_failure');
+            }
 
-            //let wallets = localStorage.getItem("wallets");
-            let walletid = uuid();
             let newwallet = {
                 id: walletid,
                 name: payload.backup.wallet,
@@ -104,7 +124,7 @@ const actions = {
                 accounts: payload.backup.accounts.map(x=> x.accountID)
             };
             BeetDB.wallets_public.put(newwallet).then(() => {
-                BeetDB.wallets_public.toArray().then((wallets) => {
+                BeetDB.wallets_public.toArray().then(async (wallets) => {
                     let unlock;
                     let unlocked = new Promise(function (resolve) {
                         unlock = resolve
@@ -116,17 +136,30 @@ const actions = {
                     commit(SET_WALLET_STATUS, true);
                     commit(SET_WALLETLIST, wallets);
 
-                    let walletdata = aes.encrypt(
-                                      JSON.stringify(payload.backup.accounts),
-                                      sha512(payload.password).toString()
-                                    ).toString();
+                    let _hash;
+                    try {
+                        _hash = await window.electron.sha512({data: payload.password});
+                    } catch (error) {
+                        console.log({error});
+                        return;
+                    }
+
+                    let _encrypted;
+                    try {
+                        _encrypted = await window.electron.aesEncrypt({
+                            data: JSON.stringify(payload.backup.walletdata),
+                            seed: _hash
+                        });
+                    } catch (error) {
+                        console.log({error});
+                        return;
+                    }
 
                     BeetDB.wallets_encrypted.put({
                         id: walletid,
-                        data: walletdata
+                        data: _encrypted
                     });
 
-                    ipcRenderer.send('seeding', sha512(payload.password).toString());
                     commit(GET_WALLET, newwallet);
                     dispatch('AccountStore/loadAccounts', payload.backup.walletdata, {
                         root: true
@@ -145,17 +178,25 @@ const actions = {
         commit,
         dispatch
     }, payload) {
-        return new Promise((resolve, reject) => {
-
-            //let wallets = localStorage.getItem("wallets");
-            let walletid = uuid();
+        return new Promise(async (resolve, reject) => {
+            let walletid;
+            try {
+                walletid = await window.electron.id();
+            } catch (error) {
+                console.log({error});
+                return reject('uuid_failure');
+            }
             let newwallet = {
                 id: walletid,
                 name: payload.walletname,
-                accounts: [{ accountID: payload.walletdata.accountID, chain: payload.walletdata.chain}]
+                accounts: [{
+                    accountID: payload.walletdata.accountID ? payload.walletdata.accountID : payload.walletdata.accountName,
+                    accountName: payload.walletdata.accountName,
+                    chain: payload.walletdata.chain
+                }]
             };
             BeetDB.wallets_public.put(newwallet).then(() => {
-                BeetDB.wallets_public.toArray().then((wallets) => {
+                BeetDB.wallets_public.toArray().then(async (wallets) => {
                     let unlock;
                     let unlocked = new Promise(function (resolve) {
                         unlock = resolve
@@ -167,28 +208,47 @@ const actions = {
                     commit(SET_WALLET_STATUS, true);
                     commit(SET_WALLETLIST, wallets);
 
-                    for (let keytype in payload.walletdata.keys) {
+                    let _hash;
+                    try {
+                        _hash = await window.electron.sha512({data: payload.password});
+                    } catch (error) {
+                        console.log({error});   
+                        return reject(error);
+                    }
+
+                    let keys = Object.keys(payload.walletdata.keys);
+                    for (let i = 0; i < keys.length; i++) {
+                        let keytype = keys[i];
+                        let _encrypted;
                         try {
-                            payload.walletdata.keys[keytype] = aes.encrypt(
-                                payload.walletdata.keys[keytype],
-                                sha512(payload.password).toString()
-                            ).toString();
+                            _encrypted = await window.electron.aesEncrypt({
+                                data: payload.walletdata.keys[keytype],
+                                seed: _hash
+                            });
                         } catch (error) {
-                            console.log(error)
-                            reject('AES encryption failure');
+                            console.log({error});
+                            return reject('AES encryption failure');
                         }
+                    
+                        payload.walletdata.keys[keytype] = _encrypted;
                     }
                     
-                    let walletdata = aes.encrypt(
-                        JSON.stringify([payload.walletdata]),
-                        sha512(payload.password).toString()
-                    ).toString();
+                    let _encryptedWalletData;
+                    try {
+                        _encryptedWalletData = await window.electron.aesEncrypt({
+                            data: JSON.stringify(payload.walletdata),
+                            seed: _hash
+                        });
+                    } catch (error) {
+                        console.log({error});
+                        return reject('AES encryption failure');
+                    }
 
                     BeetDB.wallets_encrypted.put({
                         id: walletid,
-                        data: walletdata
+                        data: _encryptedWalletData
                     });
-                    ipcRenderer.send('seeding', sha512(payload.password).toString());
+
                     commit(GET_WALLET, newwallet);
                     dispatch('AccountStore/loadAccounts', [payload.walletdata], {
                         root: true
@@ -215,19 +275,32 @@ const actions = {
             await BeetDB.wallets_encrypted.get({
                 id: state.wallet.id
             }).then(async (wallet) => {
+                let _hash;
                 try {
-                    let bytes = aes.decrypt(wallet.data, sha512(payload.password).toString());
-                    JSON.parse(bytes.toString(ENC));
+                    _hash = await window.electron.sha512({data: payload.password});
                 } catch (error) {
-                    console.log(error)
-                    throw ('invalid');
+                    console.log({error});
+                    return reject('hash_failure');
                 }
 
-                let encryptedSTR = sha512(payload.password).toString();
-                let encwalletdata = aes.encrypt(
-                    JSON.stringify(newwalletdata),
-                    encryptedSTR
-                ).toString();
+                let bytes;
+                try {
+                    bytes = await window.electron.aesDecrypt({data: wallet.data, seed: _hash});
+                } catch (error) {
+                    console.log({error});
+                    return reject('decrypt_failure');
+                }
+
+                let encwalletdata;
+                try {
+                    encwalletdata = await window.electron.aesEncrypt({
+                        data: JSON.stringify(newwalletdata),
+                        seed: _hash
+                    });
+                } catch (error) {
+                    console.log(error)
+                    return reject('encrypt_failure');
+                }
 
                 let updatedWallet = JSON.parse(JSON.stringify(state.wallet))
                 updatedWallet.accounts.push({
@@ -245,20 +318,87 @@ const actions = {
                         "accounts": newAccounts
                     }).then(() => {
                         commit(GET_WALLET, updatedWallet);
-                        resolve('Account saved');
+                        return resolve('Account saved');
                     }).catch((error) => {
                         console.log(error);
-                        reject('update_failed');
+                        return reject('update_failed');
                     });
                 }).catch((error) => {
                     console.log(error)
-                    reject(error);
+                    return reject(error);
                 });
             }).catch((error) => {
                 console.log(error)
-                reject(error);
+                return reject(error);
             });
 
+        });
+    },
+    deleteAccountFromWallet({ commit, state, rootState }, payload) {
+        return new Promise(async (resolve, reject) => {
+            await BeetDB.wallets_encrypted.get({
+                id: state.wallet.id
+            }).then(async (wallet) => {
+                let _hash;
+                try {
+                    _hash = await window.electron.sha512({ data: payload.wallet_pass });
+                } catch (error) {
+                    console.log({ error });
+                    return reject('hash_failure');
+                }
+    
+                let authorized;
+                try {
+                    authorized = await window.electron.aesDecrypt({ data: wallet.data, seed: _hash });
+                } catch (error) {
+                    console.log({ error });
+                    return reject('decrypt_failure');
+                }
+    
+                let walletdata = rootState.AccountStore.accountlist.slice();
+
+                let newwalletdata = walletdata.filter(account => {
+                    return account.chain !== payload.chain 
+                        || account.accountName !== payload.accountName;
+                });
+
+                let encwalletdata;
+                try {
+                    encwalletdata = await window.electron.aesEncrypt({
+                        data: JSON.stringify(newwalletdata),
+                        seed: _hash
+                    });
+                } catch (error) {
+                    console.log(error)
+                    return reject('encrypt_failure');
+                }
+    
+                let updatedWallet = JSON.parse(JSON.stringify(state.wallet))
+                updatedWallet.accounts = updatedWallet.accounts.filter(
+                    account => account.chain !== payload.chain &&
+                               account.accountName !== payload.accountName
+                );
+    
+                await BeetDB.wallets_encrypted.update(updatedWallet.id, {
+                    "data": encwalletdata
+                }).then(async () => {
+                    await BeetDB.wallets_public.update(updatedWallet.id, {
+                        "accounts": updatedWallet.accounts
+                    }).then(() => {
+                        commit(GET_WALLET, updatedWallet);
+                        return resolve('Account deleted');
+                    }).catch((error) => {
+                        console.log(error);
+                        return reject('update_failed');
+                    });
+                }).catch((error) => {
+                    console.log(error)
+                    return reject(error);
+                });
+            }).catch((error) => {
+                console.log(error)
+                return reject(error);
+            });
         });
     },
     loadWallets({
@@ -277,13 +417,12 @@ const actions = {
                     });
                     commit(SET_WALLET_STATUS, true);
                     commit(SET_WALLETLIST, wallets);
-                    resolve('Wallets Found');
+                    return resolve('Wallets Found');
                 } else {
-                    resolve('Wallets not found');
+                    return resolve('Wallets not found');
                 }
-                resolve();
-            }).catch(() => {
-                reject();
+            }).catch((error) => {
+                return reject(error);
             });
         });
     },
@@ -316,6 +455,17 @@ const actions = {
 
 const getters = {
     getWallet: state => state.wallet,
+    getCurrentID: state => {
+        if (
+            state.selectedWalletIndex !== null &&
+            state.selectedWalletIndex >= 0 &&
+            state.selectedWalletIndex < state.walletlist.length
+        ) {
+            return state.walletlist[state.selectedWalletIndex].id;
+        } else {
+            return null;
+        }
+    },
     getWalletName: state => state.wallet.name,
     getHasWallet: state => state.hasWallet,
     getWalletList: state => state.walletlist
@@ -325,9 +475,9 @@ const initialState = {
     wallet: wallet,
     hasWallet: false,
     walletlist: [],
-    ipc: ipcRenderer,
     unlocked: {},
-    isUnlocked: false
+    isUnlocked: false,
+    selectedWalletIndex: null,
 };
 
 export default {

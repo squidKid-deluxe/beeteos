@@ -1,36 +1,56 @@
 <script setup>
-    import { onMounted, watchEffect, ref, computed, inject } from 'vue';
+    import { onMounted, watchEffect, ref } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import store from '../../store/index';
-    import getBlockchainAPI from "../../lib/blockchains/blockchainFactory";
+    import store from '../../store/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
-    const emitter = inject('emitter');
+    const props = defineProps({
+        ops: {
+            type: Array,
+            required: true,
+            default() {
+                return []
+            }
+        },
+        chain: {
+            type: String,
+            required: true,
+            default() {
+                return ''
+            }
+        }
+    });
+    const emit = defineEmits(['selected', 'exit']);
+
+    let selected = ref([]);
+    onMounted(() => {
+        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](props.chain);
+        if (!rememberedRows || !rememberedRows.length) {
+            selected.value = [];
+            return;
+        }
+
+        selected.value = rememberedRows;
+    })
 
     function saveRows() {
-        if (selectedRows && selectedRows.value) {
-            // save rows to account
-            let chain = store.getters['AccountStore/getChain'];
-            store.dispatch(
-                "SettingsStore/setChainPermissions",
-                {
-                    chain: chain,
-                    rows: selectedRows.value
-                }
-            );
-            selectedRows.value = JSON.parse(JSON.stringify(settingsRows.value))
-            emitter.emit('selectedRows', true);
-        }
+        window.electron.resetTimer();
+        store.dispatch(
+            "SettingsStore/setChainPermissions",
+            {
+                chain: props.chain,
+                rows: selected.value
+            }
+        );
+        emit('selected', selected.value);
     }
 
     function goBack() {
-        emitter.emit('exitOperations', true);
+        window.electron.resetTimer();
+        emit('exit', true);
     }
 
     let thead = ref(['ID', 'Method', 'Info'])
-
-    let chain = store.getters['AccountStore/getChain'];
-
     let tbody = ref([
         {
             field: 'id',
@@ -41,58 +61,16 @@
         {
             field: 'method',
             fn: data => {
-                return t(`operations.injected.${chain}.${data.method}.method`)
+                return t(`operations.injected.${props.chain === "BTS_TEST" ? "BTS" : props.chain}.${data.method}.method`)
             }
         },
         {
             field: 'info',
             fn: data => {
-                return t(`operations.injected.${chain}.${data.method}.tooltip`)
+                return t(`operations.injected.${props.chain === "BTS_TEST" ? "BTS" : props.chain}.${data.method}.tooltip`)
             }
         }
     ]);
-
-    let data = computed(() => {
-        // get operations
-        let chain = store.getters['AccountStore/getChain'];
-        let types = getBlockchainAPI(chain).getOperationTypes();
-        return types;
-    });
-
-    let settingsRows = computed(() => {
-        // last approved TOTP rows for this chain
-        let chain = store.getters['AccountStore/getChain']
-        let rememberedRows = store.getters['SettingsStore/getChainPermissions'](chain);
-        if (!rememberedRows || !rememberedRows.length) {
-            return [];
-        }
-
-        return rememberedRows;
-    });
-
-    let hasSelectedNewRows = ref(false);
-    let selectedRows = ref([]);
-    onMounted(() => {
-        selectedRows.value = settingsRows && settingsRows.value
-            ? JSON.parse(JSON.stringify(settingsRows.value))
-            : []
-    })
-
-    watchEffect(() => {
-        if (selectedRows && settingsRows) {
-            if (
-                selectedRows.value && selectedRows.value.sort().join('') === settingsRows.value.sort().join('')
-            ) {
-                // initial setting of settingsrows
-                hasSelectedNewRows.value = false;
-            } else if (selectedRows.value && selectedRows.value.sort().join('') !== settingsRows.value.sort().join('')) {
-                console.log('Selected a new row')
-                hasSelectedNewRows.value = true;
-            }
-        } else {
-            hasSelectedNewRows.value = false;
-        }
-    });
 </script>
 
 <template>
@@ -103,7 +81,7 @@
                     {{ t('common.totp.prompt') }}
                 </p>
                 <p
-                    v-if="!data || !data.length"
+                    v-if="!props.ops || !props.ops.length"
                     outlined
                     style="marginTop: 5px;"
                 >
@@ -111,8 +89,8 @@
                 </p>
                 <ui-table
                     v-else 
-                    v-model="selectedRows"
-                    :data="data"
+                    v-model="selected"
+                    :data="props.ops"
                     :thead="thead"
                     :tbody="tbody"
                     :default-col-width="200"
@@ -139,20 +117,10 @@
                             {{ t('common.qr.back') }}
                         </ui-button>
                         <ui-button
-                            v-if="selectedRows && selectedRows.length"
                             raised
                             style="margin-right:5px"
                             icon="save"
                             @click="saveRows"
-                        >
-                            {{ t('common.totp.save') }}
-                        </ui-button>
-                        <ui-button
-                            v-else
-                            raised
-                            style="margin-right:5px"
-                            icon="save"
-                            disabled
                         >
                             {{ t('common.totp.save') }}
                         </ui-button>

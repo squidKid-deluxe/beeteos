@@ -1,21 +1,21 @@
 <script setup>
-    import { computed, ref, watchEffect } from "vue";
+    import { ref, watchEffect, watch } from "vue";
     import queryString from "query-string";
     import { useI18n } from 'vue-i18n';
-    import { ipcRenderer } from 'electron';
 
     import langSelect from "./lang-select.vue";
 
     const { t } = useI18n({ useScope: 'global' });
 
     function handleProp(target) {
-        if (!global || !global.location || !global.location.search) {
+        let search = window.electron.getLocationSearch();
+        if (!search) {
             return '';
         }
 
         let qs;
         try {
-            qs = queryString.parse(global.location.search);
+            qs = queryString.parse(search);
         } catch (error) {
             console.log(error);
             return;
@@ -30,57 +30,52 @@
         return decoded;
     }
 
-    const type = ref();
-    const toSend = ref();
-    const chain = ref();
-    const accountName = ref();
-    const target = ref();
-    const warning = ref();
     const visualizedParams = ref();
     const request = ref();
     const moreRequest = ref();
     const result = ref();
+    const chain = ref();
     const moreResult = ref();
     const notifyTXT = ref();
 
+    let openOPReq = ref(false);
+    let openOPRes = ref(false);
+    let openOpDetails = ref(false);
+    let page = ref(1);
+
     const payload = ref();
     const accounts = ref();
-    const existingLinks = ref();
+
+    let jsonData = ref("");
+    let resultData = ref("");
+    let resultID = ref("");
+    let resultBlockNum = ref(1);
+    let resultTrxNum = ref(1);
+    let resultExpiration = ref("");
+    let resultSignatures = ref("");
 
     watchEffect(() => {
         const id = handleProp('id');
 
-        ipcRenderer.send(`get:receipt:${id}`);
-
-        ipcRenderer.on(`respond:receipt:${id}`, (event, data) => {
-            if (data.type) {
-                type.value = data.type;
-            }
-            if (data.toSend) {
-                toSend.value = data.toSend;
-            }
-            if (data.chain) {
-                chain.value = data.chain;
-            }
-            if (data.accountName) {
-                accountName.value = data.accountName;
-            }
-            if (data.target) {
-                target.value = data.target;
-            }
-            if (data.warning) {
-                warning.value = data.warning;
-            }
+        window.electron.getReceipt(id);
+        window.electron.onReceipt(id, (data) => {
             if (data.receipt) {
                 visualizedParams.value = JSON.parse(data.receipt.visualizedParams);
             }
             if (data.request) {
                 request.value = data.request;
+                chain.value = data.request.payload.chain;
                 moreRequest.value = JSON.stringify(data.request, undefined, 4);
             }
             if (data.result) {
-                result.value = data.result;
                 moreResult.value = JSON.stringify(data.result, undefined, 4);
+
+                result.value = data.result;
+                resultID.value = data.result[0].id;
+                resultBlockNum.value = data.result[0].block_num;
+                resultTrxNum.value = data.result[0].trx_num;
+                resultExpiration.value = data.result[0].trx.expiration;
+                resultSignatures.value = data.result[0].trx.signatures;
             }
             if (data.payload) {
                 payload.value = JSON.parse(data.payload);
@@ -91,48 +86,31 @@
                 const filteredAccounts = parsedAccounts.filter(account => parsedRequest.payload.chain === account.chain);
                 accounts.value = filteredAccounts;
             }
-            if (data.existingLinks) {
-                existingLinks.value = JSON.parse(data.existingLinks);
-            }
             if (data.notifyTXT) {
                 notifyTXT.value = data.notifyTXT;
             }
         });
     })
 
-    let openOPReq = ref(false);
-    let openOPRes = ref(false);
-    let openOpDetails = ref(false);
-    let page = ref(1);
+    watch(
+        [page, visualizedParams, result],
+        ([newPage, newVisualizedParams, newResult]) => {
+            const currentPageValue = newPage > 0 ? newPage - 1 : 0;
 
-    let jsonData = ref("");
-    let resultData = ref("");
-    let resultID = ref("");
-    let resultBlockNum = ref(1);
-    let resultTrxNum = ref(1);
-    let resultExpiration = ref("");
-    let resultSignatures = ref("");
-    watchEffect(() => {
-        const currentPageValue = page.value > 0 ? page.value - 1 : 0;
+            if (newVisualizedParams && newVisualizedParams.length) {
+                jsonData.value = JSON.stringify(
+                    newVisualizedParams[currentPageValue].op, undefined, 4
+                );
+            }
 
-        if (visualizedParams.value && visualizedParams.value.length) {
-            jsonData.value = JSON.stringify(
-                visualizedParams.value[currentPageValue].op, undefined, 4
-            );
-        }
-
-        if (result.value && result.value.length) {
-            resultData.value = JSON.stringify(
-                result.value[0].trx.operation_results[currentPageValue], undefined, 4
-            );
-
-            resultID.value = result.value[0].id;
-            resultBlockNum.value = result.value[0].block_num;
-            resultTrxNum.value = result.value[0].trx_num;
-            resultExpiration.value = result.value[0].trx.expiration;
-            resultSignatures.value = result.value[0].trx.signatures;
-        }
-    });
+            if (newResult && newResult.length) {
+                resultData.value = JSON.stringify(
+                    newResult[0].trx.operation_results[currentPageValue], undefined, 4
+                );
+            }
+        },
+        { immediate: true }
+    );
 
     let openMoreRequest = ref(false);
     let openResult = ref(false);
@@ -174,14 +152,14 @@
                                     <b>{{ t(visualizedParams[page > 0 ? page - 1 : 0].title) }}</b>
                                 </div>
                                 <div style="margin-bottom: 5px;">
-                                    {{ t(`operations.injected.${chain}.${visualizedParams[page > 0 ? page - 1 : 0].method}.headers.result`) }}
+                                    {{ t(`operations.injected.${chain === "BTS_TEST" ? "BTS" : chain}.${visualizedParams[page > 0 ? page - 1 : 0].method}.headers.result`) }}
                                 </div>
                                 <div
                                     v-for="row in visualizedParams[page > 0 ? page - 1 : 0].rows"
                                     :key="row.key"
                                     :class="$tt('subtitle2')"
                                 >
-                                    {{ t(`operations.injected.${chain}.${visualizedParams[page > 0 ? page - 1 : 0].method}.rows.${row.key}`, row.params) }}
+                                    {{ t(`operations.injected.${chain === "BTS_TEST" ? "BTS" : chain}.${visualizedParams[page > 0 ? page - 1 : 0].method}.rows.${row.key}`, row.params) }}
                                 </div>
                             </ui-card-text>
                         </ui-card-content>

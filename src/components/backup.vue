@@ -1,22 +1,55 @@
 <script setup>
+    import { ref, onMounted } from 'vue';
     import { useI18n } from 'vue-i18n';
-    import { ipcRenderer } from "electron";
-    import store from '../store/index';
+    
+    import store from '../store/index.js';
+    import router from '../router/index.js';
 
     const { t } = useI18n({ useScope: 'global' });
 
-    async function downloadBackup() {
-        let walletName = store.getters['WalletStore/getWalletName'];
-        let accounts = JSON.stringify(store.getters['AccountStore/getAccountList'].slice());
+    let walletpass = ref("");
+    let passincorrect = ref("");
 
-        ipcRenderer.send(
-            "downloadBackup",
-            {
-                walletName: walletName,
-                accounts: accounts
-            }
-        );
+    async function downloadBackup() {
+        if (!store.state.WalletStore.isUnlocked || router.currentRoute.value.path != "/backup") {
+            return;
+        }
+        window.electron.resetTimer();
+
+        const _id = store.getters['WalletStore/getCurrentID'];
+
+        store
+            .dispatch("WalletStore/getWallet", {
+                wallet_id: _id,
+                wallet_pass: walletpass.value
+            })
+            .then(async () => {
+                let walletName = store.getters['WalletStore/getWalletName'];
+                let accounts = JSON.stringify(store.getters['AccountStore/getAccountList'].slice());
+
+                window.electron.downloadBackup({
+                    walletName: walletName,
+                    accounts: accounts,
+                    seed: walletpass.value
+                });
+                
+                passincorrect.value = "";
+                walletpass.value = "";
+            })
+            .catch(() => {
+                passincorrect.value = "is-invalid";
+                window.electron.notify(t('common.start.invalid_password'));
+            });
     }
+
+    onMounted(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
+    });
 </script>
 
 <template>
@@ -38,6 +71,18 @@
             </ui-grid-cell>
             <ui-grid-cell columns="3" />
             <ui-grid-cell columns="6">
+                <input
+                    id="inputPassword"
+                    v-model="walletpass"
+                    style="width:97%; margin-top: 5px;"
+                    type="password"
+                    class="form-control mb-4 px-3"
+                    :placeholder=" t('common.password_placeholder')"
+                    required
+                    :class="passincorrect"
+                    @focus="passincorrect=''"
+                >
+                <br>
                 <ui-button
                     class="step_btn"
                     type="button"

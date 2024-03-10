@@ -1,14 +1,12 @@
 <script setup>
-    import { computed, inject, onMounted, watchEffect, ref } from "vue";
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
+    import { computed, watchEffect, ref, onMounted } from "vue";
 
     import Balances from "./balances";
     import AccountDetails from "./account-details";
     import AccountSelect from "./account-select";
 
-    import store from '../store/index';
-
-    const emitter = inject('emitter');
+    import store from '../store/index.js';
+    import router from '../router/index.js';
 
     let selectedAccount = computed(() => {
         if (!store.state.WalletStore.isUnlocked) {
@@ -16,33 +14,75 @@
         }
         return store.getters["AccountStore/getCurrentSafeAccount"]()
     })
-
+    
+    let isConnected = ref();
+    let isConnecting = ref();
     let lastBlockchain = ref(null);
-    let blockchain = ref();
-    watchEffect(() => {
-        if (selectedAccount.value) {
-            if (!lastBlockchain.value) {
-                console.log("new account selected")
-                lastBlockchain.value = selectedAccount.value.chain;
-                blockchain.value = getBlockchainAPI(selectedAccount.value.chain);
-            } else {
-                if (lastBlockchain.value !== selectedAccount.value.chain) {
-                    console.log("account with different blockchain selected")
-                    lastBlockchain.value = selectedAccount.value.chain;
-                    blockchain.value = null;
-                    blockchain.value = getBlockchainAPI(selectedAccount.value.chain);
-                } else {
-                    console.log("account with same blockchain selected")
-                }
-            }
-        }
-    })
+    let fetchQty = ref(1);
 
-    /**
-     * Set the initial menu value
-     */
+    let _explorer = ref("");
+    let _accessType = ref("");
+    let _balances = ref([]);
+    let _chain = ref("");
+
+    watchEffect(async () => {
+        async function lookupBlockchain() {
+            isConnecting.value = true;
+            isConnected.value = false;
+            let selectedDifferentChain = !lastBlockchain.value || (lastBlockchain.value && lastBlockchain.value !== selectedAccount.value.chain);
+            if (selectedDifferentChain) {
+                lastBlockchain.value = selectedAccount.value.chain;
+            }
+
+            _chain.value = selectedAccount.value.chain;
+
+            let blockchainRequest;
+            try { 
+                blockchainRequest = await window.electron.blockchainRequest({
+                    methods: selectedDifferentChain
+                        ? ['getExplorer', 'getAccessType', 'getBalances']
+                        : ['getExplorer', 'getBalances'],
+                    account: selectedAccount.value,
+                    chain: selectedAccount.value.chain,
+                })
+            } catch (error) {
+                console.log({error});
+            }
+
+            if (!blockchainRequest) {
+                console.log("No blockchain request");
+                isConnecting.value = false;
+                isConnected.value = false;
+                return;
+            }
+
+            if (blockchainRequest.getExplorer) {
+                _explorer.value = blockchainRequest.getExplorer;
+            }
+            if (blockchainRequest.getAccessType) {
+                _accessType.value = blockchainRequest.getAccessType;
+            }
+            if (blockchainRequest.getBalances) {
+                _balances.value = JSON.parse(blockchainRequest.getBalances);
+            }
+
+            isConnecting.value = false;
+            isConnected.value = true;
+        }
+
+        if (selectedAccount.value && fetchQty.value) {
+            console.log(`Fetching blockchain data #${fetchQty.value}`);
+            lookupBlockchain();
+        }
+    });
+
     onMounted(() => {
-        emitter.emit('setMenuItem', 0);
+        if (!store.state.WalletStore.isUnlocked) {
+            console.log("logging user out...");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+            return;
+        }
     });
 </script>
 
@@ -55,11 +95,16 @@
         <span v-if="selectedAccount">
             <AccountDetails
                 :account="selectedAccount"
-                :blockchain="blockchain"
+                :explorer="_explorer"
+                :type="_accessType"
             />
             <Balances
                 :account="selectedAccount"
-                :blockchain="blockchain"
+                :balances="_balances"
+                :chain="_chain"
+                :is-connected="isConnected"
+                :is-connecting="isConnecting"
+                @refresh="() => fetchQty += 1"
             />
         </span>
     </span>

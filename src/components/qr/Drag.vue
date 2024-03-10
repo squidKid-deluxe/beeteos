@@ -1,37 +1,24 @@
 <script setup>
-    import { ref, inject } from 'vue';
+    import { ref } from 'vue';
     import { useI18n } from 'vue-i18n';
     import { QrcodeDropZone } from 'vue-qrcode-reader'
-
-    const emitter = inject('emitter');
 
     const { t } = useI18n({ useScope: 'global' });
     let result = ref();
     let error = ref();
     let dragover = ref(false);
 
+    const emit = defineEmits(['detection']);
+
     /**
      * Dragged image QR attempt
      * @param {Promise} promise 
      */
-    async function onDetect (promise) {
-        let detectedQR;
-        try {
-            detectedQR = await promise
-        } catch (error) {
-            if (error.name === 'DropImageFetchError') {
-                error.value = "Cross-origin images like this are unsupported.";
-            } else if (error.name === 'DropImageDecodeError') {
-                error.value = "Couldn't decode QR in image.";
-            } else {
-                error.value = 'QR detection error';
-            }
-        }
-      
-        if (detectedQR && detectedQR.content) {
+    async function onDetect (detectedCodes) {     
+        if (detectedCodes && detectedCodes.length) {
             error.value = null;
             result.value = true;
-            emitter.emit('detectedQR', detectedQR.content);
+            emit('detection', detectedCodes[0].rawValue);
         }
     }
 
@@ -42,27 +29,32 @@
         dragover.value = isDraggingOver;
     }
 
-    /**
-     * @param {Promise} promise 
-     */
-    function logErrors (promise) {
-        promise.catch((error) => {console.log(error)});
-    }
-
     function tryAgain() {
         result.value = null;
         error.value = null;
     }
+
+    function onError(error) {
+        // Handle error event
+        if (error.name === 'DropImageFetchError') {
+            error.value = t('common.qr.drag.error1')
+        } else if (error.name === 'DropImageDecodeError') {
+            error.value = t('common.qr.drag.error2')
+        } else {
+            error.value = t('common.qr.drag.error3')
+        }
+    }
+
 </script>
 
 <template>
     <div>
         <span v-if="result && !error">
             <p>
-                Successfully scanned image for QR
+                {{ t('common.qr.drag.successPrompt') }}
             </p>           
             <ui-button @click="tryAgain">
-                Scan another image
+                {{ t('common.qr.drag.successBtn') }}
             </ui-button>
         </span>
         <span v-else-if="!result && error">
@@ -73,7 +65,7 @@
                 {{ error }}
             </ui-alert>           
             <ui-button @click="tryAgain">
-                Scan another image
+                {{ t('common.qr.drag.successBtn') }}
             </ui-button>
         </span>
         <span v-else>
@@ -89,14 +81,14 @@
                 <qrcode-drop-zone
                     @detect="onDetect"
                     @dragover="onDragOver"
-                    @init="logErrors"
+                    @error="onError"
                 >
                     <div
                         class="drop-area"
                         style="height: 100px; width: 200px; padding-top: 40px;"
                         :class="{ 'dragover': dragover }"
                     >
-                        DROP YOUR IMAGE HERE
+                        {{ t('common.qr.drag.prompt') }}
                     </div>
                 </qrcode-drop-zone>
             </ui-card>

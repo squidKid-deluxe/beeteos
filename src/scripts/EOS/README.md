@@ -24,7 +24,7 @@ node ./buyrambytes.js
 
 This will output the raw deeplink in your console window like the following:
 ```
-rawbeet://api?chain=EOS&request=DATA
+rawbeeteos://api?chain=EOS&request=DATA
 ```
 
 Copy the entire URL and paste it into a web browser URL bar & hit enter.

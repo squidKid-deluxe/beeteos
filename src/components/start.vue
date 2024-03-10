@@ -1,14 +1,11 @@
 <script setup>
     import { ref, onMounted, computed } from 'vue';
-    import {ipcRenderer} from 'electron';
 
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n({ useScope: 'global' });
 
-    import store from '../store/index';
+    import store from '../store/index.js';
     import router from '../router/index.js';
-    import RendererLogger from "../lib/RendererLogger";
-    const logger = new RendererLogger();
 
     let hasWallet = computed(() => {
         return store.getters['WalletStore/getHasWallet'];
@@ -29,11 +26,11 @@
     let walletpass = ref("");
     let selectedWallet = ref(0);
     let passincorrect = ref("");
-    let legacy = ref(false);
 
     onMounted(() => {
-        logger.debug("Start screen mounted");
-        store.dispatch("WalletStore/loadWallets", {}).catch(() => {});
+        store.dispatch("WalletStore/loadWallets", {}).catch((error) => {
+            console.log({error});
+        });
         store.dispatch("OriginStore/loadApps");
     });
 
@@ -41,24 +38,22 @@
         store
             .dispatch("WalletStore/getWallet", {
                 wallet_id: walletlist.value[selectedWallet.value].id,
-                wallet_pass: walletpass.value,
-                legacy: legacy.value
+                wallet_pass: walletpass.value
             })
             .then(async () => {
                 try {
                     await store.dispatch("WalletStore/confirmUnlock");
                 } catch (error) {
                     console.log(error);
+                    return;
                 }
+                store.dispatch("WalletStore/setSelectedWalletIndex", selectedWallet.value);
                 walletpass.value = "";
                 router.replace("/dashboard");
             })
             .catch(() => {
                 passincorrect.value = "is-invalid";
-                ipcRenderer.send(
-                    "notify",
-                    t('common.start.invalid_password')
-                );
+                window.electron.notify(t('common.start.invalid_password'));
             });
     }
 </script>
@@ -124,10 +119,6 @@
                 :class="passincorrect"
                 @focus="passincorrect=''"
             >
-            <ui-form-field>
-                <ui-checkbox v-model="legacy" />
-                <label>Legacy account</label>
-            </ui-form-field>
             <br>
             <ui-button
                 v-if="hasWallet"

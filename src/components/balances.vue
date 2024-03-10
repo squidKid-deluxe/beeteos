@@ -1,12 +1,8 @@
 <script setup>
-    import { watchEffect, ref, computed, inject } from "vue";
+    import { watchEffect, ref, computed } from "vue";
     import { useI18n } from 'vue-i18n';
-    import getBlockchainAPI from "../lib/blockchains/blockchainFactory";
-    import RendererLogger from "../lib/RendererLogger";
 
-    const emitter = inject('emitter');
     const { t } = useI18n({ useScope: 'global' });
-    const logger = new RendererLogger();
 
     const props = defineProps({
         account: {
@@ -16,41 +12,35 @@
                 return {}
             }
         },
-        blockchain: {
-            type: Object,
-            required: true,
+        balances: {
+            type: Array,
+            required: false,
             default() {
-                return {}
+                return []
             }
+        },
+        chain: {
+            type: String,
+            required: true,
+            default: ""
+        },
+        isConnected: {
+            type: Boolean,
+            required: false,
+            default: false
+        },
+        isConnecting: {
+            type: Boolean,
+            required: false,
+            default: false
         }
     });
 
-    let balances = ref();
-    let isConnected = ref();
-    let isConnecting = ref();
-    let tableData = ref();
+    const emit = defineEmits(['refresh']);
 
-    /**
-     * Fetch blockchain account balances
-     * @returns {Array}
-     */
-    async function fetchBalances(chain, name) {
-        if (!blockchain.value) {
-            return;
-        }
-        isConnecting.value = true;
-        return blockchain.value.getBalances(name)
-            .then(result => {
-                isConnected.value = true;
-                isConnecting.value = false;
-                return result;
-            })
-            .catch(error => {
-                console.log(error);
-                isConnected.value = false;
-                isConnecting.value = false;
-            });
-    }
+    let balances = computed(() => {
+        return props.balances;
+    });
 
     let selectedChain = computed(() => {
         return props.account.chain;
@@ -59,34 +49,22 @@
     let accountName = computed(() => {
         return props.account.accountName;
     });
-    
-    let blockchain = computed(() => {
-        return props.blockchain;
-    });
 
-    /**
-     * On demand load the balances
-     */
+
+    let tableData = ref();
     async function loadBalances() {
         if (
             selectedChain.value !== '' &&
             accountName.value !== '' &&
-            blockchain.value._config.identifier === selectedChain.value
+            props.chain === selectedChain.value
         ) {
             tableData.value = null;
-            balances.value = await fetchBalances(selectedChain.value, accountName.value)
+            emit('refresh', true);
+            window.electron.resetTimer();
+        } else {
+            console.log("Unable to reload balances, please try again later.")
         }
     }
-
-    watchEffect(async () => {
-        if (
-            selectedChain.value && selectedChain.value !== '' &&
-            accountName.value && accountName.value !== ''  &&
-            blockchain.value._config.identifier === selectedChain.value
-        ) {
-            loadBalances();
-        }
-    });
 
     watchEffect(() => {
         if (balances.value && balances.value.length) {

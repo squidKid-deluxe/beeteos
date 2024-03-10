@@ -10,8 +10,13 @@
       "error": "Plokiahelaga ei saanud ühendust luua"
     },
     "settings": {
-      "exit": "Välju seadete menüüst"
-    },
+        "exit": "Naaske armatuurlauale",
+        "deleted": "Konto kustutati teie rahakotist edukalt.",
+        "label": "Kas eemaldada konto rahakotist?",
+        "prompt": "Selle konto pöördumatult oma rahakotist eemaldamiseks kinnitage allpool oma parool.",
+        "button": "Kustuta konto",
+        "insufficient": "Kahjuks ei saa rahakoti viimast kontot kustutada."
+      },
     "start": {
       "wallet_name": "Rahakoti nimi",
       "invalid_password": "Teie rahakotti üritati avada kehtetu parooliga."
@@ -35,30 +40,47 @@
       "duplicate": "Sama nimega rahakott on juba olemas, katkestades rahakoti taastamise"
     },
     "raw": {
-      "label": "Toores sügava lingi leht",
-      "promptFailure": "Toores sügavlink lükati tagasi. "
-    },
+        "label": "Toores süvalingi leht",
+        "desc": "See leht töötleb sissetulevaid süvalinkide viipasid ilma ajatundliku krüptimiseta.",
+        "promptFailure": "Toores sügavlink lükati tagasi. ",
+        "exit": "Välju süvalingi lehelt"
+      },
+    "www": {
+        "label": "Veebipäringu leht",
+        "description": "Valmis väliste veebipäringute töötlemiseks. Kolmanda osapoole rakendused saavad nüüd käivitada viipasid linkimiseks ja seejärel toimingute edastamiseks.",
+        "chosen": "valitud toimingud",
+        "ready": "Valmis veebipäringuteks!",
+        "loading": "Pistikupesateenuste laadimine...",
+        "exit": "Välju veebipäringu lehelt",
+        "unsupported": "Vabandust, selle ahela jaoks ei toetata veel veebipäringuid.",
+        "init": "See leht kasutab sissetulevate veebipäringute töötlemiseks kohapeal hostitud veebisokleid. Interneti-teenuse pakkuja ühilduvus võib erineda. Kas soovite jätkata?",
+        "yes": "Jätkake",
+        "no": "Mine tagasi",
+        "prompt": "Valmis väliste veebipäringute töötlemiseks. Kolmanda osapoole rakendused saavad nüüd käivitada viipasid linkimiseks ja seejärel toimingute edastamiseks."
+      },
     "totp": {
-      "label": "Ajapõhised ühekordsed paroolid",
-      "promptFailure": "TOTP süvalink lükati tagasi. ",
-      "prompt": "Valige allpool soovitud toimingud",
-      "chosen": "valitud toimingud",
-      "request": "Küsi pääsukoodi",
-      "failed": "Sissetulev TOTP-taotlus nurjus. ",
-      "default": "Ebapiisavad toimingud",
-      "time": "Aega jäänud",
-      "exit": "Välju TOTP-lehelt",
-      "save": "Salvesta",
-      "unsupported": "Vabandust, TOTP-d selle ahela jaoks veel ei toetata.",
-      "warning": "Ärge jagage ülaltoodud koodi kellegagi",
-      "inProgress": "Süvalinki töödeldakse"
-    },
-    "opPermissions": {
+        "label": "Ajaliselt piiratud ja krüptitud süvalingi viibaleht",
+        "desc": "See leht töötleb sissetulevaid süvalinkide viipasid, mis on krüpteeritud ajatundlikul viisil.",
+        "promptFailure": "TOTP-sügavlink lükati tagasi. ",
+        "prompt": "Valige allpool soovitud toimingud",
+        "chosen": "valitud toimingud",
+        "request": "Küsi pääsukoodi",
+        "failed": "Sissetulev TOTP-taotlus nurjus. ",
+        "default": "Ebapiisavad toimingud",
+        "time": "Aega jäänud",
+        "exit": "Välju TOTP-lehelt",
+        "save": "Salvesta",
+        "unsupported": "Vabandust, TOTP-d selle ahela jaoks veel ei toetata.",
+        "warning": "Ärge jagage ülaltoodud koodi kellegagi",
+        "inProgress": "Süvalinki töödeldakse"
+      },
+    "chosenScope": {
       "title": {
         "local": "Kas soovite konfigureerida skannitavate JSON-failide ulatust?",
         "qr": "Kas soovite konfigureerida skannitavate QR-koodide ulatust?",
         "rawLink": "Kas soovite konfigureerida sissetulevate toores sügavlinkide ulatust?",
-        "totp": "Kas soovite konfigureerida sissetulevate süvalinkide ulatust?"
+        "totp": "Kas soovite konfigureerida sissetulevate süvalinkide ulatust?",
+        "www": "Kas soovite konfigureerida sissetulevate veebipäringute ulatust?"
       },
       "yes": "Jah – kohandage ulatust",
       "no": "Ei – lubage kõik toimingud"
@@ -72,13 +94,26 @@
         "upload": "Laadige üles QR-pilt"
       },
       "scan": {
-        "title": "Skannige oma veebikaameraga QR-kood"
+        "title": "Skannige oma veebikaameraga QR-kood",
+        "switch": "Vaheta kaamerat",
+        "initFail": "Teie veebikaamera initsialiseerimine ebaõnnestus, proovige uuesti.",
+        "again": "Proovi uuesti",
+        "scanned": "QR-kood skannitud!",
+        "another": "Skannige teine"
       },
       "drag": {
-        "title": "Pukseerige QR-koodi sisaldav pilt"
+        "title": "Pukseerige QR-koodi sisaldav pilt",
+        "error1": "Selliseid ristpäritolu pilte ei toetata.",
+        "error2": "Pildil oleva QR-koodi ei saanud dekodeerida.",
+        "error3": "QR tuvastamise viga",
+        "successPrompt": "QR-koodi skannimine õnnestus",
+        "successBtn": "Skannige teine ​​pilt",
+        "prompt": "KÜPSTA OMA PILT SIIA"
       },
       "upload": {
-        "title": "QR-koodide otsimiseks laadige üles pildifail"
+        "title": "QR-koodide otsimiseks laadige üles pildifail",
+        "detected": "Üleslaadimisel tuvastati QR",
+        "another": "Laadige üles teine ​​QR"
       },
       "exit": "Välju QR-lehelt",
       "back": "tagasi",
@@ -89,7 +124,8 @@
     },
     "local": {
       "label": "Kohalik faili op skanner",
-      "upload": "Laadige üles pakutud toimingu JSON-fail",
+      "desc": "See leht võimaldab hinnata ja edastada tehinguid kohapeal salvestatud JSON-failidest.",
+      "upload": "Jätkamiseks laadige üles JSON-fail, mis sisaldab teie pakutud tehingut.",
       "exit": "Välju kohaliku faili lehelt",
       "failed": "JSON-i töötlemine ebaõnnestus",
       "back": "tagasi",
@@ -101,6 +137,7 @@
     "actionBar": {
       "Home": "Kodu",
       "New": "Uus",
+      "WWW": "Veebipäring",
       "TOTP": "TOTP",
       "Local": "Kohalik",
       "RAW": "Toores link",
@@ -227,5 +264,7 @@
     "backup_btn": "Laadige alla Backup",
     "backup_txt": "Kõigi rahakotivõtmetega krüptitud faili salvestamiseks klõpsake alloleval nupul „Laadi varukoopia alla”. ",
     "tooltip_lock": "Klõpsake selle rahakoti lukustamiseks / väljalogimiseks ja naasmiseks rahakoti valikukuvale.",
-    "tooltip_refresh": "Ühendage uuesti plokiahelaga ja värskendage konto saldot"
+    "tooltip_refresh": "Ühendage uuesti plokiahelaga ja värskendage konto saldot",
+    "invalidFile": "Vale failitüüp, palun valige mõni muu fail.",
+    "invalidPass": "Vale parool, proovige uuesti."
   }

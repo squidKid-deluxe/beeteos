@@ -1,10 +1,5 @@
-import {
-    defaultLocale
-} from '../../config/i18n.js'
 import BeetDB from '../../lib/BeetDB.js';
 
-import RendererLogger from "../../lib/RendererLogger";
-const logger = new RendererLogger();
 const LOAD_WHITELIST = 'LOAD_WHITELIST';
 const LOAD_AVAILABLE = 'LOAD_AVAILABLE';
 const ADD_WHITELIST = 'ADD_WHITELIST';
