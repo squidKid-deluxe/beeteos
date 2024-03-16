@@ -30,13 +30,17 @@ The app will generate your public keys from those private keys and verify them a
 
 Once your keys and account are verified, you will be redirected to the dashboard view which currently displays your account details and balances.
 
-While logged-in, BeetEOS exposes a socket.io server **LOCALLY** that can only be accessed by applications running on your computer (internet browser or any other third party application installed on your computer),
-as long as it includes our client-side javascript library [BeetJS](https://github.com/bitshares/beet-js).
+While logged-in, BeetEOS can optionally create a local socket.io server which can only be accessed by applications running on your computer (internet browser or any other third party application installed on your computer),
+as long as it includes our client-side javascript library [BeeteosJS](https://github.com/beetapp/beeteos-js).
 
-BeetJS allows any web-page to send requests to Beet in order to retrieve identity (account id / address) or ask for an action to be taken (sign a transaction, vote or others).
-Of-course, any incoming request has to be **explicitly** approved by the user inside the Beet app and is clearly displayed.
+BeeteosJS allows any web-page to send requests to BeetEOS in order to retrieve identity (account id / address) or ask for an action to be taken (sign a transaction, vote or others).
+Of-course, any incoming request has to be **explicitly** approved by the user inside the BeetEOS app and is clearly displayed.
 
-The EOS blockchain has their own native javascript library that can be used (e.g. [eosjs](https://github.com/EOSIO/eosjs)) with Beet. BeetJS can be injected into said native library to redirect all signature and broadcast requests to Beet, i.e. you can simply use the native javascript library and inject BeetJS when starting your application, and voila, Beet is integrated.
+The EOS blockchain has their own native javascript library that can be used (e.g. [eosjs](https://github.com/EOSIO/eosjs)) with BeetEOS. BeeteosJS can be injected into said native library to redirect all signature and broadcast requests to BeetEOS, i.e. you can simply use the native javascript library and inject BeetEOSJS when starting your application, and voila, BeetEOS is integrated.
+
+The wallet now also supports deeplinks, encrypted deeplinks, qr codes and local json files for generating blockchain request prompts for approval & broadcast with the BeetEOS wallet. These input methods do not require external packages, and can be stored for later use.
+
+Supported blockchains: Bitshares, Bitshares testnet, TUSC, EOS, BEOS, TLOS.
 
 ## For end users
 
@@ -50,12 +54,12 @@ BeetEOS binaries will never be hosted anywhere but within GitHub releases. If yo
 
 BeetEOS is an [electron-based app](https://www.electronjs.org) for [cross-platform compatibility](https://www.electron.build), utilising the [VueJS framework](https://blog.vuejs.org/posts/vue-3-as-the-new-default.html), [BalmUI design system](https://material.balmjs.com) and the [Socket.IO](https://socket.io) libraries.
 
-To run Beet it's simply a case of
+To run BeetEOS it's simply a case of
 
 ``` bash
 # clone
 git clone https://github.com/beetapp/beeteos
-cd beet
+cd beeteos
 
 # install dependencies
 npm install
