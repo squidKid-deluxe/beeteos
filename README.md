@@ -44,7 +44,7 @@ Supported blockchains: Bitshares, Bitshares testnet, TUSC, EOS, BEOS, TLOS.
 
 ## For end users
 
-Releases are bundled as installers and are available at https://github.com/bitshares/beet/releases.
+Releases are bundled as installers and are available at https://github.com/beetapp/beeteos/releases
 
     ATTENTION
 
