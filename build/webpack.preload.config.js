@@ -5,7 +5,7 @@ module.exports = function(env) {
     return {
         entry: {
             preload: "./src/preload.js",
-            preloadmodal: "./src/preloadmodal.js",
+            preloadModal: "./src/preloadmodal.js",
         },
         output: {
             filename: "[name].js",
