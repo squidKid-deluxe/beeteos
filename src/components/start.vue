@@ -117,6 +117,7 @@
                 :placeholder=" t('common.password_placeholder')"
                 required
                 :class="passincorrect"
+                @keypress.enter="unlockWallet"
                 @focus="passincorrect=''"
             >
             <br>
@@ -124,6 +125,7 @@
                 v-if="hasWallet"
                 type="submit"
                 raised
+                style="margin-top: 10px; margin-bottom: 5px;"
                 @click="unlockWallet"
             >
                 {{ t('common.unlock_cta') }}

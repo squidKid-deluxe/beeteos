@@ -159,4 +159,13 @@ contextBridge.exposeInMainWorld('electron', {
     verifyMessageError: async (args) => await ipcRenderer.send('verifyMessageError', args),
     //
     removeAllListeners: async (msg) => await ipcRenderer.removeAllListeners(msg),
+    //
+    /*
+    // For logging background issues to renderer dev console
+    onMainLog: async (func) => {
+        ipcRenderer.on("mainLog", (event, data) => {
+            func(data);
+        })
+    },
+    */
 });

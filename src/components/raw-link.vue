@@ -39,7 +39,7 @@
         return store.getters['AccountStore/getChain'];
     });
 
-    let compatibleChain = ref(false);
+    let compatibleChain = ref();
     let operationTypes = ref([]);
     watchEffect(() => {
         async function initialize() {
@@ -132,7 +132,7 @@
     <div
         class="bottom p-0"
     >
-        <span v-if="compatibleChain">
+        <span v-if="operationTypes && compatibleChain">
             <AccountSelect />
             <span v-if="deepLinkInProgress">
                 <p style="marginBottom:0px;">
@@ -232,7 +232,7 @@
             </router-link>
         </span>
         <span v-else>
-            {{ t('common.raw.unsupported') }}
+            Unsupported chain.
         </span>
     </div>
 </template>

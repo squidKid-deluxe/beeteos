@@ -630,7 +630,7 @@ export default async function beautify(
             ];
         }
     } else if (opType == 10 || opType == 11) {
-        // Create or Update an asset
+        // asset_create & asset_update
         let asset =
             opType === 11
                 ? assetResults.find(
