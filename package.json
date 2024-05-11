@@ -35,7 +35,7 @@
     },
     "linux": {
         "category": "Utility",
-        "target": "deb",
+        "target": ["deb", "AppImage"],
         "mimeTypes": [
             "x-scheme-handler/rawbeeteos",
             "x-scheme-handler/beeteos"
