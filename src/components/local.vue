@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed, onMounted, toRaw } from 'vue';
+    import { ref, computed, onMounted, watch, toRaw } from 'vue';
     import { useI18n } from 'vue-i18n';
 
     import AccountSelect from "./account-select";
@@ -23,6 +23,19 @@
     let chain = computed(() => {
         return store.getters['AccountStore/getChain'];
     });
+
+    let selectedAccount = computed(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            return;
+        }
+        return store.getters["AccountStore/getCurrentSafeAccount"]()
+    })
+
+    watch(selectedAccount, async (newVal, oldVal) => {
+        console.log("User changed account - resetting configured scope!")
+        chosenScope.value = null;
+        selectedRows.value = null;
+    }, {immediate: true});
 
     let supportsLocal = ref(false);
     let operationTypes = ref([]);

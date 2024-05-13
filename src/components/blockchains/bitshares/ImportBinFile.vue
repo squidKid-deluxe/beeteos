@@ -15,7 +15,7 @@
     const emit = defineEmits(['back', 'continue', 'imported']);
 
     onMounted(() => {
-        if (!["BTS", "BTS_TEST", "TUSC"].includes(props.chain)) {
+        if (!["BTS", "BTS_TEST"].includes(props.chain)) {
             throw "Unsupported chain!";
         }
     })

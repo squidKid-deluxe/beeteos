@@ -21,6 +21,7 @@ const allowedOperations = [
     "defcpuloan",
     "defnetloan",
     "updaterex",
+    "transfer",
     "rexexec",
     "consolidate",
     "mvtosavings",

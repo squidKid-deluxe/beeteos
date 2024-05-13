@@ -322,7 +322,7 @@
                 } = args;
 
                 if (
-                    (["BTS", "BTS_TEST", "TUSC"].includes(chain)) &&
+                    (["BTS", "BTS_TEST"].includes(chain)) &&
                     ((!visualizedAccount && account && !account.accountName) || !visualizedParams)
                 ) {
                     console.log("Missing required fields for injected call");
@@ -373,7 +373,7 @@
 
                 window.electron.popupApproved(request.id, async (args) => {
                     let _request = request;
-                    if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {        
+                    if (["BTS", "BTS_TEST"].includes(chain)) {        
                         if (request.payload.memo) {
                             let from;
                             let to;
@@ -441,7 +441,7 @@
                     }
 
                     let activeKey;
-                    if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
+                    if (["BTS", "BTS_TEST"].includes(chain)) {
                         try {
                             activeKey = request.payload.account_id
                                 ? store.getters['AccountStore/getActiveKey'](request)
@@ -466,7 +466,7 @@
 
                     if (txType == "signAndBroadcast") {
                         try {
-                            if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
+                            if (["BTS", "BTS_TEST"].includes(chain)) {
                                 finalResult = await window.electron.blockchainRequest({
                                     methods: ["signAndBroadcast"],
                                     account: null,
@@ -539,7 +539,7 @@
                 window.electron.popupApproved(request.id, async (result) => {
 
                     let activeKey;
-                    if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
+                    if (["BTS", "BTS_TEST"].includes(chain)) {
                         try {
                             activeKey = request.payload.account_id
                                 ? store.getters['AccountStore/getActiveKey'](request)
@@ -564,7 +564,7 @@
 
                     let transaction;
                     try {
-                        if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
+                        if (["BTS", "BTS_TEST"].includes(chain)) {
                             transaction = await window.electron.requestSignature(request.payload.params, signingKey);
                         } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
                             transaction = await window.electron.requestSignature(JSON.parse(request.payload.params[1]), signingKey);

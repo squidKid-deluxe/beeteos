@@ -71,7 +71,7 @@ export async function inject(
 
     let account = "";
     let visualizedAccount;
-    if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
+    if (["BTS", "BTS_TEST"].includes(blockchain._config.identifier)) {
         let fromField = types.find(type => type.method === request.type).from;
         if (!fromField || !fromField.length) {
             const _account = async () => {

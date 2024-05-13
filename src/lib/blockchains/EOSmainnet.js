@@ -34,6 +34,7 @@ const operations = [
     "fundnetloan",
     "defcpuloan",
     "defnetloan",
+    "transfer",
     "updaterex",
     "rexexec",
     "consolidate",
@@ -78,16 +79,27 @@ export default class EOS extends BlockchainAPI {
                     ? nodeToConnect
                     : this.getNodes()[0].url;
 
-        this.rpc = new JsonRpc(chosenURL, {fetch});
-
+        let rpc;
         try {
-            this.rpc.get_info().then(() => {
+            rpc = new JsonRpc(chosenURL, {fetch});
+        } catch (error) {
+            console.log({error})
+            this._connectionFailed(reject, chosenURL, error.message);
+        }
+        
+        this.rpc = rpc;
+        this._connectionEstablished(resolve, chosenURL);
+
+        /*
+        try {
+            this.rpc.get_block(1).then(() => {
                 this._connectionEstablished(resolve, chosenURL);
             })
         } catch (error) {
             console.log({error})
             this._connectionFailed(reject, chosenURL, error.message);
         }
+        */
     }
 
     /**
@@ -467,6 +479,10 @@ export default class EOS extends BlockchainAPI {
 
     broadcast(transaction) {
         return new Promise((resolve, reject) => {
+            if (!this.rpc) {
+                this.rpc = new JsonRpc(this.getNodes()[0].url, {fetch});
+            }
+
             const api = new Api({
                 rpc: this.rpc,
                 signatureProvider: transaction.signatureProvider,

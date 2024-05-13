@@ -7,6 +7,7 @@
     
     import store from '../store/index.js';
     import router from '../router/index.js';
+    import { watch } from 'vue';
 
     const { t } = useI18n({ useScope: 'global' });
 
@@ -34,6 +35,19 @@
             );
         }
     }
+
+    let selectedAccount = computed(() => {
+        if (!store.state.WalletStore.isUnlocked) {
+            return;
+        }
+        return store.getters["AccountStore/getCurrentSafeAccount"]()
+    })
+
+    watch(selectedAccount, async (newVal, oldVal) => {
+        console.log("User changed account - resetting configured scope!")
+        chosenScope.value = null;
+        selectedRows.value = null;
+    }, {immediate: true});
 
     let chain = computed(() => {
         return store.getters['AccountStore/getChain'];

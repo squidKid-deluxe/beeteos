@@ -1,7 +1,6 @@
 import { blockchains } from "../../config/config.js";
 
 import BitShares from "./BitShares.js";
-import TUSC from "./TUSC.js";
 import EOSmainnet from "./EOSmainnet.js";
 import TLOS from "./TLOS.js";
 import BEOS from "./BEOS.js";
@@ -36,8 +35,6 @@ export default function getBlockchainAPI(chain = null, node = null) {
                 storedChain = new TLOS(config, node);
             } else if (chain === "BTS" || chain === "BTS_TEST") {
                 storedChain = new BitShares(config, node);
-            } else if (chain === "TUSC") {
-                storedChain = new TUSC(config, node);
             }
         } catch (error) {
             console.log(error);

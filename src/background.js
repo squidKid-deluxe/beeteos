@@ -423,8 +423,9 @@ async function _parseDeeplink(
     }
 
     if (request.payload.method === Actions.INJECTED_CALL) {
+        console.log({req: request.payload.params})
         let authorizedUse = false;
-        if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
+        if (["BTS", "BTS_TEST"].includes(chain)) {
             let tr;
             try {
                 tr = await blockchain._parseTransactionBuilder(
@@ -443,16 +444,20 @@ async function _parseDeeplink(
                 }
             }
         } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
-            if (request.payload.params.actions) {
-                for (
-                    let i = 0;
-                    i < request.payload.params.actions.length;
-                    i++
-                ) {
-                    let operation = request.payload.params.actions[i];
-                    if (settingsRows && settingsRows.includes(operation.name)) {
-                        authorizedUse = true;
-                        break;
+            if (request.payload.params && request.payload.params.length > 1) {
+                const actions = JSON.parse(request.payload.params[1]).actions;
+
+                if (actions) {
+                    for (
+                        let i = 0;
+                        i < actions.length;
+                        i++
+                    ) {
+                        let operation = actions[i];
+                        if (settingsRows && settingsRows.includes(operation.name)) {
+                            authorizedUse = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -678,6 +683,10 @@ const createWindow = async () => {
 
         if (methods.includes("getAccessType")) {
             responses["getAccessType"] = blockchain.getAccessType();
+        }
+
+        if (methods.includes("getSignUpInput")) {
+            responses["getSignUpInput"] = blockchain.getSignUpInput();
         }
 
         if (methods.includes("getImportOptions")) {
@@ -917,7 +926,7 @@ const createWindow = async () => {
 
             let parsedData = JSON.parse(qrData);
             let authorizedUse = false;
-            if (["BTS", "BTS_TEST", "TUSC"].includes(chain)) {
+            if (["BTS", "BTS_TEST"].includes(chain)) {
                 const ops = parsedData.operations[0].operations;
                 for (let i = 0; i < ops.length; i++) {
                     let operation = ops[i];
@@ -946,7 +955,7 @@ const createWindow = async () => {
             if (authorizedUse) {
                 let qrTX;
                 try {
-                    qrTX = ["BTS", "BTS_TEST", "TUSC"].includes(chain)
+                    qrTX = ["BTS", "BTS_TEST"].includes(chain)
                         ? await blockchain.handleQR(
                               JSON.stringify(parsedData.operations[0])
                           )
@@ -964,7 +973,7 @@ const createWindow = async () => {
                         origin: "localhost",
                         appName: "qr",
                         browser: qrChoice,
-                        params: ["BTS", "BTS_TEST", "TUSC"].includes(chain)
+                        params: ["BTS", "BTS_TEST"].includes(chain)
                             ? qrTX.toObject()
                             : qrTX,
                         chain: chain,
@@ -1121,7 +1130,6 @@ const createWindow = async () => {
         "explore.beos.world",
         "blocksights.info",
         "telos.eosx.io",
-        "wallet.tusc.network",
     ];
     ipcMain.on("openURL", (event, arg) => {
         try {
@@ -1406,9 +1414,11 @@ if (currentOS === "win32" || currentOS === "linux") {
                 console.log(error);
                 return;
             }
-    
-            let deeplinkingUrl = deeplink.includes("beeteos://api/") ? deeplink.split("beeteos://api/")[1] : deeplink.split("rawbeeteos://api/")[1];
-            
+
+            let deeplinkingUrl = deeplink.includes("beeteos://api/")
+                ? deeplink.split("beeteos://api/")[1]
+                : deeplink.split("rawbeeteos://api/")[1];
+
             let qs;
             try {
                 qs = queryString.parse(deeplinkingUrl);
@@ -1419,9 +1429,7 @@ if (currentOS === "win32" || currentOS === "linux") {
 
             if (qs) {
                 mainWindow.webContents.send(
-                    deeplink.includes("raw")
-                        ? "rawdeeplink"
-                        : "deeplink",
+                    deeplink.includes("raw") ? "rawdeeplink" : "deeplink",
                     qs
                 );
             }
@@ -1478,7 +1486,7 @@ if (currentOS === "win32" || currentOS === "linux") {
         }
 
         if (qs) {
-            dialog.showErrorBox("Error", JSON.stringify({qs: qs}));
+            dialog.showErrorBox("Error", JSON.stringify({ qs: qs }));
             mainWindow.webContents.send(urlType, qs);
         }
     });

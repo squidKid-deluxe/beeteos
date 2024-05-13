@@ -108,7 +108,6 @@ const actions = {
                     settings['chainPermissions'] = {
                         BTS: [],
                         BTS_TEST: [],
-                        TUSC: [],
                         EOS: [],
                         BEOS: [],
                         TLOS: []
@@ -149,7 +148,6 @@ const initialState = {
             EOS: [],
             BEOS: [],
             TLOS: [],
-            TUSC: [],
             BTC: [],
             BTC_TEST: []
         }

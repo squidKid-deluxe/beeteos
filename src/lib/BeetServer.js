@@ -209,7 +209,7 @@ export default class BeetServer {
             
             let authorizedUse = true;
             if (app.injectables.length) {
-                if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
+                if (["BTS", "BTS_TEST"].includes(blockchain._config.identifier)) {
                     let tr = blockchain._parseTransactionBuilder(msg.params);
                     for (let i = 0; i < tr.operations.length; i++) {
                         let operation = tr.operations[i];
@@ -277,7 +277,7 @@ export default class BeetServer {
                 }
             
                 let visualizedAccount;
-                if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
+                if (["BTS", "BTS_TEST"].includes(blockchain._config.identifier)) {
                     try {
                         visualizedAccount = await blockchain.visualize(apiobj.payload.account_id);
                     } catch (error) {
@@ -371,7 +371,7 @@ export default class BeetServer {
             
                 let account = "";
                 let visualizedAccount;
-                if (["BTS", "BTS_TEST", "TUSC"].includes(blockchain._config.identifier)) {
+                if (["BTS", "BTS_TEST"].includes(blockchain._config.identifier)) {
                     let fromField = types.find(type => type.method === apiobj.type).from;
                     if (!fromField || !fromField.length) {
                         const _account = () => {

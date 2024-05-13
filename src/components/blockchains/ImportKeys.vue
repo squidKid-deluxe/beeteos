@@ -48,7 +48,7 @@
     let privateKey = ref("");
     async function next() {
         let authorities = {};
-        if (requiredFields.value.privateKey != null) {
+        if (requiredFields.value && requiredFields.value.privateKey) {
             authorities.privateKey = privateKey.value;
         }
 
@@ -107,7 +107,7 @@
             {{ t('common.keys_cta') }}
         </p>
 
-        <template v-if="requiredFields.privateKey !== null">
+        <template v-if="requiredFields && requiredFields.privateKey">
             <p class="mb-2 font-weight-bold">
                 {{ t(accessType == 'account' ? 'common.active_authority' : 'common.public_authority') }}
             </p>
@@ -131,7 +131,7 @@
                     {{ t('common.back_btn') }}
                 </ui-button>
 
-                <span v-if="requiredFields.privateKey != null">
+                <span v-if="requiredFields && requiredFields.privateKey">
                     <ui-button
                         v-if="accountname !== '' && privateKey !== ''"
                         raised

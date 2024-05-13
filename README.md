@@ -40,7 +40,7 @@ The EOS blockchain has their own native javascript library that can be used (e.g
 
 The wallet now also supports deeplinks, encrypted deeplinks, qr codes and local json files for generating blockchain request prompts for approval & broadcast with the BeetEOS wallet. These input methods do not require external packages, and can be stored for later use.
 
-Supported blockchains: Bitshares, Bitshares testnet, TUSC, EOS, BEOS, TLOS.
+Supported blockchains: Bitshares, Bitshares testnet, EOS, BEOS, TLOS.
 
 ## For end users
 
@@ -56,7 +56,7 @@ BeetEOS is an [electron-based app](https://www.electronjs.org) for [cross-platfo
 
 To run BeetEOS it's simply a case of
 
-``` bash
+```bash
 # clone
 git clone https://github.com/beetapp/beeteos
 cd beeteos
