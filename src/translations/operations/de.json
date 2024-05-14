@@ -2225,7 +2225,22 @@
           "newname": "Neuer Name: {newname}"
         },
         "tooltip": "Rückerstattung des Gebotsvorgangs"
-      }
+      },
+    "ramtransfer": {
+        "method": "RAM-Übertragung",
+        "title": "RAM-Übertragungsanforderung",
+        "result": "RAM-Übertragungsergebnis",
+        "headers": {
+        "request": "RAM von einem Konto auf ein anderes übertragen?",
+        "result": "RAM wurde von einem Konto auf ein anderes übertragen:"
+        },
+        "rows": {
+        "from": "Von: {von}",
+        "to": "An: {an}",
+        "bytes": "Bytes: {Bytes}"
+        },
+        "tooltip": "RAM-Betrieb übertragen"
+    }
     }
   }
 }

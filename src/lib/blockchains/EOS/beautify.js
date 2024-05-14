@@ -44,19 +44,20 @@ const allowedOperations = [
     "rmvproducer",
     "updtrevision",
     "bidname",
-    "bidrefund"
+    "bidrefund",
+    "ramtransfer",
 ];
 
 /**
  * Convert an array of operations into a readable format
- * @param {Object} operation 
- * @returns 
+ * @param {Object} operation
+ * @returns
  */
-export default async function beautify (operation) {
+export default async function beautify(operation) {
     if (!operation || !operation.name) {
         return;
     }
-    
+
     const opType = operation.name;
 
     if (!allowedOperations.includes(opType)) {
@@ -74,9 +75,9 @@ export default async function beautify (operation) {
     if (opType === "transfer") {
         /**
          * Transferring tokens action.
-         * 
+         *
          * @details Transfer tokens from account to account.
-         * 
+         *
          * @param from - the account to transfer from,
          * @param to - the account to be transferred to,
          * @param quantity - the quantity of tokens to be transferred,
@@ -92,7 +93,6 @@ export default async function beautify (operation) {
             { key: "quantity", params: { quantity: quantity } },
             { key: "memo", params: { memo: memo ?? "" } },
         ];
-        
     } else if (opType === "setalimits") {
         /**
          * Set account limits action.
@@ -169,7 +169,10 @@ export default async function beautify (operation) {
          */
         const feature_digest = operation.data.feature_digest;
         currentOperation["rows"] = [
-            { key: "feature_digest", params: { feature_digest: feature_digest } },
+            {
+                key: "feature_digest",
+                params: { feature_digest: feature_digest },
+            },
         ];
     } else if (opType === "delegatebw") {
         // functions defined in delegate_bandwidth.cpp
@@ -197,11 +200,16 @@ export default async function beautify (operation) {
         currentOperation["rows"] = [
             { key: "from", params: { from: from } },
             { key: "receiver", params: { receiver: receiver } },
-            { key: "stake_net_quantity", params: { stake_net_quantity: stake_net_quantity } },
-            { key: "stake_cpu_quantity", params: { stake_cpu_quantity: stake_cpu_quantity } },
+            {
+                key: "stake_net_quantity",
+                params: { stake_net_quantity: stake_net_quantity },
+            },
+            {
+                key: "stake_cpu_quantity",
+                params: { stake_cpu_quantity: stake_cpu_quantity },
+            },
             { key: "transfer", params: { transfer: transfer } },
         ];
-    
     } else if (opType === "setrex") {
         /**
          * Setrex action.
@@ -333,9 +341,7 @@ export default async function beautify (operation) {
          * @pre Order cannot be cancelled once it's been filled.
          */
         const owner = operation.data.owner;
-        currentOperation["rows"] = [
-            { key: "owner", params: { owner: owner } },
-        ];
+        currentOperation["rows"] = [{ key: "owner", params: { owner: owner } }];
     } else if (opType === "rentcpu") {
         /**
          * Rentcpu action.
@@ -469,7 +475,7 @@ export default async function beautify (operation) {
             { key: "from", params: { from: from } },
             { key: "loan_num", params: { loan_num: loan_num } },
             { key: "amount", params: { amount: amount } },
-        ];        
+        ];
     } else if (opType === "updaterex") {
         /**
          * Updaterex action.
@@ -478,11 +484,9 @@ export default async function beautify (operation) {
          *
          * @param owner - REX owner account.
          */
-        
+
         const owner = operation.data.owner;
-        currentOperation["rows"] = [
-            { key: "owner", params: { owner: owner } },
-        ];
+        currentOperation["rows"] = [{ key: "owner", params: { owner: owner } }];
     } else if (opType === "rexexec") {
         /**
          * Rexexec action.
@@ -509,9 +513,7 @@ export default async function beautify (operation) {
          * @param owner - REX owner account name.
          */
         const owner = operation.data.owner;
-        currentOperation["rows"] = [
-            { key: "owner", params: { owner: owner } },
-        ];
+        currentOperation["rows"] = [{ key: "owner", params: { owner: owner } }];
     } else if (opType === "mvtosavings") {
         /**
          * Mvtosavings action.
@@ -561,9 +563,7 @@ export default async function beautify (operation) {
          *    REX fund entry is deleted.
          */
         const owner = operation.data.owner;
-        currentOperation["rows"] = [
-            { key: "owner", params: { owner: owner } },
-        ];
+        currentOperation["rows"] = [{ key: "owner", params: { owner: owner } }];
     } else if (opType === "undelegatebw") {
         /**
          * Undelegate bandwitdh action.
@@ -601,8 +601,14 @@ export default async function beautify (operation) {
         currentOperation["rows"] = [
             { key: "from", params: { from: from } },
             { key: "receiver", params: { receiver: receiver } },
-            { key: "unstake_net_quantity", params: { unstake_net_quantity: unstake_net_quantity } },
-            { key: "unstake_cpu_quantity", params: { unstake_cpu_quantity: unstake_cpu_quantity } },
+            {
+                key: "unstake_net_quantity",
+                params: { unstake_net_quantity: unstake_net_quantity },
+            },
+            {
+                key: "unstake_cpu_quantity",
+                params: { unstake_cpu_quantity: unstake_cpu_quantity },
+            },
         ];
     } else if (opType === "buyram") {
         /**
@@ -669,9 +675,7 @@ export default async function beautify (operation) {
          * @param owner - the owner of the tokens claimed.
          */
         const owner = operation.data.owner;
-        currentOperation["rows"] = [
-            { key: "owner", params: { owner: owner } },
-        ];
+        currentOperation["rows"] = [{ key: "owner", params: { owner: owner } }];
     } else if (opType === "regproducer") {
         // functions defined in voting.cpp
 
@@ -711,7 +715,7 @@ export default async function beautify (operation) {
         const producer = operation.data.producer;
         currentOperation["rows"] = [
             { key: "producer", params: { producer: producer } },
-        ];        
+        ];
     } else if (opType === "setram") {
         /**
          * Set ram action.
@@ -735,7 +739,10 @@ export default async function beautify (operation) {
         */
         const bytes_per_block = operation.data.bytes_per_block;
         currentOperation["rows"] = [
-            { key: "bytes_per_block", params: { bytes_per_block: bytes_per_block } },
+            {
+                key: "bytes_per_block",
+                params: { bytes_per_block: bytes_per_block },
+            },
         ];
     } else if (opType === "voteproducer") {
         /**
@@ -770,7 +777,7 @@ export default async function beautify (operation) {
             { key: "voter", params: { voter: voter } },
             { key: "proxy", params: { proxy: proxy } },
             { key: "producers", params: { producers: producers } },
-        ];        
+        ];
     } else if (opType === "regproxy") {
         /**
          * Register proxy action.
@@ -803,7 +810,10 @@ export default async function beautify (operation) {
          */
         const params = JSON.stringify(operation.data.params, null, 2);
         currentOperation["rows"] = [
-            { key: "params", params: { params: JSON.stringify(params, null, 2) } },
+            {
+                key: "params",
+                params: { params: JSON.stringify(params, null, 2) },
+            },
         ];
     } else if (opType === "claimrewards") {
         // functions defined in producer_pay.cpp
@@ -814,9 +824,7 @@ export default async function beautify (operation) {
          * @param owner - producer account claiming per-block and per-vote rewards.
          */
         const owner = operation.data.owner;
-        currentOperation["rows"] = [
-            { key: "owner", params: { owner: owner } },
-        ];
+        currentOperation["rows"] = [{ key: "owner", params: { owner: owner } }];
     } else if (opType === "setpriv") {
         /**
          * Set privilege status for an account.
@@ -897,6 +905,24 @@ export default async function beautify (operation) {
         currentOperation["rows"] = [
             { key: "bidder", params: { bidder: bidder } },
             { key: "newname", params: { newname: newname } },
+        ];
+    } else if (opType === "ramtransfer") {
+        /**
+         * Ram transfer action.
+         *
+         * @details Allows an account `from` to transfer ram to another account `to`.
+         *
+         * @param from - the account sending ram,
+         * @param to - the account receiving ram,
+         * @param bytes - the amount of ram to be sent.
+         */
+        const from = operation.data.from;
+        const to = operation.data.to;
+        const bytes = operation.data.bytes;
+        currentOperation["rows"] = [
+            { key: "from", params: { from: from } },
+            { key: "to", params: { to: to } },
+            { key: "bytes", params: { bytes: bytes } },
         ];
     }
 

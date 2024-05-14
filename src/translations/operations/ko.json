@@ -2225,6 +2225,21 @@
           "newname": "새 이름: {newname}"
         },
         "tooltip": "입찰 환불 작업"
+      },
+      "ramtransfer": {
+        "method": "RAM 전송",
+        "title": "RAM 전송 요청",
+        "result": "RAM 전송 결과",
+        "headers": {
+          "request": "한 계정에서 다른 계정으로 RAM을 이전하시겠습니까?",
+          "result": "RAM이 한 계정에서 다른 계정으로 이전되었습니다."
+        },
+        "rows": {
+          "from": "보낸 사람: {from}",
+          "to": "받는 사람: {to}",
+          "bytes": "바이트: {바이트}"
+        },
+        "tooltip": "RAM 작업 전송 중"
       }
     }
   }

@@ -2225,6 +2225,21 @@
           "newname": "Uus nimi: {newname}"
         },
         "tooltip": "Pakkumise tagasimakse toiming"
+      },
+      "ramtransfer": {
+        "method": "RAM-i ülekanne",
+        "title": "RAM-i ülekande taotlus",
+        "result": "RAM-i ülekande tulemus",
+        "headers": {
+          "request": "Kas teisaldada RAM-i ühelt kontolt teisele?",
+          "result": "RAM kanti ühelt kontolt teisele:"
+        },
+        "rows": {
+          "from": "Saatja: {from}",
+          "to": "Saaja: {to}",
+          "bytes": "Baidid: {baiti}"
+        },
+        "tooltip": "RAM-i toimingute edastamine"
       }
     }
   }

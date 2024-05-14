@@ -787,7 +787,22 @@
                     "newname": "New Name: {newname}"
                 },
                 "tooltip": "Refunding Bid operation"
-            }  
+            },
+            "ramtransfer": {
+                "method": "RAM Transfer",
+                "title": "RAM Transfer Request",
+                "result": "RAM Transfer Result",
+                "headers": {
+                    "request": "Transfer RAM from one account to another?",
+                    "result": "RAM was transferred from one account to another:"
+                },
+                "rows": {
+                    "from": "From: {from}",
+                    "to": "To: {to}",
+                    "bytes": "Bytes: {bytes}"
+                },
+                "tooltip": "Transferring RAM operation"
+            }
         },
         "BTS": {
             "getAccount": {

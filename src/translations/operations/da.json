@@ -2225,6 +2225,21 @@
           "newname": "Nyt navn: {newname}"
         },
         "tooltip": "Tilbagebetaling af budoperation"
+      },
+      "ramtransfer": {
+        "method": "RAM-overførsel",
+        "title": "RAM-overførselsanmodning",
+        "result": "Resultat af RAM-overførsel",
+        "headers": {
+          "request": "Overføre RAM fra en konto til en anden?",
+          "result": "RAM blev overført fra en konto til en anden:"
+        },
+        "rows": {
+          "from": "Fra: {from}",
+          "to": "Til: {to}",
+          "bytes": "Bytes: {bytes}"
+        },
+        "tooltip": "Overførsel af RAM-drift"
       }
     }
   }

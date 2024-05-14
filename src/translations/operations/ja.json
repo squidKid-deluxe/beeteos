@@ -2225,6 +2225,21 @@
           "newname": "新しい名前: {newname}"
         },
         "tooltip": "入札返金業務"
+      },
+      "ramtransfer": {
+        "method": "RAM転送",
+        "title": "RAM転送リクエスト",
+        "result": "RAM転送結果",
+        "headers": {
+          "request": "RAM をあるアカウントから別のアカウントに転送しますか?",
+          "result": "RAM があるアカウントから別のアカウントに転送されました。"
+        },
+        "rows": {
+          "from": "差出人: {差出人}",
+          "to": "宛先: {宛}",
+          "bytes": "バイト: {バイト}"
+        },
+        "tooltip": "RAM操作の転送"
       }
     }
   }

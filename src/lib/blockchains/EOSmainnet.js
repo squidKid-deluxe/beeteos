@@ -58,7 +58,8 @@ const operations = [
     "rmvproducer",
     "updtrevision",
     "bidname",
-    "bidrefund"
+    "bidrefund",
+    "ramtransfer"
 ];
 
 export default class EOS extends BlockchainAPI {

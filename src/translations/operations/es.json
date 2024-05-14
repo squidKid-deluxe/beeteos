@@ -2225,6 +2225,21 @@
           "newname": "Nuevo nombre: {newname}"
         },
         "tooltip": "Operación de oferta de reembolso"
+      },
+      "ramtransfer": {
+        "method": "Transferencia de RAM",
+        "title": "Solicitud de transferencia de RAM",
+        "result": "Resultado de la transferencia de RAM",
+        "headers": {
+          "request": "¿Transferir RAM de una cuenta a otra?",
+          "result": "La RAM se transfirió de una cuenta a otra:"
+        },
+        "rows": {
+          "from": "De: {de}",
+          "to": "Para: {a}",
+          "bytes": "Bytes: {bytes}"
+        },
+        "tooltip": "Operación de transferencia de RAM"
       }
     }
   }
