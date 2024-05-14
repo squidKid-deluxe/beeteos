@@ -8,9 +8,9 @@ BeetEOS aims to solve these trust concerns, whilst additionally facilitating pri
 
 A general rule of thumb for the inexperienced: Never ever expose your private keys on the internet, and if that is ever needed, stay vigilant and do your due diligence.
 
-# BeetEOS - Your EOS blockchain companion
+# BeetEOS - Your Bitshares & EOS blockchain companion
 
-BeetEOS is a locally installed stand-alone key and identity manager and signing app for both Bitshares and EOS based blockchains influenced by the [Beet](https://github.com/bitshares/beet) and [Scatter](https://github.com/GetScatter) wallets.
+BeetEOS is a locally installed stand-alone key and identity manager and signing app for both Bitshares and EOS based blockchains, heavily influenced by the [Beet](https://github.com/bitshares/beet) and [Scatter](https://github.com/GetScatter) wallets.
 
 BeetEOS allows separate account management while being in full control of what data to expose to third parties.
 
@@ -37,6 +37,8 @@ BeeteosJS allows any web-page to send requests to BeetEOS in order to retrieve i
 Of-course, any incoming request has to be **explicitly** approved by the user inside the BeetEOS app and is clearly displayed.
 
 The EOS blockchain has their own native javascript library that can be used (e.g. [eosjs](https://github.com/EOSIO/eosjs)) with BeetEOS. BeeteosJS can be injected into said native library to redirect all signature and broadcast requests to BeetEOS, i.e. you can simply use the native javascript library and inject BeetEOSJS when starting your application, and voila, BeetEOS is integrated.
+
+The Bitshares blockchain also has [its own native javascript library](https://github.com/bitshares/bitsharesjs/) which can be used with BeetEOS. BeetEOSJS can similarly be injected into bitsharesjs to redirect important requests to BeetEOS.
 
 The wallet now also supports deeplinks, encrypted deeplinks, qr codes and local json files for generating blockchain request prompts for approval & broadcast with the BeetEOS wallet. These input methods do not require external packages, and can be stored for later use.
 
