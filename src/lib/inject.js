@@ -1,14 +1,10 @@
-import { ipcMain } from 'electron';
+import { ipcMain } from "electron";
 
-export async function inject(
-    blockchain,
-    request,
-    webContents
-) {
+export async function inject(blockchain, request, webContents) {
     let isBlocked = false;
     let blockedAccounts;
     let foundIDs = [];
-    let regexBTS = /1.2.\d+/g
+    let regexBTS = /1.2.\d+/g;
 
     if (blockchain._config.identifier === "BTS") {
         // Decentralized warn list
@@ -27,7 +23,8 @@ export async function inject(
             }
 
             if (blockedAccounts) {
-                const isBadActor = (actor) => blockedAccounts.find(x => x === actor) ? true : false;
+                const isBadActor = (actor) =>
+                    blockedAccounts.find((x) => x === actor) ? true : false;
                 isBlocked = foundIDs.some(isBadActor);
             }
         }
@@ -62,7 +59,8 @@ export async function inject(
         }
 
         if (blockedAccounts) {
-            const isBadActor = (actor) => blockedAccounts.find(x => x === actor) ? true : false;
+            const isBadActor = (actor) =>
+                blockedAccounts.find((x) => x === actor) ? true : false;
             isBlocked = foundIDs.some(isBadActor);
         }
     }
@@ -72,54 +70,69 @@ export async function inject(
     let account = "";
     let visualizedAccount;
     if (["BTS", "BTS_TEST"].includes(blockchain._config.identifier)) {
-        let fromField = types.find(type => type.method === request.type).from;
+        let fromField = types.find((type) => type.method === request.type).from;
         if (!fromField || !fromField.length) {
             const _account = async () => {
                 return new Promise((resolve, reject) => {
-                    webContents.send('getSafeAccount');
-                    ipcMain.once('getSafeAccountResponse', (event, arg) => {
+                    webContents.send("getSafeAccount");
+                    ipcMain.once("getSafeAccountResponse", (event, arg) => {
                         resolve(arg);
                     });
                 });
-            }
-            
+            };
+
             account = await _account();
         } else {
             let visualizeContents = request.payload[fromField];
             try {
-                visualizedAccount = await blockchain.visualize(visualizeContents);
+                visualizedAccount = await blockchain.visualize(
+                    visualizeContents
+                );
             } catch (error) {
                 console.log(error);
             }
         }
-    } else if (["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)) {
-        const _actions = JSON.parse(request.payload.params[1]).actions;
-        visualizedAccount = _actions[0].authorization[0].actor; 
+    } else if (
+        ["EOS", "BEOS", "TLOS"].includes(blockchain._config.identifier)
+    ) {
+        const params = request.payload.params[1];
+        const _actions =
+            typeof params === "string"
+                ? JSON.parse(params).actions
+                : params.actions;
+
+        visualizedAccount = _actions[0].authorization[0].actor;
     }
 
-    const _injectedCall = (_apiobj, _chain, _account, _visualizedAccount, _visualizedParams, _isBlocked, _blockedAccounts, _foundIDs) => {
+    const _injectedCall = (
+        _apiobj,
+        _chain,
+        _account,
+        _visualizedAccount,
+        _visualizedParams,
+        _isBlocked,
+        _blockedAccounts,
+        _foundIDs
+    ) => {
         return new Promise((resolve, reject) => {
-            webContents.send(
-                'injectedCall',
-                {
-                    request: _apiobj,
-                    chain: _chain,
-                    account: _account,
-                    visualizedAccount: _visualizedAccount,
-                    visualizedParams: _visualizedParams,
-                    isBlocked: _isBlocked,
-                    blockedAccounts: _blockedAccounts,
-                    foundIDs: _foundIDs
-                }
-            );
-            ipcMain.once('injectedCallResponse', (event, arg) => {
+            webContents.send("injectedCall", {
+                request: _apiobj,
+                chain: _chain,
+                account: _account,
+                visualizedAccount: _visualizedAccount,
+                visualizedParams: _visualizedParams,
+                isBlocked: _isBlocked,
+                blockedAccounts: _blockedAccounts,
+                foundIDs: _foundIDs,
+            });
+            ipcMain.once("injectedCallResponse", (event, arg) => {
                 return resolve(arg);
             });
-            ipcMain.once('injectedCallError', (event, error) => {
+            ipcMain.once("injectedCallError", (event, error) => {
                 return reject(error);
             });
         });
-    }
+    };
 
     let injectedCallResult;
     try {
@@ -134,7 +147,7 @@ export async function inject(
             foundIDs
         );
     } catch (error) {
-        console.log({error, location: "_injectedCall"});
+        console.log({ error, location: "_injectedCall" });
     }
 
     return injectedCallResult;

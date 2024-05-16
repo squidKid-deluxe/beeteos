@@ -423,7 +423,6 @@ async function _parseDeeplink(
     }
 
     if (request.payload.method === Actions.INJECTED_CALL) {
-        console.log({req: request.payload.params})
         let authorizedUse = false;
         if (["BTS", "BTS_TEST"].includes(chain)) {
             let tr;
@@ -448,13 +447,12 @@ async function _parseDeeplink(
                 const actions = JSON.parse(request.payload.params[1]).actions;
 
                 if (actions) {
-                    for (
-                        let i = 0;
-                        i < actions.length;
-                        i++
-                    ) {
+                    for (let i = 0; i < actions.length; i++) {
                         let operation = actions[i];
-                        if (settingsRows && settingsRows.includes(operation.name)) {
+                        if (
+                            settingsRows &&
+                            settingsRows.includes(operation.name)
+                        ) {
                             authorizedUse = true;
                             break;
                         }
@@ -939,7 +937,7 @@ const createWindow = async () => {
                     }
                 }
             } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
-                const ops = parsedData.operations[0].actions;
+                const ops = parsedData.actions;
                 for (let i = 0; i < ops.length; i++) {
                     let operation = ops[i];
                     if (
@@ -959,7 +957,7 @@ const createWindow = async () => {
                         ? await blockchain.handleQR(
                               JSON.stringify(parsedData.operations[0])
                           )
-                        : parsedData.operations[0].actions;
+                        : parsedData;
                 } catch (error) {
                     console.log({ error, location: "background" });
                 }
@@ -975,7 +973,7 @@ const createWindow = async () => {
                         browser: qrChoice,
                         params: ["BTS", "BTS_TEST"].includes(chain)
                             ? qrTX.toObject()
-                            : qrTX,
+                            : ["signAndBroadcast", qrTX, []],
                         chain: chain,
                     },
                 };

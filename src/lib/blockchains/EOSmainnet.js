@@ -1,13 +1,13 @@
 import BlockchainAPI from "./BlockchainAPI.js";
 
-import { Api, JsonRpc, RpcError } from 'eosjs';
+import { Api, JsonRpc, RpcError } from "eosjs";
 import { JsSignatureProvider } from "eosjs/dist/eosjs-jssig";
 
 import * as ecc from "eosjs-ecc";
 import { TextEncoder, TextDecoder } from "util";
 
 import beautify from "./EOS/beautify.js";
-import * as Actions from '../Actions.js';
+import * as Actions from "../Actions.js";
 
 const operations = [
     Actions.GET_ACCOUNT,
@@ -59,11 +59,10 @@ const operations = [
     "updtrevision",
     "bidname",
     "bidrefund",
-    "ramtransfer"
+    "ramtransfer",
 ];
 
 export default class EOS extends BlockchainAPI {
-
     /*
      * Establish a connection
      * @param {String} nodeToConnect
@@ -72,22 +71,26 @@ export default class EOS extends BlockchainAPI {
      * @returns {String}
      */
     async _establishConnection(nodeToConnect, resolve, reject) {
-        if ((!nodeToConnect || !nodeToConnect.length) && !this.getNodes()[0].url) {
-            this._connectionFailed(reject, '', 'No node url')
+        if (
+            (!nodeToConnect || !nodeToConnect.length) &&
+            !this.getNodes()[0].url
+        ) {
+            this._connectionFailed(reject, "", "No node url");
         }
 
-        const chosenURL = nodeToConnect && nodeToConnect.length
-                    ? nodeToConnect
-                    : this.getNodes()[0].url;
+        const chosenURL =
+            nodeToConnect && nodeToConnect.length
+                ? nodeToConnect
+                : this.getNodes()[0].url;
 
         let rpc;
         try {
-            rpc = new JsonRpc(chosenURL, {fetch});
+            rpc = new JsonRpc(chosenURL, { fetch });
         } catch (error) {
-            console.log({error})
+            console.log({ error });
             this._connectionFailed(reject, chosenURL, error.message);
         }
-        
+
         this.rpc = rpc;
         this._connectionEstablished(resolve, chosenURL);
 
@@ -112,8 +115,8 @@ export default class EOS extends BlockchainAPI {
         const _ops = operations.map((op) => {
             return {
                 id: op,
-                method: op
-            }
+                method: op,
+            };
         });
         return _ops;
     }
@@ -125,55 +128,85 @@ export default class EOS extends BlockchainAPI {
      */
     _connect(nodeToConnect = null) {
         return new Promise((resolve, reject) => {
-
             if (nodeToConnect) {
                 //console.log(`nodetoconnect: ${nodeToConnect}`)
-                return this._establishConnection(nodeToConnect, resolve, reject);
+                return this._establishConnection(
+                    nodeToConnect,
+                    resolve,
+                    reject
+                );
             }
 
-            if (this._isConnected && this._isConnectedToNode && !nodeToConnect) {
+            if (
+                this._isConnected &&
+                this._isConnectedToNode &&
+                !nodeToConnect
+            ) {
                 //console.log(`isConnected: ${this._isConnectedToNode}`)
-                return this._connectionEstablished(resolve, this._isConnectedToNode);
+                return this._connectionEstablished(
+                    resolve,
+                    this._isConnectedToNode
+                );
             }
 
             let diff;
             if (this._nodeCheckTime) {
                 let now = new Date();
                 let nowTS = now.getTime();
-                diff = Math.abs(Math.round((nowTS - this._nodeCheckTime) / 1000));
+                diff = Math.abs(
+                    Math.round((nowTS - this._nodeCheckTime) / 1000)
+                );
             }
 
-            if (!nodeToConnect && (!this._nodeLatencies || diff && diff > 360)) {
+            if (
+                !nodeToConnect &&
+                (!this._nodeLatencies || (diff && diff > 360))
+            ) {
                 // initializing the blockchain
-                return this._testNodes().then((res) => {
-                    this._node = res.node;
-                    this._nodeLatencies = res.latencies;
-                    this._nodeCheckTime = res.timestamp;
-                    console.log(`Establishing connection to ${res.node}`);
-                    return this._establishConnection(res.node, resolve, reject);
-                })
-                .catch(error => {
-                    console.log(error);
-                    return this._connectionFailed(reject, '', 'Node test fail');
-                })
+                return this._testNodes()
+                    .then((res) => {
+                        this._node = res.node;
+                        this._nodeLatencies = res.latencies;
+                        this._nodeCheckTime = res.timestamp;
+                        console.log(`Establishing connection to ${res.node}`);
+                        return this._establishConnection(
+                            res.node,
+                            resolve,
+                            reject
+                        );
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        return this._connectionFailed(
+                            reject,
+                            "",
+                            "Node test fail"
+                        );
+                    });
             } else if (!nodeToConnect && this._nodeLatencies) {
                 // blockchain has previously been initialized
-                let filteredNodes = this._nodeLatencies
-                                    .filter(item => {
-                                    if (!this._tempBanned.includes(item.url)) {
-                                        return true;
-                                    }
-                                    });
+                let filteredNodes = this._nodeLatencies.filter((item) => {
+                    if (!this._tempBanned.includes(item.url)) {
+                        return true;
+                    }
+                });
 
                 this._nodeLatencies = filteredNodes;
                 if (!filteredNodes || !filteredNodes.length) {
-                return this._connectionFailed(reject, '', 'No working nodes');
+                    return this._connectionFailed(
+                        reject,
+                        "",
+                        "No working nodes"
+                    );
                 }
 
                 this._node = filteredNodes[0].url;
-                return this._establishConnection(filteredNodes[0].url, resolve, reject);
+                return this._establishConnection(
+                    filteredNodes[0].url,
+                    resolve,
+                    reject
+                );
             }
-
         });
     }
 
@@ -195,7 +228,7 @@ export default class EOS extends BlockchainAPI {
             let beforeTS = before.getTime();
 
             let socket = new Socket(url);
-            socket.on('connect', () => {
+            socket.on("connect", () => {
                 let now = new Date();
                 let nowTS = now.getTime();
                 socket.destroy();
@@ -203,62 +236,65 @@ export default class EOS extends BlockchainAPI {
                 return resolve({ url: url, lag: nowTS - beforeTS });
             });
 
-            socket.on('error', (error) => {
+            socket.on("error", (error) => {
                 //console.log(`Failure: ${url}`);
                 socket.destroy();
                 return resolve(null);
             });
         });
 
-        const fastestPromise = Promise.race([connectionPromise, timeoutPromise]).catch(
-            (error) => {
-                return null;
-            }
-        );
+        const fastestPromise = Promise.race([
+            connectionPromise,
+            timeoutPromise,
+        ]).catch((error) => {
+            return null;
+        });
 
         return fastestPromise;
     }
 
-  /**
-   * Test the wss nodes, return latencies and fastest url.
-   * @returns {Promise}
-   */
+    /**
+     * Test the wss nodes, return latencies and fastest url.
+     * @returns {Promise}
+     */
     async _testNodes() {
-      return new Promise(async (resolve, reject) => {
-          let urls = this.getNodes().map(node => node.url);
+        return new Promise(async (resolve, reject) => {
+            let urls = this.getNodes().map((node) => node.url);
 
-          let filteredURLS = urls.filter(url => {
-            if (!this._tempBanned || !this._tempBanned.includes(url)) {
-              return true;
-            }
-          });
+            let filteredURLS = urls.filter((url) => {
+                if (!this._tempBanned || !this._tempBanned.includes(url)) {
+                    return true;
+                }
+            });
 
-          return Promise.all(filteredURLS.map(url => this._testConnection(url)))
-          .then((validNodes) => {
-            let filteredNodes = validNodes.filter(x => x);
-            if (filteredNodes.length) {
-              let sortedNodes = filteredNodes.sort((a, b) => a.lag - b.lag);
-              let now = new Date();
-              return resolve({
-                node: sortedNodes[0].url,
-                latencies: sortedNodes,
-                timestamp: now.getTime()
-              });
-            } else {
-              console.error("No valid BTS WSS connections established; Please check your internet connection.")
-              return reject();
-            }
-          })
-          .catch(error => {
-            console.log(error);
-          })
-
-
-      });
-
+            return Promise.all(
+                filteredURLS.map((url) => this._testConnection(url))
+            )
+                .then((validNodes) => {
+                    let filteredNodes = validNodes.filter((x) => x);
+                    if (filteredNodes.length) {
+                        let sortedNodes = filteredNodes.sort(
+                            (a, b) => a.lag - b.lag
+                        );
+                        let now = new Date();
+                        return resolve({
+                            node: sortedNodes[0].url,
+                            latencies: sortedNodes,
+                            timestamp: now.getTime(),
+                        });
+                    } else {
+                        console.error(
+                            "No valid BTS WSS connections established; Please check your internet connection."
+                        );
+                        return reject();
+                    }
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
+        });
     }
 
-    
     /*
      * Check if the connection needs reestablished (placeholder replacement)
      * @returns {Boolean}
@@ -272,170 +308,216 @@ export default class EOS extends BlockchainAPI {
             ) {
                 return resolve(true);
             }
-    
-            let testConnection = await this._testConnection(this._isConnectedToNode);
-            let connectionResult = testConnection && testConnection.url ? false : true;
+
+            let testConnection = await this._testConnection(
+                this._isConnectedToNode
+            );
+            let connectionResult =
+                testConnection && testConnection.url ? false : true;
             return resolve(connectionResult);
         });
     }
 
     /**
      * Verify the private key for an EOS blockchain L1 account
-     * @param {string} accountName 
-     * @param {string} privateKey 
+     * @param {string} accountName
+     * @param {string} privateKey
      * @param {string} chain // EOS, TLOS, BEOS
      */
     async verifyAccount(accountName, privateKey, chain = "EOS") {
-
         let fetchedAccount;
         try {
             fetchedAccount = await this.getAccount(accountName);
             // Keys must resolve to one of these types of permissions
-          } catch (err) {
+        } catch (err) {
             console.log(err);
             return;
-          }
+        }
 
-          if (!fetchedAccount) {
+        if (!fetchedAccount) {
             console.log("Account not found");
             return;
-          }
+        }
 
-          let publicKey;
-          try {
+        let publicKey;
+        try {
             // Derive the public key from the private key provided
             publicKey = ecc.privateToPublic(privateKey, chain);
-          } catch (err) {
+        } catch (err) {
             // key is likely invalid, an exception was thrown
-            console.log(err)
+            console.log(err);
             return;
-          }
+        }
 
-          if (!publicKey) {
+        if (!publicKey) {
             console.log("Public key not found");
             return;
-          }
+        }
 
-          const validPermissions = fetchedAccount.permissions.filter((perm) => {
+        const validPermissions = fetchedAccount.permissions.filter((perm) => {
             // Get the threshold a key needs to perform operations
             const { threshold } = perm.required_auth;
             // finally determine if any keys match
-            const matches = perm.required_auth.keys.filter((auth) =>
-              (auth.key === publicKey) && (auth.weight >= threshold));
+            const matches = perm.required_auth.keys.filter(
+                (auth) => auth.key === publicKey && auth.weight >= threshold
+            );
             // this is a valid permission should any of the keys and thresholds match
-            return (matches.length > 0);
-          });
+            return matches.length > 0;
+        });
 
-          if (validPermissions.length > 0) {
+        if (validPermissions.length > 0) {
             console.log("Key is valid");
             return {
-              fetchedAccount,
-              publicKey,
-            }
-          }
+                fetchedAccount,
+                publicKey,
+            };
+        }
     }
 
     getAccount(accountname) {
         return new Promise((resolve, reject) => {
-            this._establishConnection().then((result) => {
-                this.rpc.get_account(accountname).then((account) => {
-                    account.active = {}
-                    account.owner = {}
-                    account.active.public_keys = account.permissions.find(
-                        res => { return res.perm_name == "active" }).required_auth.keys.map(item => [item.key, item.weight]);
-                    account.owner.public_keys = account.permissions.find(
-                        res => { return res.perm_name == "owner" }).required_auth.keys.map(item => [item.key, item.weight]);
-                    account.memo = {public_key: account.active.public_keys[0][0]};
-                    account.id = account.account_name;
-                    resolve(account);
-                }).catch((error) => {
+            this._establishConnection()
+                .then((result) => {
+                    this.rpc
+                        .get_account(accountname)
+                        .then((account) => {
+                            account.active = {};
+                            account.owner = {};
+                            account.active.public_keys = account.permissions
+                                .find((res) => {
+                                    return res.perm_name == "active";
+                                })
+                                .required_auth.keys.map((item) => [
+                                    item.key,
+                                    item.weight,
+                                ]);
+                            account.owner.public_keys = account.permissions
+                                .find((res) => {
+                                    return res.perm_name == "owner";
+                                })
+                                .required_auth.keys.map((item) => [
+                                    item.key,
+                                    item.weight,
+                                ]);
+                            account.memo = {
+                                public_key: account.active.public_keys[0][0],
+                            };
+                            account.id = account.account_name;
+                            resolve(account);
+                        })
+                        .catch((error) => {
+                            console.error(error);
+                            reject(error);
+                        });
+                })
+                .catch((error) => {
                     console.error(error);
                     reject(error);
                 });
-            }).catch((error) => {
-                console.error(error);
-                reject(error);
-            });
         });
     }
 
-    getPublicKey(privateKey) { // convertLegacyPublicKey
+    getPublicKey(privateKey) {
+        // convertLegacyPublicKey
         return ecc.PrivateKey.fromString(privateKey).toPublic().toString();
     }
 
-    getTableRows(contract = "eosio.token", accountname, table = "accounts", limit = 100) {
+    getTableRows(
+        contract = "eosio.token",
+        accountname,
+        table = "accounts",
+        limit = 100
+    ) {
         return new Promise((resolve, reject) => {
-            this.rpc.get_table_rows({
-                json: true,
-                code: contract,
-                scope: accountname,
-                table: table,
-                limit: limit
-            }).then(result => {
-                if (result && result.rows) {
-                    resolve(result.rows);
-                }
-                reject();
-            }).catch(reject);
+            this.rpc
+                .get_table_rows({
+                    json: true,
+                    code: contract,
+                    scope: accountname,
+                    table: table,
+                    limit: limit,
+                })
+                .then((result) => {
+                    if (result && result.rows) {
+                        resolve(result.rows);
+                    }
+                    reject();
+                })
+                .catch(reject);
         });
     }
 
     getBalances(accountName) {
         return new Promise((resolve, reject) => {
             let balances = [];
-            this.getAccount(accountName).then((account) => {
-                balances.push({
-                    asset_type: "Core",
-                    asset_name: this._getCoreSymbol(),
-                    balance: parseFloat(account.core_liquid_balance),
-                    owner: "-",
-                    prefix: ""
-                });
-                balances.push({
-                    asset_type: "UIA",
-                    asset_name: "CPU Stake",
-                    balance: parseFloat(account.cpu_weight),
-                    owner: "-",
-                    prefix: ""
-                });
-                balances.push({
-                    asset_type: "UIA",
-                    asset_name: "Bandwith Stake",
-                    balance: parseFloat(account.net_weight),
-                    owner: "-",
-                    prefix: ""
-                });
-                balances.push({
-                    asset_type: "UIA",
-                    asset_name: `RAM Stake (-${account.ram_usage} bytes)`,
-                    balance : parseFloat(account.ram_quota),
-                    owner: "-",
-                    prefix: ""
-                });
-            }).then(() => {
-                // Call getTableRows after getting the account information
-                this.getTableRows("eosio.token", accountName, "accounts", 100).then((tableRows) => {
-                    // Merge the results
-                    tableRows.forEach((row) => {
-                        if (!balances.some((balance) => balance.asset_name === row.balance.split(" ")[1])) {
-                            balances.push({
-                                asset_type: "UIA",
-                                asset_name: row.balance.split(" ")[1], // replace 'key' with the actual property name
-                                balance: parseFloat(row.balance.split(" ")[0]), // replace 'value' with the actual property name
-                                owner: "-",
-                                prefix: ""
-                            });
-                        }
+            this.getAccount(accountName)
+                .then((account) => {
+                    balances.push({
+                        asset_type: "Core",
+                        asset_name: this._getCoreSymbol(),
+                        balance: parseFloat(account.core_liquid_balance),
+                        owner: "-",
+                        prefix: "",
+                    });
+                    balances.push({
+                        asset_type: "UIA",
+                        asset_name: "CPU Stake",
+                        balance: parseFloat(account.cpu_weight),
+                        owner: "-",
+                        prefix: "",
+                    });
+                    balances.push({
+                        asset_type: "UIA",
+                        asset_name: "Bandwith Stake",
+                        balance: parseFloat(account.net_weight),
+                        owner: "-",
+                        prefix: "",
+                    });
+                    balances.push({
+                        asset_type: "UIA",
+                        asset_name: `RAM Stake (-${account.ram_usage} bytes)`,
+                        balance: parseFloat(account.ram_quota),
+                        owner: "-",
+                        prefix: "",
                     });
                 })
-            })
-            .then(() => {
-                return resolve(balances);
-            })
-            .catch((error) => {
-                console.log({error});
-                reject();
-            });
+                .then(() => {
+                    // Call getTableRows after getting the account information
+                    this.getTableRows(
+                        "eosio.token",
+                        accountName,
+                        "accounts",
+                        100
+                    ).then((tableRows) => {
+                        // Merge the results
+                        tableRows.forEach((row) => {
+                            if (
+                                !balances.some(
+                                    (balance) =>
+                                        balance.asset_name ===
+                                        row.balance.split(" ")[1]
+                                )
+                            ) {
+                                balances.push({
+                                    asset_type: "UIA",
+                                    asset_name: row.balance.split(" ")[1], // replace 'key' with the actual property name
+                                    balance: parseFloat(
+                                        row.balance.split(" ")[0]
+                                    ), // replace 'value' with the actual property name
+                                    owner: "-",
+                                    prefix: "",
+                                });
+                            }
+                        });
+                    });
+                })
+                .then(() => {
+                    return resolve(balances);
+                })
+                .catch((error) => {
+                    console.log({ error });
+                    reject();
+                });
         });
     }
 
@@ -462,7 +544,7 @@ export default class EOS extends BlockchainAPI {
     supportsWeb() {
         return true;
     }
-    
+
     /**
      * Placeholder for local file processing
      * @returns Boolean
@@ -481,30 +563,32 @@ export default class EOS extends BlockchainAPI {
     broadcast(transaction) {
         return new Promise((resolve, reject) => {
             if (!this.rpc) {
-                this.rpc = new JsonRpc(this.getNodes()[0].url, {fetch});
+                this.rpc = new JsonRpc(this.getNodes()[0].url, { fetch });
             }
 
             const api = new Api({
                 rpc: this.rpc,
                 signatureProvider: transaction.signatureProvider,
                 textDecoder: new TextDecoder(),
-                textEncoder: new TextEncoder()
+                textEncoder: new TextEncoder(),
             });
 
             api.transact(
                 {
-                    actions: transaction.actions
+                    actions: transaction.actions,
                 },
                 {
                     blocksBehind: 3,
-                    expireSeconds: 30
+                    expireSeconds: 30,
                 }
-            ).then((result) => {
-                resolve(result);
-            }).catch((error) => {
-                console.log({error});
-                reject();
-            });
+            )
+                .then((result) => {
+                    resolve(result);
+                })
+                .catch((error) => {
+                    console.log({ error });
+                    reject();
+                });
         });
     }
 
@@ -551,24 +635,23 @@ export default class EOS extends BlockchainAPI {
         return [
             {
                 type: "ImportKeys",
-                translate_key: "import_keys"
-            }
+                translate_key: "import_keys",
+            },
         ];
     }
 
     /**
      * Processing and localizing operations in the transaction
-     * @param {Object[]} trx 
-     * @returns 
+     * @param {Object[]} trx
+     * @returns
      */
     async visualize(trx) {
-        const _trx = JSON.parse(trx[1]);
+        const _trx = typeof trx[1] === "string" ? JSON.parse(trx[1]) : trx[1];
+        console.log({ trx, _trx, actions: _trx.actions[0] });
         let beautifiedOpPromises = [];
         for (let i = 0; i < _trx.actions.length; i++) {
             let operation = _trx.actions[i];
-            beautifiedOpPromises.push(
-                beautify(operation)
-            );
+            beautifiedOpPromises.push(beautify(operation));
         }
 
         return Promise.all(beautifiedOpPromises)
@@ -589,5 +672,4 @@ export default class EOS extends BlockchainAPI {
                 console.log(error);
             });
     }
-
 }
