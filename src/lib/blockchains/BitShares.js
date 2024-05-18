@@ -737,10 +737,6 @@ export default class BitShares extends BlockchainAPI {
     getImportOptions() {
         return [
             {
-                type: "ImportKeys",
-                translate_key: "import_keys",
-            },
-            {
                 type: "bitshares/ImportBinFile",
                 translate_key: "import_bin",
             },
@@ -1226,12 +1222,12 @@ export default class BitShares extends BlockchainAPI {
         let parsedTransaction;
         try {
             parsedTransaction = await this._parseTransactionBuilder([
-                'signAndBroadcast',
+                "signAndBroadcast",
                 contents,
-                []
+                [],
             ]);
         } catch (error) {
-            console.log({error, location: "handleQR"});
+            console.log({ error, location: "handleQR" });
         }
 
         return parsedTransaction;
@@ -1274,7 +1270,7 @@ export default class BitShares extends BlockchainAPI {
      * @param {Class||Object} incoming
      * @returns {Class} TransactionBuilder
      */
-    async _parseTransactionBuilder(incoming) {       
+    async _parseTransactionBuilder(incoming) {
         if (incoming instanceof TransactionBuilder) {
             return incoming;
         } else if (
@@ -1315,7 +1311,7 @@ export default class BitShares extends BlockchainAPI {
                     try {
                         tr = await this._parseTransactionBuilder(operation);
                     } catch (error) {
-                        console.log({error, location: "sign"});
+                        console.log({ error, location: "sign" });
                     }
                     Promise.all([
                         tr.set_required_fees(),
@@ -1359,7 +1355,7 @@ export default class BitShares extends BlockchainAPI {
                     try {
                         tr = await this._parseTransactionBuilder(transaction);
                     } catch (error) {
-                        console.log({error, location: "broadcast"});
+                        console.log({ error, location: "broadcast" });
                     }
 
                     if (!tr) {
@@ -1536,7 +1532,9 @@ export default class BitShares extends BlockchainAPI {
      */
     getExplorer(object, chain) {
         if (object.accountName) {
-            return `https://blocksights.info/#/accounts/${object.accountName}${chain && chain === "BTS_TEST" ? `?network=testnet` : ``}`;
+            return `https://blocksights.info/#/accounts/${object.accountName}${
+                chain && chain === "BTS_TEST" ? `?network=testnet` : ``
+            }`;
         } else if (object.opid) {
             // 1.11.833380474
             return "https://blocksights.info/#/operations/" + object.opid;
