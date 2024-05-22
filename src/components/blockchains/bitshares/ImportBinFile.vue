@@ -57,6 +57,7 @@
         if (pickedAccounts && pickedAccounts.length) {
             console.log('importing accounts');
             emit('imported', pickedAccounts);
+            emit('continue');
         }
     }
 
@@ -69,11 +70,11 @@
                     methods: ["decryptBackup"],
                     location: 'importBinFile',
                     chain: props.chain,
-                    filePath: wallet_file.value,
+                    filePath: wallet_file.value.path,
                     pass: bin_file_password.value
                 });
             } catch (error) {
-                console.log(error);
+                console.log({error});
                 inProgress.value = false;
                 window.electron.notify(t("common.error_text"));
                 return;
@@ -84,6 +85,7 @@
                 substep1.value = false;
                 substep2.value = true;
             }
+
             inProgress.value = false;
         } else {
             _getPickedAccounts();

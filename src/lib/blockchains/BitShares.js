@@ -820,6 +820,89 @@ export default class BitShares extends BlockchainAPI {
         return fastestPromise;
     }
 
+    /**
+     * Format account details for use in account lookup
+     */
+    _buildMatrix(account_data, public_key_auths, keypairs) {
+        const getAccountDetails = (account, type) => {
+            let details = {
+                availWeight: 0,
+                canPropose: false,
+                canTransact: false
+            };
+            for (let auth of account[type].key_auths) {
+                if (public_key_auths.includes(auth[0])) {
+                    details.canPropose = true;
+                    details.availWeight += auth[1];
+                    if (auth[1] >= account[type].weight_threshold) {
+                        details.key = keypairs.find(x => x.pub == auth[0]).priv;
+                        details.canTransact = true;
+                    }
+                }
+            }
+            return details;
+        }
+    
+        return account_data.map(account => {
+            let account_details = {
+                id: account.id,
+                name: account.name
+            };
+            account_details.active = getAccountDetails(account, 'active');
+            account_details.owner = getAccountDetails(account, 'owner');
+            account_details.importable = account_details.active.canTransact || account_details.owner.canTransact;
+            let memo = {
+                canSend: false
+            };
+            if (public_key_auths.includes(account.options.memo_key)) {
+                memo.key = keypairs.find(x => x.pub == account.options.memo_key).priv;
+                memo.canSend = true;
+            }
+            account_details.memo = memo;
+            return account_details;
+        });
+    }
+
+    /**
+     * Used for BTS bin file import verification
+     */
+    async lookupAccounts(public_key_auths, keyPairs) {
+        try {
+            await this.ensureConnection();
+
+            let account_ids = await Apis.instance()
+                .db_api()
+                .exec("get_key_references", [public_key_auths]);
+
+            let accounts = new Set(account_ids.flat());
+
+            let refs = Array.from(accounts).map(account =>
+                Apis.instance()
+                    .db_api()
+                    .exec("get_account_references", [account])
+                    .then(res => {
+                        if (res.length > 0) {
+                            res.forEach(ref => accounts.add(ref));
+                        }
+                    })
+            );
+
+            await Promise.all(refs);
+
+            let finalAccounts = Array.from(accounts);
+
+            let account_matrix = await Apis.instance()
+                .db_api()
+                .exec("get_accounts", [finalAccounts])
+                .then(res => this._buildMatrix(res, public_key_auths, keyPairs));
+
+            return account_matrix;
+        } catch (error) {
+            console.log(error);
+            throw error;
+        }
+    }
+
     /*
      * Get the associated Bitshares account name from the provided account ID
      * @param {String} accountId

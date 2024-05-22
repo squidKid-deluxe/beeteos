@@ -46,6 +46,24 @@ const logger = new Logger(isDevMode ? 3 : 0);
 let tray = null;
 let regexBTS = /1.2.\d+/g;
 
+
+async function _readFile(filePath) {
+    return new Promise((resolve, reject) => {
+        if (!filePath || !filePath.includes(".bin")) {
+            return reject("Invalid file path");
+        }
+
+        fs.readFile(filePath, async (err, data) => {
+            if (err) {
+                console.log({ err });
+                return reject(err);
+            } else {
+                return resolve(data);
+            }
+        });
+    });
+}
+
 /*
  * On modal popup this runs to create child browser window
  */
@@ -874,6 +892,7 @@ const createWindow = async () => {
 
         if (methods.includes("localFileUpload")) {
             const { allowedOperations, filePath } = arg;
+
             fs.readFile(filePath, "utf-8", async (error, data) => {
                 if (!error) {
                     let apiobj;
@@ -1060,38 +1079,45 @@ const createWindow = async () => {
                 }
             }
         }
-
+        
         if (methods.includes("decryptBackup")) {
             const { filePath, pass } = arg;
-            fs.readFile(filePath, async (err, data) => {
-                if (err) {
-                    console.log({ err });
-                } else {
-                    let wh = new BTSWalletHandler(data);
-                    let unlocked;
+
+            let _data;
+            try {
+                _data = await _readFile(filePath);
+            } catch (error) {
+                console.log({ error });
+            }
+
+            if (_data) {
+                let wh = new BTSWalletHandler(_data);
+
+                let unlocked;
+                try {
+                    unlocked = await wh.unlock(pass);
+                } catch (error) {
+                    console.log({ error });
+                }
+                
+                if (unlocked) {
+                    let retrievedAccounts;
                     try {
-                        unlocked = await wh.unlock(pass);
+                        retrievedAccounts = await blockchain.lookupAccounts(
+                            wh.public,
+                            wh.keypairs
+                        );
                     } catch (error) {
                         console.log({ error });
-                        return;
                     }
-
-                    if (unlocked) {
-                        let retrievedAccounts;
-                        try {
-                            retrievedAccounts = await wh.lookupAccounts(
-                                mainWindow.webContents
-                            );
-                        } catch (error) {
-                            console.log({ error });
-                        }
-
-                        if (retrievedAccounts) {
-                            responses["decryptBackup"] = retrievedAccounts;
-                        }
+    
+                    if (retrievedAccounts) {
+                        responses["decryptBackup"] = retrievedAccounts;
                     }
                 }
-            });
+                
+                wh = null;
+            }
         }
 
         return responses;
