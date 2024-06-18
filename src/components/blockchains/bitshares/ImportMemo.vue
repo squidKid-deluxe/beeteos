@@ -76,7 +76,7 @@
         emit('imported', [{
             account: {
                 accountName: accountname.value,
-                accountID: blockchainRequest.verifyAccount.id,
+                accountID: blockchainRequest.verifyAccount.account.id,
                 chain: props.chain,
                 keys: blockchainRequest.verifyAccount.authorities
             }
