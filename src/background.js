@@ -46,7 +46,6 @@ const logger = new Logger(isDevMode ? 3 : 0);
 let tray = null;
 let regexBTS = /1.2.\d+/g;
 
-
 async function _readFile(filePath) {
     return new Promise((resolve, reject) => {
         if (!filePath || !filePath.includes(".bin")) {
@@ -618,6 +617,8 @@ const createWindow = async () => {
     ipcMain.handle("blockchainRequest", async (event, arg) => {
         const { methods, account, chain } = arg;
 
+        console.log({ methods, account, chain });
+
         let blockchain;
         try {
             blockchain = await getBlockchainAPI(chain);
@@ -864,7 +865,7 @@ const createWindow = async () => {
                     allowedOperations
                 );
             } catch (error) {
-                console.log(error);
+                console.log({ error, location: "_parseDeeplink" });
             }
 
             if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
@@ -922,6 +923,8 @@ const createWindow = async () => {
                         } catch (error) {
                             console.log({ error: error || "No status" });
                         }
+
+                        console.log({ status });
 
                         if (
                             status &&
@@ -1079,7 +1082,7 @@ const createWindow = async () => {
                 }
             }
         }
-        
+
         if (methods.includes("decryptBackup")) {
             const { filePath, pass } = arg;
 
@@ -1099,7 +1102,7 @@ const createWindow = async () => {
                 } catch (error) {
                     console.log({ error });
                 }
-                
+
                 if (unlocked) {
                     let retrievedAccounts;
                     try {
@@ -1110,12 +1113,12 @@ const createWindow = async () => {
                     } catch (error) {
                         console.log({ error });
                     }
-    
+
                     if (retrievedAccounts) {
                         responses["decryptBackup"] = retrievedAccounts;
                     }
                 }
-                
+
                 wh = null;
             }
         }
