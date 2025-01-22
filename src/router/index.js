@@ -16,6 +16,7 @@ import Popups from "../components/popups.vue";
 import Receipt from "../components/receipt.vue";
 import Local from "../components/local.vue";
 import Settings from "../components/settings.vue";
+import Nodes from "../components/nodes.vue";
 
 const router = createRouter({
   routes: [{
@@ -106,6 +107,13 @@ const router = createRouter({
         path: '/settings',
         components: {
             default: Settings,
+            header: HeaderSmall
+        }
+    },
+    {
+        path: '/nodes',
+        components: {
+            default: Nodes,
             header: HeaderSmall
         }
     },

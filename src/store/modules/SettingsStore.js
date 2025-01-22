@@ -1,6 +1,5 @@
-import {
-    defaultLocale
-} from '../../config/i18n.js'
+import { defaultLocale } from '../../config/i18n.js'
+import {blockchains} from '../../config/config.js';
 import BeetDB from '../../lib/BeetDB.js';
 
 const LOAD_SETTINGS = 'LOAD_SETTINGS';
@@ -55,6 +54,19 @@ const actions = {
                 } catch (error) {
                   console.log(`setNode: ${error}`)
                 }
+
+                let chainNodeList = settings.chainNodes[payload.chain];
+                if (chainNodeList && chainNodeList.length > payload.node) {
+                    let node = chainNodeList.splice(payload.node, 1)[0];
+                    chainNodeList.unshift(node);
+                }
+                
+                try {
+                    settings.chainNodes[payload.chain] = chainNodeList;
+                } catch (error) {
+                    console.log(`setNodeList: ${error}`)
+                }
+
                 BeetDB.settings.put({id: 'settings', value: JSON.stringify(settings)}).then(() => {
                     commit(LOAD_SETTINGS, settings);
                     resolve();
@@ -135,6 +147,12 @@ const getters = {
             return [];
         }
         return state.settings.chainPermissions[chain];
+    },
+    getNodes: (state) => (chain) => {
+        if (!state.settings.hasOwnProperty('chainNodes')) {
+            return initialState.settings.chainNodes[chain];
+        }
+        return state.settings.chainNodes[chain];
     }
 };
 
@@ -147,9 +165,14 @@ const initialState = {
             BTS_TEST: [],
             EOS: [],
             BEOS: [],
-            TLOS: [],
-            BTC: [],
-            BTC_TEST: []
+            TLOS: []
+        },
+        chainNodes: {
+            BTS: blockchains.BTS.nodeList,
+            BTS_TEST: blockchains.BTS_TEST.nodeList,
+            EOS: blockchains.EOS.nodeList,
+            BEOS: blockchains.BEOS.nodeList,
+            TLOS: blockchains.TLOS.nodeList
         }
     }
 };

@@ -10,76 +10,82 @@ let open = ref(false);
 let lastIndex = ref(0);
 const { t } = useI18n({ useScope: "global" });
 
-let items = computed(() => {
-    return [
-        {
-            text: t("common.actionBar.Home"),
-            index: 0,
-            icon: "home",
-            url: "/dashboard",
-        },
-        {
-            text: t("common.actionBar.New"),
-            index: 1,
-            icon: "add",
-            url: "/add-account",
-        },
-        {
-            text: t("common.actionBar.WWW"),
-            index: 2,
-            icon: "web",
-            url: "/www",
-        },
-        {
-            text: t("common.actionBar.TOTP"),
-            index: 3,
-            icon: "generating_tokens",
-            url: "/totp",
-        },
-        {
-            text: t("common.actionBar.Local"),
-            index: 4,
-            icon: "upload",
-            url: "/local",
-        },
-        {
-            text: t("common.actionBar.RAW"),
-            index: 5,
-            icon: "raw_on",
-            url: "/raw-link",
-        },
-        {
-            text: t("common.actionBar.QR"),
-            index: 6,
-            icon: "qr_code_2",
-            url: "/qr",
-        },
-        {
-            text: t("common.actionBar.dapps"),
-            index: 7,
-            icon: "app_registration",
-            url: "/dapps",
-        },
-        {
-            text: t("common.actionBar.Backup"),
-            index: 8,
-            icon: "download",
-            url: "/backup",
-        },
-        {
-            text: t("common.actionBar.Settings"),
-            index: 9,
-            icon: "settings",
-            url: "/settings",
-        },
-        {
-            text: t("common.actionBar.Logout"),
-            index: 10,
-            icon: "logout",
-            url: "/",
-        },
-    ];
-});
+    let items = computed(() => {
+        return [
+            {
+                text: t("common.actionBar.Home"),
+                index: 0,
+                icon: "home",
+                url: "/dashboard"
+            },
+            {
+                text: t("common.actionBar.New"),
+                index: 1,
+                icon: "add",
+                url: "/add-account"
+            },
+            {
+                text: t("common.actionBar.WWW"),
+                index: 2,
+                icon: "web",
+                url: "/www"
+            },
+            {
+                text: t("common.actionBar.TOTP"),
+                index: 3,
+                icon: "generating_tokens",
+                url: "/totp"
+            },
+            {
+                text: t("common.actionBar.Local"),
+                index: 4,
+                icon: "upload",
+                url: "/local"
+            },
+            {
+                text: t("common.actionBar.RAW"),
+                index: 5,
+                icon: "raw_on",
+                url: "/raw-link"
+            },
+            {
+                text: t("common.actionBar.QR"),
+                index: 6,
+                icon: "qr_code_2",
+                url: "/qr"
+            },
+            {
+                text: t("common.actionBar.dapps"),
+                index: 7,
+                icon: "app_registration",
+                url: "/dapps"
+            },
+            {
+                text: t("common.actionBar.Backup"),
+                index: 8,
+                icon: "download",
+                url: "/backup"
+            },
+            {
+                text: t("common.actionBar.Settings"),
+                index: 9,
+                icon: "settings",
+                url: "/settings"
+            },
+            {
+                text: t("common.actionBar.changeNodes"),
+                index: 10,
+                icon: "lan",
+                url: "/nodes"
+            },
+            {
+                text: t("common.actionBar.Logout"),
+                index: 11,
+                icon: "logout",
+                url: "/"
+            }
+        ]
+    });
 
 function onChange(data) {
     const newIndex = data.index;
@@ -93,7 +99,7 @@ function onChange(data) {
     }
     lastIndex.value = newIndex;
 
-    if (data.index === 10) {
+    if (data.index === 11) {
         console.log("User logged out.");
         store.dispatch("WalletStore/logout");
         router.replace("/");

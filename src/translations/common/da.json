@@ -9,6 +9,10 @@
       "connecting": "Tilslutning til blockchain",
       "error": "Kunne ikke oprette forbindelse til blockchain"
     },
+    "nodes": {
+        "prompt": "Vælg en node at oprette forbindelse til",
+        "exit": "Afslut nodevalg"
+    },
     "settings": {
         "exit": "Tilbage til instrumentbræt",
         "deleted": "Kontoen er blevet slettet fra din tegnebog.",
@@ -143,6 +147,7 @@
       "RAW": "Rå link",
       "QR": "QR",
       "Settings": "Indstillinger",
+      "changeNodes": "Skift node",
       "Backup": "Backup",
       "dapps": "DAAP'er",
       "Logout": "Log ud"
