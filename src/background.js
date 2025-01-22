@@ -1,6 +1,8 @@
 import path from "path";
 import url from "url";
 import fs from "fs";
+import fsPromises from "fs/promises";
+
 import os from "os";
 
 import queryString from "query-string";
@@ -893,52 +895,51 @@ const createWindow = async () => {
 
         if (methods.includes("localFileUpload")) {
             const { allowedOperations, filePath } = arg;
+            try {
+                const data = await fsPromises.readFile(filePath, "utf-8");
 
-            fs.readFile(filePath, "utf-8", async (error, data) => {
-                if (!error) {
-                    let apiobj;
+                let apiobj;
+                try {
+                    apiobj = await _parseDeeplink(
+                        data,
+                        "local",
+                        chain,
+                        blockchain,
+                        blockchainActions,
+                        allowedOperations,
+                        null, // avoid TOTP
+                        true // changes request parsing
+                    );
+                } catch (error) {
+                    console.log(error);
+                }
+
+                if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
+                    let status;
                     try {
-                        apiobj = await _parseDeeplink(
-                            data,
-                            "local",
-                            chain,
+                        status = await inject(
                             blockchain,
-                            blockchainActions,
-                            allowedOperations,
-                            null, // avoid TOTP
-                            true // changes request parsing
+                            apiobj,
+                            mainWindow.webContents
                         );
                     } catch (error) {
-                        console.log(error);
+                        console.log({ error: error || "No status" });
                     }
 
-                    if (apiobj && apiobj.type === Actions.INJECTED_CALL) {
-                        let status;
-                        try {
-                            status = await inject(
-                                blockchain,
-                                apiobj,
-                                mainWindow.webContents
-                            );
-                        } catch (error) {
-                            console.log({ error: error || "No status" });
-                        }
+                    console.log({ status });
 
-                        console.log({ status });
-
-                        if (
-                            status &&
-                            status.result &&
-                            !status.result.isError &&
-                            !status.result.canceled
-                        ) {
-                            responses["localFileUpload"] = status.result;
-                        }
+                    if (
+                        status &&
+                        status.result &&
+                        !status.result.isError &&
+                        !status.result.canceled
+                    ) {
+                        responses["localFileUpload"] = status.result;
                     }
-                } else {
-                    console.log({ error });
                 }
-            });
+            } catch (error) {
+                console.log({ error });
+            }
         }
 
         if (methods.includes("processQR")) {

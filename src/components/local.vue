@@ -56,8 +56,20 @@ onMounted(async () => {
             console.log({ error });
             inProgress.value = false;
             window.electron.notify(t("common.local.promptFailure"));
+            console.log("BlockchainRequest failure");
             return;
         }
+
+        /*
+        console.log({
+            blockchainResponse,
+            input: {
+                methods: ["supportsLocal", "getOperationTypes"],
+                chain: chain.value,
+                location: "local",
+            },
+        });
+        */
 
         if (!blockchainResponse) {
             console.log("No blockchain response");
@@ -118,8 +130,8 @@ async function onFileUpload(a) {
     }
 
     if (!blockchainResponse || !blockchainResponse.localFileUpload) {
-        console.log("No blockchain response");
         console.log({
+            msg: "No blockchain response",
             blockchainResponse,
             request: {
                 methods: ["localFileUpload"],
