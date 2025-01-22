@@ -9,6 +9,10 @@
     "connecting": "Verbindung zur Blockchain herstellen",
     "error": "Es konnte keine Verbindung zur Blockchain hergestellt werden"
   },
+  "nodes": {
+    "prompt": "Wählen Sie einen Knoten aus, mit dem Sie eine Verbindung herstellen möchten",
+    "exit": "Knotenauswahl beenden"
+  },
   "settings": {
     "exit": "Zurück zum Dashboard",
     "deleted": "Das Konto wurde erfolgreich aus Ihrem Wallet gelöscht.",
@@ -143,6 +147,7 @@
     "RAW": "Roher Link",
     "QR": "QR",
     "Settings": "Einstellungen",
+    "changeNodes": "Knoten ändern",
     "Backup": "Sicherung",
     "dapps": "DAAPs",
     "Logout": "Ausloggen"

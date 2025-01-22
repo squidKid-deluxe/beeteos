@@ -9,6 +9,10 @@
     "connecting": "Conectando ao blockchain",
     "error": "Não foi possível conectar-se ao blockchain"
   },
+  "nodes": {
+    "prompt": "Selecione um nó para conectar",
+    "exit": "Sair da seleção de nó"
+  },
   "settings": {
     "exit": "Retornar ao painel",
     "deleted": "Conta excluída da sua carteira com sucesso.",
@@ -143,6 +147,7 @@
     "RAW": "Link Bruto",
     "QR": "QR",
     "Settings": "Configurações",
+    "changeNodes": "Alterar nó",
     "Backup": "Cópia de segurança",
     "dapps": "DAAP",
     "Logout": "Sair"
