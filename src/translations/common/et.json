@@ -9,6 +9,10 @@
       "connecting": "Ühenduse loomine plokiahelaga",
       "error": "Plokiahelaga ei saanud ühendust luua"
     },
+    "nodes": {
+        "prompt": "Valige sõlm, millega ühenduse luua",
+        "exit": "Välju sõlme valikust"
+    },
     "settings": {
         "exit": "Naaske armatuurlauale",
         "deleted": "Konto kustutati teie rahakotist edukalt.",
@@ -143,6 +147,7 @@
       "RAW": "Toores link",
       "QR": "QR",
       "Settings": "Seaded",
+      "changeNodes": "Muuda sõlme",
       "Backup": "Varundamine",
       "dapps": "DAAP-id",
       "Logout": "Logi välja"

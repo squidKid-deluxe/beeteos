@@ -9,6 +9,10 @@
         "connecting": "Connecting to blockchain",
         "error": "Couldn't to connect to blockchain"
     },
+    "nodes": {
+        "prompt": "Select a node to connect to",
+        "exit": "Exit node selection"
+    },
     "settings": {
         "exit": "Return to dashboard",
         "deleted": "Successfully deleted account from your wallet.",
@@ -143,6 +147,7 @@
         "RAW": "Raw Link",
         "QR": "QR",
         "Settings": "Settings",
+        "changeNodes": "Change node",
         "Backup": "Backup",
         "dapps": "DAAPs",
         "Logout": "Logout"

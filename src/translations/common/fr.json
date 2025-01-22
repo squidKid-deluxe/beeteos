@@ -9,6 +9,10 @@
     "connecting": "Connexion à la blockchain",
     "error": "Impossible de se connecter à la blockchain"
   },
+  "nodes": {
+    "prompt": "Sélectionnez un nœud auquel vous connecter",
+    "exit": "Quitter la sélection du nœud"
+  },
   "settings": {
     "exit": "Retour au tableau de bord",
     "deleted": "Compte supprimé avec succès de votre portefeuille.",
@@ -143,6 +147,7 @@
     "RAW": "Lien brut",
     "QR": "QR",
     "Settings": "Paramètres",
+    "changeNodes": "Changer de nœud",
     "Backup": "Sauvegarde",
     "dapps": "DAAP",
     "Logout": "Se déconnecter"

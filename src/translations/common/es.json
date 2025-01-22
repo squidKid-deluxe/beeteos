@@ -9,6 +9,10 @@
     "connecting": "Conexión a la cadena de bloques",
     "error": "No se pudo conectar a blockchain"
   },
+  "nodes": {
+    "prompt": "Seleccione un nodo al que conectarse",
+    "exit": "Salir de la selección de nodos"
+  },
   "settings": {
     "exit": "Volver al panel",
     "deleted": "Cuenta eliminada exitosamente de su billetera.",
@@ -143,6 +147,7 @@
     "RAW": "Enlace sin procesar",
     "QR": "código QR",
     "Settings": "Ajustes",
+    "changeNodes": "Cambiar nodo",
     "Backup": "Respaldo",
     "dapps": "DAAP",
     "Logout": "Cerrar sesión"

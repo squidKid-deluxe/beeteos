@@ -5,7 +5,6 @@ import * as Actions from '../Actions.js';
 export default class BlockchainAPI {
 
     constructor(config, initNode) {
-        this._tempBanned = [];
         this._config = config;
         this._node = initNode;
         this._isConnected = false;
@@ -86,7 +85,6 @@ export default class BlockchainAPI {
      */
     _connectionFailed(resolveCallback, node, error) {
         console.log(this._config.name + " Failed to connect to " + node, error);
-        this._tempBanned.push(node);
         this._isConnected = false;
         this._isConnectingInProgress = false;
         if (resolveCallback != null) {

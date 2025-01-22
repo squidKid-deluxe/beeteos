@@ -9,6 +9,10 @@
     "connecting": "블록체인에 연결",
     "error": "블록체인에 연결할 수 없습니다."
   },
+  "nodes": {
+    "prompt": "연결할 노드 선택",
+    "exit": "노드 선택 종료"
+  },
   "settings": {
     "exit": "대시보드로 돌아가기",
     "deleted": "지갑에서 계정을 성공적으로 삭제했습니다.",
@@ -143,6 +147,7 @@
     "RAW": "원시 링크",
     "QR": "QR",
     "Settings": "설정",
+    "changeNodes": "노드 변경",
     "Backup": "지원",
     "dapps": "DAAP",
     "Logout": "로그 아웃"

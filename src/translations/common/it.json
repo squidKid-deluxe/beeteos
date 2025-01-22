@@ -9,6 +9,10 @@
     "connecting": "Connessione alla blockchain",
     "error": "Impossibile connettersi alla blockchain"
   },
+  "nodes": {
+    "prompt": "Seleziona un nodo a cui connetterti",
+    "exit": "Esci dalla selezione del nodo"
+  },
   "settings": {
     "exit": "Ritorna alla dashboard",
     "deleted": "Account eliminato dal tuo portafoglio con successo.",
@@ -143,6 +147,7 @@
     "RAW": "Collegamento grezzo",
     "QR": "QR",
     "Settings": "Impostazioni",
+    "changeNodes": "Cambia nodo",
     "Backup": "Backup",
     "dapps": "DAAP",
     "Logout": "Disconnettersi"

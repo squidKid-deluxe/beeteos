@@ -86,7 +86,7 @@
                 <input
                     id="inputPassword"
                     v-model="walletpass"
-                    style="width:97%; margin-top: 5px;"
+                    style="width:97%;"
                     type="password"
                     class="form-control mb-4 px-3"
                     :placeholder=" t('common.password_placeholder')"

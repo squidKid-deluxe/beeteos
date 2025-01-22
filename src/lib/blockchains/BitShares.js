@@ -12,6 +12,8 @@ import * as Socket from "simple-websocket";
 
 import * as Actions from "../Actions.js";
 
+import store from "../../store/index.js";
+
 import beautify from "./bitshares/beautify.js";
 import { humanReadableFloat } from "../assetUtils.js";
 
@@ -669,64 +671,22 @@ export default class BitShares extends BlockchainAPI {
                 );
             }
 
-            let diff;
-            if (this._nodeCheckTime) {
-                let now = new Date();
-                let nowTS = now.getTime();
-                diff = Math.abs(
-                    Math.round((nowTS - this._nodeCheckTime) / 1000)
+            const userConfiguredNodes = store.getters['SettingsStore/getNodes'](this._config.coreSymbol);
+
+            if (!userConfiguredNodes || !userConfiguredNodes.length) {
+                return this._connectionFailed(
+                    reject,
+                    "",
+                    "No user-configured nodes"
                 );
             }
-
-            if (
-                !nodeToConnect &&
-                (!this._nodeLatencies || (diff && diff > 360))
-            ) {
-                // initializing the blockchain
-                return this._testNodes()
-                    .then((res) => {
-                        this._node = res.node;
-                        this._nodeLatencies = res.latencies;
-                        this._nodeCheckTime = res.timestamp;
-                        console.log(`Establishing connection to ${res.node}`);
-                        return this._establishConnection(
-                            res.node,
-                            resolve,
-                            reject
-                        );
-                    })
-                    .catch((error) => {
-                        console.log(error);
-                        return this._connectionFailed(
-                            reject,
-                            "",
-                            "Node test fail"
-                        );
-                    });
-            } else if (!nodeToConnect && this._nodeLatencies) {
-                // blockchain has previously been initialized
-                let filteredNodes = this._nodeLatencies.filter((item) => {
-                    if (!this._tempBanned.includes(item.url)) {
-                        return true;
-                    }
-                });
-
-                this._nodeLatencies = filteredNodes;
-                if (!filteredNodes || !filteredNodes.length) {
-                    return this._connectionFailed(
-                        reject,
-                        "",
-                        "No working nodes"
-                    );
-                }
-
-                this._node = filteredNodes[0].url;
-                return this._establishConnection(
-                    filteredNodes[0].url,
-                    resolve,
-                    reject
-                );
-            }
+    
+            this._node = userConfiguredNodes[0].url;
+            return this._establishConnection(
+                this._node,
+                resolve,
+                reject
+            );
         });
     }
 

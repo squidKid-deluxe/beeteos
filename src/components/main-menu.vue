@@ -73,8 +73,14 @@
                 url: "/settings"
             },
             {
-                text: t("common.actionBar.Logout"),
+                text: t("common.actionBar.changeNodes"),
                 index: 10,
+                icon: "lan",
+                url: "/nodes"
+            },
+            {
+                text: t("common.actionBar.Logout"),
+                index: 11,
                 icon: "logout",
                 url: "/"
             }
@@ -93,7 +99,7 @@
         }
         lastIndex.value = newIndex;
 
-        if (data.index === 10) {
+        if (data.index === 11) {
             console.log('User logged out.');
             store.dispatch("WalletStore/logout");
             router.replace("/");
