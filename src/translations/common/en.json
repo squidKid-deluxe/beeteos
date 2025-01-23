@@ -41,7 +41,7 @@
     "recovery": {
         "decryptError": "Account recovery error!",
         "invalidPassword": "Invalid recovered wallet password",
-        "duplicate": "A wallet with the same name already exists, aborting wallet restoration" 
+        "duplicate": "A wallet with the same name already exists, aborting wallet restoration"
     },
     "raw": {
         "label": "Raw deeplink page",
@@ -113,7 +113,7 @@
             "successPrompt": "Successfully scanned image for QR",
             "successBtn": "Scan another image",
             "prompt": "DROP YOUR IMAGE HERE"
-        }, 
+        },
         "upload": {
             "title": "Upload an image file to scan for QR codes",
             "detected": "QR detected in upload",
@@ -164,7 +164,8 @@
         "result": "View network result JSON",
         "details": "View details",
         "language": "Language",
-        "chainOperations": "Chain operations"
+        "chainOperations": "Chain operations",
+        "copy": "Copy to clipboard"
     },
     "abHome": "Home",
     "abNew": "New",

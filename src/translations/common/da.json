@@ -1,13 +1,13 @@
 {
     "addAccount": {
-      "none_selected": "Ingen konto valgt!"
+        "none_selected": "Ingen konto valgt!"
     },
     "balances": {
-      "refresh": "Opdater",
-      "reconnect": "Tilslut igen",
-      "empty": "Ingen saldi på konto",
-      "connecting": "Tilslutning til blockchain",
-      "error": "Kunne ikke oprette forbindelse til blockchain"
+        "refresh": "Opdater",
+        "reconnect": "Tilslut igen",
+        "empty": "Ingen saldi på konto",
+        "connecting": "Tilslutning til blockchain",
+        "error": "Kunne ikke oprette forbindelse til blockchain"
     },
     "nodes": {
         "prompt": "Vælg en node at oprette forbindelse til",
@@ -20,35 +20,35 @@
         "prompt": "Bekræft din adgangskode nedenfor for uigenkaldeligt at fjerne denne konto fra din tegnebog.",
         "button": "Slet konto",
         "insufficient": "Kan ikke slette den sidste konto i en tegnebog, beklager."
-      },
+    },
     "start": {
-      "wallet_name": "Tegnebogsnavn",
-      "invalid_password": "Et forsøg på at låse din tegnebog op med en ugyldig adgangskode."
+        "wallet_name": "Tegnebogsnavn",
+        "invalid_password": "Et forsøg på at låse din tegnebog op med en ugyldig adgangskode."
     },
     "apiUtils": {
-      "broadcast": "Transaktionen blev sendt.",
-      "sign": "Transaktionen er underskrevet.",
-      "signAndBroadcast": "Transaktionen blev underskrevet",
-      "inject": "Anmodning om at udføre en specifik blockchain-operation",
-      "vote": "Stemprompt",
-      "signNFT": "Anmodning om en NFT-signatur",
-      "signMessage": "Anmodning om underskrevet besked",
-      "transfer": "Token-overførselsanmodning",
-      "transferComplete": "Transaktionen \"overførsel\" blev sendt.",
-      "msgVerify": "Bekræftelse af besked",
-      "getAccount": "App, der anmoder om oplysninger om en af ​​dine konti."
+        "broadcast": "Transaktionen blev sendt.",
+        "sign": "Transaktionen er underskrevet.",
+        "signAndBroadcast": "Transaktionen blev underskrevet",
+        "inject": "Anmodning om at udføre en specifik blockchain-operation",
+        "vote": "Stemprompt",
+        "signNFT": "Anmodning om en NFT-signatur",
+        "signMessage": "Anmodning om underskrevet besked",
+        "transfer": "Token-overførselsanmodning",
+        "transferComplete": "Transaktionen \"overførsel\" blev sendt.",
+        "msgVerify": "Bekræftelse af besked",
+        "getAccount": "App, der anmoder om oplysninger om en af ​​dine konti."
     },
     "recovery": {
-      "decryptError": "Kontogendannelsesfejl!",
-      "invalidPassword": "Ugyldig gendannet tegnebogsadgangskode",
-      "duplicate": "En pung med samme navn findes allerede, hvilket afbryder punggendannelse"
+        "decryptError": "Kontogendannelsesfejl!",
+        "invalidPassword": "Ugyldig gendannet tegnebogsadgangskode",
+        "duplicate": "En pung med samme navn findes allerede, hvilket afbryder punggendannelse"
     },
     "raw": {
         "label": "Rå deeplink-side",
         "desc": "Denne side behandler indgående deeplink-prompter uden tidsfølsom kryptering.",
         "promptFailure": "Et råt dybt link blev afvist. ",
         "exit": "Afslut dyblink-siden"
-      },
+    },
     "www": {
         "label": "Webanmodningsside",
         "description": "Klar til at behandle eksterne webanmodninger. Tredjeparts apps er nu i stand til at starte prompter om at linke og derefter udsende operationer.",
@@ -61,7 +61,7 @@
         "yes": "Fortsæt",
         "no": "Gå tilbage",
         "prompt": "Klar til at behandle eksterne webanmodninger. Tredjeparts apps er nu i stand til at starte prompter om at linke og derefter udsende operationer."
-      },
+    },
     "totp": {
         "label": "Tidsbegrænset og krypteret deeplink-promptside",
         "desc": "Denne side behandler indgående deeplink-prompts, som er blevet krypteret på en tidsfølsom måde.",
@@ -77,94 +77,95 @@
         "unsupported": "TOTP er endnu ikke understøttet for denne kæde, beklager.",
         "warning": "Del ikke koden ovenfor med nogen",
         "inProgress": "Et dybt link behandles"
-      },
+    },
     "chosenScope": {
-      "title": {
-        "local": "Ønsker du at konfigurere omfanget af scanbare JSON-filer?",
-        "qr": "Ønsker du at konfigurere omfanget af scanbare QR-koder?",
-        "rawLink": "Ønsker du at konfigurere omfanget af indgående rå deeplinks?",
-        "totp": "Ønsker du at konfigurere omfanget af indgående dybe links?",
-        "www": "Ønsker du at konfigurere omfanget af indgående webanmodninger?"
-      },
-      "yes": "Ja - tilpas omfanget",
-      "no": "Nej - tillad alle operationer"
+        "title": {
+            "local": "Ønsker du at konfigurere omfanget af scanbare JSON-filer?",
+            "qr": "Ønsker du at konfigurere omfanget af scanbare QR-koder?",
+            "rawLink": "Ønsker du at konfigurere omfanget af indgående rå deeplinks?",
+            "totp": "Ønsker du at konfigurere omfanget af indgående dybe links?",
+            "www": "Ønsker du at konfigurere omfanget af indgående webanmodninger?"
+        },
+        "yes": "Ja - tilpas omfanget",
+        "no": "Nej - tillad alle operationer"
     },
     "qr": {
-      "label": "QR-kode scanner",
-      "main": {
-        "title": "QR-scanner metoder",
-        "scan": "Scan en QR-kode",
-        "drag": "Træk",
-        "upload": "Upload et QR-billede"
-      },
-      "scan": {
-        "title": "Scan en QR-kode med dit webcam",
-        "switch": "Skift kamera",
-        "initFail": "Dit webcam kunne ikke initialiseres. Prøv venligst igen.",
-        "again": "Prøv igen",
-        "scanned": "QR-kode scannet!",
-        "another": "Scan en anden"
-      },
-      "drag": {
-        "title": "Træk og slip et billede, der indeholder en QR-kode",
-        "error1": "Billeder med krydsoprindelse som dette understøttes ikke.",
-        "error2": "Kunne ikke afkode QR i billedet.",
-        "error3": "QR-detekteringsfejl",
-        "successPrompt": "Billedet blev scannet til QR",
-        "successBtn": "Scan et andet billede",
-        "prompt": "SLIP DIT BILLEDE HER"
-      },
-      "upload": {
-        "title": "Upload en billedfil for at scanne efter QR-koder",
-        "detected": "QR fundet i upload",
-        "another": "Upload endnu en QR"
-      },
-      "exit": "Afslut QR-siden",
-      "back": "Tilbage",
-      "progress": "Behandler QR-kode",
-      "unsupported": "QR-koder er endnu ikke understøttet for denne kæde, beklager.",
-      "promptSuccess": "Den QR-scannede operation blev udsendt",
-      "promptFailure": "Der gik noget galt med den scannede QR"
+        "label": "QR-kode scanner",
+        "main": {
+            "title": "QR-scanner metoder",
+            "scan": "Scan en QR-kode",
+            "drag": "Træk",
+            "upload": "Upload et QR-billede"
+        },
+        "scan": {
+            "title": "Scan en QR-kode med dit webcam",
+            "switch": "Skift kamera",
+            "initFail": "Dit webcam kunne ikke initialiseres. Prøv venligst igen.",
+            "again": "Prøv igen",
+            "scanned": "QR-kode scannet!",
+            "another": "Scan en anden"
+        },
+        "drag": {
+            "title": "Træk og slip et billede, der indeholder en QR-kode",
+            "error1": "Billeder med krydsoprindelse som dette understøttes ikke.",
+            "error2": "Kunne ikke afkode QR i billedet.",
+            "error3": "QR-detekteringsfejl",
+            "successPrompt": "Billedet blev scannet til QR",
+            "successBtn": "Scan et andet billede",
+            "prompt": "SLIP DIT BILLEDE HER"
+        },
+        "upload": {
+            "title": "Upload en billedfil for at scanne efter QR-koder",
+            "detected": "QR fundet i upload",
+            "another": "Upload endnu en QR"
+        },
+        "exit": "Afslut QR-siden",
+        "back": "Tilbage",
+        "progress": "Behandler QR-kode",
+        "unsupported": "QR-koder er endnu ikke understøttet for denne kæde, beklager.",
+        "promptSuccess": "Den QR-scannede operation blev udsendt",
+        "promptFailure": "Der gik noget galt med den scannede QR"
     },
     "local": {
-      "label": "Lokal fil op scanner",
-      "desc": "Denne side gør det muligt at evaluere og udsende transaktioner fra lokalt lagrede JSON-filer.",
-      "upload": "For at fortsætte skal du uploade en JSON-fil, som indeholder din foreslåede transaktion.",
-      "exit": "Afslut lokal filside",
-      "failed": "Kunne ikke behandle JSON",
-      "back": "Tilbage",
-      "progress": "Behandler lokal fil",
-      "unsupported": "Lokal filsupport er ikke understøttet for denne kæde endnu, beklager.",
-      "promptSuccess": "Den scannede handling blev udsendt",
-      "promptFailure": "Der gik noget galt med den scannede fil"
+        "label": "Lokal fil op scanner",
+        "desc": "Denne side gør det muligt at evaluere og udsende transaktioner fra lokalt lagrede JSON-filer.",
+        "upload": "For at fortsætte skal du uploade en JSON-fil, som indeholder din foreslåede transaktion.",
+        "exit": "Afslut lokal filside",
+        "failed": "Kunne ikke behandle JSON",
+        "back": "Tilbage",
+        "progress": "Behandler lokal fil",
+        "unsupported": "Lokal filsupport er ikke understøttet for denne kæde endnu, beklager.",
+        "promptSuccess": "Den scannede handling blev udsendt",
+        "promptFailure": "Der gik noget galt med den scannede fil"
     },
     "actionBar": {
-      "Home": "Hjem",
-      "New": "Ny",
-      "WWW": "Webanmodning",
-      "TOTP": "TOTP",
-      "Local": "Lokal",
-      "RAW": "Rå link",
-      "QR": "QR",
-      "Settings": "Indstillinger",
-      "changeNodes": "Skift node",
-      "Backup": "Backup",
-      "dapps": "DAAP'er",
-      "Logout": "Log ud"
+        "Home": "Hjem",
+        "New": "Ny",
+        "WWW": "Webanmodning",
+        "TOTP": "TOTP",
+        "Local": "Lokal",
+        "RAW": "Rå link",
+        "QR": "QR",
+        "Settings": "Indstillinger",
+        "changeNodes": "Skift node",
+        "Backup": "Backup",
+        "dapps": "DAAP'er",
+        "Logout": "Log ud"
     },
     "popup": {
-      "keywords": {
-        "request": "Driftsanmodning",
-        "result": "Driftsresultat"
-      },
-      "preview": "Spørg forhåndsvisning",
-      "evaluate": "Evaluer det hurtige resultat",
-      "payload": "Se nyttelast JSON",
-      "request": "Se anmodning JSON",
-      "result": "Se netværksresultat JSON",
-      "details": "Se detaljer",
-      "language": "Sprog",
-      "chainOperations": "Kædeoperationer"
+        "keywords": {
+            "request": "Driftsanmodning",
+            "result": "Driftsresultat"
+        },
+        "preview": "Spørg forhåndsvisning",
+        "evaluate": "Evaluer det hurtige resultat",
+        "payload": "Se nyttelast JSON",
+        "request": "Se anmodning JSON",
+        "result": "Se netværksresultat JSON",
+        "details": "Se detaljer",
+        "language": "Sprog",
+        "chainOperations": "Kædeoperationer",
+        "copy": "Kopiér til udklipsholder"
     },
     "abHome": "Hjem",
     "abNew": "Ny",
@@ -272,4 +273,4 @@
     "tooltip_refresh": "Genopret forbindelse til blockchain og opdater kontosaldoen",
     "invalidFile": "Ugyldig filtype, vælg venligst en anden fil.",
     "invalidPass": "Ugyldig adgangskode, prøv venligst igen."
-  }
+}
