@@ -1,13 +1,13 @@
 {
     "addAccount": {
-      "none_selected": "Ühtegi kontot pole valitud!"
+        "none_selected": "Ühtegi kontot pole valitud!"
     },
     "balances": {
-      "refresh": "Värskenda",
-      "reconnect": "Ühendage uuesti",
-      "empty": "Kontol saldod puuduvad",
-      "connecting": "Ühenduse loomine plokiahelaga",
-      "error": "Plokiahelaga ei saanud ühendust luua"
+        "refresh": "Värskenda",
+        "reconnect": "Ühendage uuesti",
+        "empty": "Kontol saldod puuduvad",
+        "connecting": "Ühenduse loomine plokiahelaga",
+        "error": "Plokiahelaga ei saanud ühendust luua"
     },
     "nodes": {
         "prompt": "Valige sõlm, millega ühenduse luua",
@@ -20,35 +20,35 @@
         "prompt": "Selle konto pöördumatult oma rahakotist eemaldamiseks kinnitage allpool oma parool.",
         "button": "Kustuta konto",
         "insufficient": "Kahjuks ei saa rahakoti viimast kontot kustutada."
-      },
+    },
     "start": {
-      "wallet_name": "Rahakoti nimi",
-      "invalid_password": "Teie rahakotti üritati avada kehtetu parooliga."
+        "wallet_name": "Rahakoti nimi",
+        "invalid_password": "Teie rahakotti üritati avada kehtetu parooliga."
     },
     "apiUtils": {
-      "broadcast": "Tehingu edastamine õnnestus.",
-      "sign": "Tehing edukalt allkirjastatud.",
-      "signAndBroadcast": "Tehing edukalt allkirjastatud",
-      "inject": "Konkreetse plokiahela toimingu sooritamise taotlus",
-      "vote": "Hääletusviis",
-      "signNFT": "NFT allkirja taotlus",
-      "signMessage": "Taotlege allkirjastatud sõnumit",
-      "transfer": "Tokenite ülekandmise taotlus",
-      "transferComplete": "Tehingu ülekanne edastati edukalt.",
-      "msgVerify": "Sõnumi kinnitamine",
-      "getAccount": "Rakendus, mis taotleb teavet ühe teie konto kohta."
+        "broadcast": "Tehingu edastamine õnnestus.",
+        "sign": "Tehing edukalt allkirjastatud.",
+        "signAndBroadcast": "Tehing edukalt allkirjastatud",
+        "inject": "Konkreetse plokiahela toimingu sooritamise taotlus",
+        "vote": "Hääletusviis",
+        "signNFT": "NFT allkirja taotlus",
+        "signMessage": "Taotlege allkirjastatud sõnumit",
+        "transfer": "Tokenite ülekandmise taotlus",
+        "transferComplete": "Tehingu ülekanne edastati edukalt.",
+        "msgVerify": "Sõnumi kinnitamine",
+        "getAccount": "Rakendus, mis taotleb teavet ühe teie konto kohta."
     },
     "recovery": {
-      "decryptError": "Konto taastamise viga!",
-      "invalidPassword": "Vale taastatud rahakoti parool",
-      "duplicate": "Sama nimega rahakott on juba olemas, katkestades rahakoti taastamise"
+        "decryptError": "Konto taastamise viga!",
+        "invalidPassword": "Vale taastatud rahakoti parool",
+        "duplicate": "Sama nimega rahakott on juba olemas, katkestades rahakoti taastamise"
     },
     "raw": {
         "label": "Toores süvalingi leht",
         "desc": "See leht töötleb sissetulevaid süvalinkide viipasid ilma ajatundliku krüptimiseta.",
         "promptFailure": "Toores sügavlink lükati tagasi. ",
         "exit": "Välju süvalingi lehelt"
-      },
+    },
     "www": {
         "label": "Veebipäringu leht",
         "description": "Valmis väliste veebipäringute töötlemiseks. Kolmanda osapoole rakendused saavad nüüd käivitada viipasid linkimiseks ja seejärel toimingute edastamiseks.",
@@ -61,7 +61,7 @@
         "yes": "Jätkake",
         "no": "Mine tagasi",
         "prompt": "Valmis väliste veebipäringute töötlemiseks. Kolmanda osapoole rakendused saavad nüüd käivitada viipasid linkimiseks ja seejärel toimingute edastamiseks."
-      },
+    },
     "totp": {
         "label": "Ajaliselt piiratud ja krüptitud süvalingi viibaleht",
         "desc": "See leht töötleb sissetulevaid süvalinkide viipasid, mis on krüpteeritud ajatundlikul viisil.",
@@ -77,94 +77,95 @@
         "unsupported": "Vabandust, TOTP-d selle ahela jaoks veel ei toetata.",
         "warning": "Ärge jagage ülaltoodud koodi kellegagi",
         "inProgress": "Süvalinki töödeldakse"
-      },
+    },
     "chosenScope": {
-      "title": {
-        "local": "Kas soovite konfigureerida skannitavate JSON-failide ulatust?",
-        "qr": "Kas soovite konfigureerida skannitavate QR-koodide ulatust?",
-        "rawLink": "Kas soovite konfigureerida sissetulevate toores sügavlinkide ulatust?",
-        "totp": "Kas soovite konfigureerida sissetulevate süvalinkide ulatust?",
-        "www": "Kas soovite konfigureerida sissetulevate veebipäringute ulatust?"
-      },
-      "yes": "Jah – kohandage ulatust",
-      "no": "Ei – lubage kõik toimingud"
+        "title": {
+            "local": "Kas soovite konfigureerida skannitavate JSON-failide ulatust?",
+            "qr": "Kas soovite konfigureerida skannitavate QR-koodide ulatust?",
+            "rawLink": "Kas soovite konfigureerida sissetulevate toores sügavlinkide ulatust?",
+            "totp": "Kas soovite konfigureerida sissetulevate süvalinkide ulatust?",
+            "www": "Kas soovite konfigureerida sissetulevate veebipäringute ulatust?"
+        },
+        "yes": "Jah – kohandage ulatust",
+        "no": "Ei – lubage kõik toimingud"
     },
     "qr": {
-      "label": "QR-koodi skanner",
-      "main": {
-        "title": "QR-skanneri meetodid",
-        "scan": "Skannige QR-kood",
-        "drag": "Vedama",
-        "upload": "Laadige üles QR-pilt"
-      },
-      "scan": {
-        "title": "Skannige oma veebikaameraga QR-kood",
-        "switch": "Vaheta kaamerat",
-        "initFail": "Teie veebikaamera initsialiseerimine ebaõnnestus, proovige uuesti.",
-        "again": "Proovi uuesti",
-        "scanned": "QR-kood skannitud!",
-        "another": "Skannige teine"
-      },
-      "drag": {
-        "title": "Pukseerige QR-koodi sisaldav pilt",
-        "error1": "Selliseid ristpäritolu pilte ei toetata.",
-        "error2": "Pildil oleva QR-koodi ei saanud dekodeerida.",
-        "error3": "QR tuvastamise viga",
-        "successPrompt": "QR-koodi skannimine õnnestus",
-        "successBtn": "Skannige teine ​​pilt",
-        "prompt": "KÜPSTA OMA PILT SIIA"
-      },
-      "upload": {
-        "title": "QR-koodide otsimiseks laadige üles pildifail",
-        "detected": "Üleslaadimisel tuvastati QR",
-        "another": "Laadige üles teine ​​QR"
-      },
-      "exit": "Välju QR-lehelt",
-      "back": "tagasi",
-      "progress": "QR-koodi töötlemine",
-      "unsupported": "Vabandust, QR-koode see kett veel ei toeta.",
-      "promptSuccess": "QR-skannitud toimingu edastamine õnnestus",
-      "promptFailure": "Midagi läks skannitud QR-ga valesti"
+        "label": "QR-koodi skanner",
+        "main": {
+            "title": "QR-skanneri meetodid",
+            "scan": "Skannige QR-kood",
+            "drag": "Vedama",
+            "upload": "Laadige üles QR-pilt"
+        },
+        "scan": {
+            "title": "Skannige oma veebikaameraga QR-kood",
+            "switch": "Vaheta kaamerat",
+            "initFail": "Teie veebikaamera initsialiseerimine ebaõnnestus, proovige uuesti.",
+            "again": "Proovi uuesti",
+            "scanned": "QR-kood skannitud!",
+            "another": "Skannige teine"
+        },
+        "drag": {
+            "title": "Pukseerige QR-koodi sisaldav pilt",
+            "error1": "Selliseid ristpäritolu pilte ei toetata.",
+            "error2": "Pildil oleva QR-koodi ei saanud dekodeerida.",
+            "error3": "QR tuvastamise viga",
+            "successPrompt": "QR-koodi skannimine õnnestus",
+            "successBtn": "Skannige teine ​​pilt",
+            "prompt": "KÜPSTA OMA PILT SIIA"
+        },
+        "upload": {
+            "title": "QR-koodide otsimiseks laadige üles pildifail",
+            "detected": "Üleslaadimisel tuvastati QR",
+            "another": "Laadige üles teine ​​QR"
+        },
+        "exit": "Välju QR-lehelt",
+        "back": "tagasi",
+        "progress": "QR-koodi töötlemine",
+        "unsupported": "Vabandust, QR-koode see kett veel ei toeta.",
+        "promptSuccess": "QR-skannitud toimingu edastamine õnnestus",
+        "promptFailure": "Midagi läks skannitud QR-ga valesti"
     },
     "local": {
-      "label": "Kohalik faili op skanner",
-      "desc": "See leht võimaldab hinnata ja edastada tehinguid kohapeal salvestatud JSON-failidest.",
-      "upload": "Jätkamiseks laadige üles JSON-fail, mis sisaldab teie pakutud tehingut.",
-      "exit": "Välju kohaliku faili lehelt",
-      "failed": "JSON-i töötlemine ebaõnnestus",
-      "back": "tagasi",
-      "progress": "Kohaliku faili töötlemine",
-      "unsupported": "Vabandust, see kett ei toeta veel kohalikku failituge.",
-      "promptSuccess": "Skaneeritud toimingu edastamine õnnestus",
-      "promptFailure": "Midagi läks skannitud failiga valesti"
+        "label": "Kohalik faili op skanner",
+        "desc": "See leht võimaldab hinnata ja edastada tehinguid kohapeal salvestatud JSON-failidest.",
+        "upload": "Jätkamiseks laadige üles JSON-fail, mis sisaldab teie pakutud tehingut.",
+        "exit": "Välju kohaliku faili lehelt",
+        "failed": "JSON-i töötlemine ebaõnnestus",
+        "back": "tagasi",
+        "progress": "Kohaliku faili töötlemine",
+        "unsupported": "Vabandust, see kett ei toeta veel kohalikku failituge.",
+        "promptSuccess": "Skaneeritud toimingu edastamine õnnestus",
+        "promptFailure": "Midagi läks skannitud failiga valesti"
     },
     "actionBar": {
-      "Home": "Kodu",
-      "New": "Uus",
-      "WWW": "Veebipäring",
-      "TOTP": "TOTP",
-      "Local": "Kohalik",
-      "RAW": "Toores link",
-      "QR": "QR",
-      "Settings": "Seaded",
-      "changeNodes": "Muuda sõlme",
-      "Backup": "Varundamine",
-      "dapps": "DAAP-id",
-      "Logout": "Logi välja"
+        "Home": "Kodu",
+        "New": "Uus",
+        "WWW": "Veebipäring",
+        "TOTP": "TOTP",
+        "Local": "Kohalik",
+        "RAW": "Toores link",
+        "QR": "QR",
+        "Settings": "Seaded",
+        "changeNodes": "Muuda sõlme",
+        "Backup": "Varundamine",
+        "dapps": "DAAP-id",
+        "Logout": "Logi välja"
     },
     "popup": {
-      "keywords": {
-        "request": "Operatsiooni taotlus",
-        "result": "Operatsiooni tulemus"
-      },
-      "preview": "Kiire eelvaade",
-      "evaluate": "Hinnake kiiret tulemust",
-      "payload": "Kuva kasuliku koormuse JSON",
-      "request": "Kuva taotlus JSON",
-      "result": "Kuva võrgutulemuse JSON",
-      "details": "Vaata detaile",
-      "language": "Keel",
-      "chainOperations": "Aheloperatsioonid"
+        "keywords": {
+            "request": "Operatsiooni taotlus",
+            "result": "Operatsiooni tulemus"
+        },
+        "preview": "Kiire eelvaade",
+        "evaluate": "Hinnake kiiret tulemust",
+        "payload": "Kuva kasuliku koormuse JSON",
+        "request": "Kuva taotlus JSON",
+        "result": "Kuva võrgutulemuse JSON",
+        "details": "Vaata detaile",
+        "language": "Keel",
+        "chainOperations": "Aheloperatsioonid",
+        "copy": "Kopeeri lõikelauale"
     },
     "abHome": "Kodu",
     "abNew": "Uus",
@@ -272,4 +273,4 @@
     "tooltip_refresh": "Ühendage uuesti plokiahelaga ja värskendage konto saldot",
     "invalidFile": "Vale failitüüp, palun valige mõni muu fail.",
     "invalidPass": "Vale parool, proovige uuesti."
-  }
+}
