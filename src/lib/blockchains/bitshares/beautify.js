@@ -297,8 +297,7 @@ export default async function beautify(
                             _feeAsset.precision
                         ),
                     },
-                },
-                ,
+                }
             ];
         }
     } else if (opType == 5) {
@@ -433,8 +432,7 @@ export default async function beautify(
                             _feeAsset.precision
                         ),
                     },
-                },
-                ,
+                }
             ];
         }
     } else if (opType == 6) {
@@ -485,8 +483,7 @@ export default async function beautify(
                             _feeAsset.precision
                         ),
                     },
-                },
-                ,
+                }
             ];
         }
     } else if (opType == 7) {
@@ -2082,8 +2079,7 @@ export default async function beautify(
                         _feeAsset.precision
                     ),
                 },
-            },
-            ,
+            }
         ];
     } else if (opType == 32) {
         // vesting_balance_create
@@ -2507,8 +2503,7 @@ export default async function beautify(
                         _feeAsset.precision
                     ),
                 },
-            },
-            ,
+            }
         ];
     } else if (opType == 41) {
         // transfer_from_blind

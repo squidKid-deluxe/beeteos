@@ -1714,7 +1714,7 @@ export default class BitShares extends BlockchainAPI {
 
             for (let k = 0; k < idKeys.length; k++) {
                 const id = get(op, idKeys[k]);
-                if (id && !accountsToFetch.includes(id)) {
+                if (id && typeof id === 'string' && !accountsToFetch.includes(id)) {
                     accountsToFetch.push(id);
                 }
             }
