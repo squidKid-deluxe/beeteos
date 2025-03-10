@@ -1,14 +1,14 @@
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
-import { useI18n } from "vue-i18n";
+    import { ref, computed, watch, onMounted } from "vue";
+    import { useI18n } from "vue-i18n";
 
-import router from "../router/index.js";
-import store from "../store/index.js";
-import langSelect from "./lang-select.vue";
+    import router from "../router/index.js";
+    import store from "../store/index.js";
+    import langSelect from "./lang-select.vue";
 
-let open = ref(false);
-let lastIndex = ref(0);
-const { t } = useI18n({ useScope: "global" });
+    let open = ref(false);
+    let lastIndex = ref(0);
+    const { t } = useI18n({ useScope: "global" });
 
     let items = computed(() => {
         return [
@@ -87,534 +87,704 @@ const { t } = useI18n({ useScope: "global" });
         ]
     });
 
-function onChange(data) {
-    const newIndex = data.index;
-    if (
-        lastIndex.value &&
-        lastIndex.value === 2 && // WWW
-        newIndex !== 2 // leaving WWW
-    ) {
-        console.log("Automatically shutting down web services");
-        window.electron.closeServer();
-    }
-    lastIndex.value = newIndex;
+    const hexToString = (hex) => {
+        const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+        return new TextDecoder().decode(bytes);
+    };
 
-    if (data.index === 11) {
-        console.log("User logged out.");
-        store.dispatch("WalletStore/logout");
-        router.replace("/");
-    }
-
-    router.replace(items.value[data.index].url);
-}
-
-let logoutTimer = null;
-function startLogoutTimer(newValue) {
-    if (logoutTimer) {
-        clearTimeout(logoutTimer);
-    }
-
-    logoutTimer = setTimeout(() => {
-        console.log("wallet timed logout");
-        if (newValue === 2) {
+    function onChange(data) {
+        const newIndex = data.index;
+        if (
+            lastIndex.value &&
+            lastIndex.value === 2 && // WWW
+            newIndex !== 2 // leaving WWW
+        ) {
+            console.log("Automatically shutting down web services");
             window.electron.closeServer();
         }
-        store.dispatch("WalletStore/logout");
-        router.replace("/");
-    }, 2 * 60 * 1000);
-}
+        lastIndex.value = newIndex;
 
-watch(
-    lastIndex,
-    (newValue, oldValue) => {
-        if (items.value[oldValue]) {
-            console.log(
-                `User navigated from ${items.value[oldValue].text} to ${items.value[newValue].text}`
-            );
-        } else if (newValue === oldValue) {
-            console.log(`Page ${items.value[newValue].text} is in use...`);
+        if (data.index === 11) {
+            console.log("User logged out.");
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
         }
 
-        window.electron.removeAllListeners("signMessage");
-        window.electron.removeAllListeners("signNFT");
-        window.electron.removeAllListeners("injectedCall");
-        window.electron.removeAllListeners("requestSignature");
-        window.electron.removeAllListeners("getAccount");
-        window.electron.removeAllListeners("verifyMessage");
+        router.replace(items.value[data.index].url);
+    }
 
-        if (
-            store.state.WalletStore.isUnlocked &&
-            [2, 3, 4, 5, 6].includes(newValue)
-        ) {
-            const decryptKey = async (encryptedKey) => {
-                return new Promise(async (resolve, reject) => {
-                    let signature = await window.electron.getSignature(
-                        "decrypt"
-                    );
-                    if (!signature) {
-                        console.log("Signature failure");
-                        return reject("signature failure");
-                    }
+    let logoutTimer = null;
+    function startLogoutTimer(newValue) {
+        if (logoutTimer) {
+            clearTimeout(logoutTimer);
+        }
 
-                    let isValid;
-                    try {
-                        isValid = await window.electron.verifyCrypto({
-                            signedMessage: signature.signedMessage,
-                            msgHash: signature.msgHash,
-                            pubk: signature.pubk,
-                        });
-                    } catch (error) {
-                        console.log(error);
-                    }
+        logoutTimer = setTimeout(() => {
+            console.log("wallet timed logout");
+            if (newValue === 2) {
+                window.electron.closeServer();
+            }
+            store.dispatch("WalletStore/logout");
+            router.replace("/");
+        }, 2 * 60 * 1000);
+    }
 
-                    if (!isValid) {
-                        console.log("invalid signature");
-                        return reject("invalid signature");
-                    }
-
-                    console.log("Was valid, proceeding to decrypt");
-                    let decryptedKey;
-                    try {
-                        decryptedKey = await window.electron.decrypt({
-                            data: encryptedKey,
-                            inject: true,
-                        });
-                    } catch (error) {
-                        console.log(error);
-                        return reject("decrypt failure");
-                    }
-
-                    if (!decryptedKey) {
-                        console.log("Decryption failure");
-                        return reject("decryption failure");
-                    }
-
-                    return resolve(decryptedKey);
-                });
-            };
-
-            window.electron.onSignMessage((request) => {
-                let shownBeetApp =
-                    store.getters["OriginStore/getBeetApp"](request);
-                if (!shownBeetApp) {
-                    window.electron.signMessageError({
-                        id: request.id,
-                        result: {
-                            isError: true,
-                            method: "signMessage.getBeetApp",
-                            error: "No beetApp",
-                        },
-                    });
-                }
-
-                let account = store.getters["AccountStore/getSafeAccount"](
-                    JSON.parse(JSON.stringify(shownBeetApp))
+    watch(
+        lastIndex,
+        (newValue, oldValue) => {
+            if (items.value[oldValue]) {
+                console.log(
+                    `User navigated from ${items.value[oldValue].text} to ${items.value[newValue].text}`
                 );
-                store.dispatch("WalletStore/notifyUser", {
-                    notify: "request",
-                    message: t("common.apiUtils.signMessage"),
-                });
+            } else if (newValue === oldValue) {
+                console.log(`Page ${items.value[newValue].text} is in use...`);
+            }
 
-                window.electron.createPopup({
-                    request: request,
-                    accounts: [account],
-                });
+            window.electron.removeAllListeners("signMessage");
+            window.electron.removeAllListeners("signNFT");
+            window.electron.removeAllListeners("injectedCall");
+            window.electron.removeAllListeners("requestSignature");
+            window.electron.removeAllListeners("getAccount");
+            window.electron.removeAllListeners("verifyMessage");
 
-                window.electron.popupApproved(request.id, async (result) => {
-                    let retrievedKey;
-                    try {
-                        retrievedKey =
-                            store.getters["AccountStore/getSigningKey"](
-                                request
-                            );
-                    } catch (error) {
-                        window.electron.signMessageError({
-                            id: request.id,
-                            result: {
-                                isError: true,
-                                method: "signMessage.getSigningKey",
-                                error: error,
-                            },
-                        });
-                        return;
-                    }
+            if (
+                store.state.WalletStore.isUnlocked &&
+                [2, 3, 4, 5, 6].includes(newValue)
+            ) {
+                const decryptKey = async (encryptedKey) => {
+                    return new Promise(async (resolve, reject) => {
+                        let signature = await window.electron.getSignature(
+                            "decrypt"
+                        );
+                        if (!signature) {
+                            console.log("Signature failure");
+                            return reject("signature failure");
+                        }
 
-                    let processedKey;
-                    try {
-                        processedKey = await decryptKey(retrievedKey);
-                    } catch (error) {
-                        window.electron.signMessageError({
-                            id: request.id,
-                            result: {
-                                isError: true,
-                                method: "signMessage.getKey",
-                                error: error,
-                            },
-                        });
-                        return;
-                    }
-
-                    let accountName;
-                    try {
-                        accountName = account.accountName;
-                    } catch (error) {
-                        window.electron.signMessageError({
-                            id: request.id,
-                            result: {
-                                isError: true,
-                                method: "signMessage.accountName",
-                                error: error,
-                            },
-                        });
-                        return;
-                    }
-
-                    let signedMessage;
-                    try {
-                        signedMessage =
-                            await window.electron.executeSignMessage({
-                                key: processedKey,
-                                name: accountName,
-                                params: request.payload.params,
+                        let isValid;
+                        try {
+                            isValid = await window.electron.verifyCrypto({
+                                signedMessage: signature.signedMessage,
+                                msgHash: signature.msgHash,
+                                pubk: signature.pubk,
                             });
-                    } catch (error) {
+                        } catch (error) {
+                            console.log(error);
+                        }
+
+                        if (!isValid) {
+                            console.log("invalid signature");
+                            return reject("invalid signature");
+                        }
+
+                        console.log("Was valid, proceeding to decrypt");
+                        let decryptedKey;
+                        try {
+                            decryptedKey = await window.electron.decrypt({
+                                data: encryptedKey,
+                                inject: true,
+                            });
+                        } catch (error) {
+                            console.log(error);
+                            return reject("decrypt failure");
+                        }
+
+                        if (!decryptedKey) {
+                            console.log("Decryption failure");
+                            return reject("decryption failure");
+                        }
+
+                        return resolve(decryptedKey);
+                    });
+                };
+
+                window.electron.onSignMessage((request) => {
+                    let shownBeetApp =
+                        store.getters["OriginStore/getBeetApp"](request);
+                    if (!shownBeetApp) {
                         window.electron.signMessageError({
                             id: request.id,
                             result: {
                                 isError: true,
-                                method: "signMessage.executeSignMessage",
-                                error: error,
+                                method: "signMessage.getBeetApp",
+                                error: "No beetApp",
                             },
                         });
-                        return;
                     }
 
-                    window.electron.signMessageResponse({
-                        result: signedMessage,
-                    });
-                });
-
-                window.electron.popupRejected(request.id, (result) => {
-                    window.electron.signMessageError({
-                        id: request.id,
-                        result: {
-                            isError: true,
-                            method: "signMessage.popupRejected",
-                            error: result,
-                        },
-                    });
-                });
-            });
-
-            window.electron.onSignNFT((request) => {
-                let shownBeetApp =
-                    store.getters["OriginStore/getBeetApp"](request);
-                if (!shownBeetApp) {
-                    window.electron.signNFTError({
-                        id: request.id,
-                        result: {
-                            isError: true,
-                            method: "signNFT.getBeetApp",
-                            error: "No beetApp",
-                        },
-                    });
-                    return;
-                }
-
-                let account = store.getters["AccountStore/getSafeAccount"](
-                    JSON.parse(JSON.stringify(shownBeetApp))
-                );
-                store.dispatch("WalletStore/notifyUser", {
-                    notify: "request",
-                    message: t("common.apiUtils.signNFT"),
-                });
-
-                window.electron.createPopup({
-                    request: request,
-                    accounts: [account],
-                });
-
-                window.electron.popupApproved(request.id, async (result) => {
-                    // `popupApproved_${request.id}`
-                    let retrievedKey;
-                    try {
-                        retrievedKey =
-                            store.getters["AccountStore/getSigningKey"](
-                                request
-                            );
-                    } catch (error) {
-                        console.log(error);
-                        window.electron.signNFTError({
-                            id: request.id,
-                            result: {
-                                isError: true,
-                                method: "signNFT.getSigningKey",
-                                error: error,
-                            },
-                        });
-                        return;
-                    }
-
-                    if (!retrievedKey) {
-                        window.electron.signNFTError({
-                            id: request.id,
-                            result: {
-                                isError: true,
-                                method: "signNFT.getSigningKey",
-                                error: "No retrievedKey",
-                            },
-                        });
-                        return;
-                    }
-
-                    let processedKey;
-                    try {
-                        processedKey = await decryptKey(retrievedKey);
-                    } catch (error) {
-                        console.log(error);
-                        window.electron.signNFTError({
-                            id: request.id,
-                            result: {
-                                isError: true,
-                                method: "signNFT.getKey",
-                                error: error,
-                            },
-                        });
-                        return;
-                    }
-
-                    if (!processedKey) {
-                        window.electron.signNFTError({
-                            id: request.id,
-                            result: {
-                                isError: true,
-                                method: "signNFT.getKey",
-                                error: "No processedKey",
-                            },
-                        });
-                        return;
-                    }
-
-                    let _request;
-                    try {
-                        _request = await window.electron.blockchainRequest({
-                            methods: ["signNFT"],
-                            account: null,
-                            chain: store.getters["AccountStore/getChain"],
-                            key: processedKey,
-                            target: request.payload.params,
-                        });
-                    } catch (error) {
-                        console.log(error);
-                        window.electron.signNFTError({
-                            id: request.id,
-                            result: {
-                                isError: true,
-                                method: "signNFT.executeSignNFT",
-                                error: error,
-                            },
-                        });
-                        return;
-                    }
-
-                    if (!_request || !_request.signNFT) {
-                        window.electron.signNFTError({
-                            id: request.id,
-                            result: {
-                                isError: true,
-                                method: "signNFT.executeSignNFT",
-                                error: "No signedNFT",
-                            },
-                        });
-                        return;
-                    }
-
-                    window.electron.signNFTResponse({
-                        result: _request.signNFT,
-                    });
-                });
-
-                window.electron.popupRejected(request.id, (result) => {
-                    // `popupRejected_${request.id}`
-                    window.electron.signNFTError({
-                        id: request.id,
-                        result: {
-                            isError: true,
-                            method: "signNFT.popupRejected",
-                            error: result,
-                        },
-                    });
-                });
-            });
-
-            window.electron.onInjectedCall(async (args) => {
-                const {
-                    request,
-                    chain,
-                    account,
-                    visualizedAccount,
-                    visualizedParams,
-                    isBlocked,
-                    blockedAccounts,
-                    foundIDs,
-                } = args;
-
-                if (
-                    ["BTS", "BTS_TEST"].includes(chain) &&
-                    ((!visualizedAccount && account && !account.accountName) ||
-                        !visualizedParams)
-                ) {
-                    console.log("Missing required fields for injected call");
-                    window.electron.injectedCallError({
-                        id: request.id,
-                        result: {
-                            isError: true,
-                            method: "injectedCall.missingFields",
-                            error: "Missing required fields for injected BTS call",
-                        },
-                    });
-                    return;
-                }
-
-                if (
-                    ["EOS", "BEOS", "TLOS"].includes(chain) &&
-                    !visualizedParams
-                ) {
-                    console.log(
-                        `Missing required fields for injected ${chain} based call`
+                    let account = store.getters["AccountStore/getSafeAccount"](
+                        JSON.parse(JSON.stringify(shownBeetApp))
                     );
-                    window.electron.injectedCallError({
-                        id: request.id,
-                        result: {
-                            isError: true,
-                            method: "injectedCall.missingFields",
-                            error: `Missing required fields for injected ${chain} based call`,
-                        },
+                    store.dispatch("WalletStore/notifyUser", {
+                        notify: "request",
+                        message: t("common.apiUtils.signMessage"),
                     });
-                    return;
-                }
 
-                const popupContents = ["EOS", "BEOS", "TLOS"].includes(chain)
-                    ? {
-                          request: request,
-                          visualizedAccount: visualizedAccount,
-                          visualizedParams: JSON.stringify(visualizedParams),
-                      }
-                    : {
-                          request: request,
-                          visualizedAccount:
-                              visualizedAccount || account.accountName,
-                          visualizedParams: JSON.stringify(visualizedParams),
-                      };
-
-                if (chain === "BTS" && foundIDs.length) {
-                    popupContents["isBlockedAccount"] = isBlocked;
-                }
-
-                if (
-                    chain === "BTS" &&
-                    (!blockedAccounts || !blockedAccounts.length)
-                ) {
-                    popupContents["serverError"] = true;
-                }
-
-                try {
-                    window.electron.createPopup(popupContents);
-                } catch (error) {
-                    window.electron.injectedCallError({
-                        id: request.id,
-                        result: {
-                            isError: true,
-                            method: "injectedCall.createPopup",
-                            error: error,
-                        },
+                    window.electron.createPopup({
+                        request: request,
+                        accounts: [account],
                     });
-                    return;
-                }
 
-                store.dispatch("WalletStore/notifyUser", {
-                    notify: "request",
-                    message: t("common.apiUtils.inject"),
-                });
-
-                window.electron.popupApproved(request.id, async (args) => {
-                    let _request = request;
-                    if (
-                        ["BTS", "BTS_TEST"].includes(chain) &&
-                        request.payload.memo
-                    ) {
-                        let from;
-                        let to;
-                        if (request.payload.from) {
-                            from = request.payload.from;
-                            to = request.payload.to;
-                        } else if (request.payload.withdraw_from_account) {
-                            from = request.payload.withdraw_from_account;
-                            to = request.payload.withdraw_to_account;
-                        } else if (request.payload.issuer) {
-                            from = request.payload.issuer;
-                            to = request.payload.issue_to_account;
-                        }
-
-                        let _blockchainRequest;
+                    window.electron.popupApproved(request.id, async (result) => {
+                        let retrievedKey;
                         try {
-                            _blockchainRequest =
-                                await window.electron.blockchainRequest({
-                                    methods: ["createMemoObject"],
-                                    account: null,
-                                    chain: chain,
-                                    from: from,
-                                    to: to,
-                                    optionalNonce:
-                                        request.payload.params.optionalNonce ??
-                                        undefined,
-                                    encryptMemo:
-                                        request.payload.params.encryptMemo ??
-                                        undefined,
-                                });
+                            retrievedKey =
+                                store.getters["AccountStore/getSigningKey"](
+                                    request
+                                );
                         } catch (error) {
-                            console.log(error);
-                        }
-
-                        if (
-                            _blockchainRequest &&
-                            _blockchainRequest.createMemoObject
-                        ) {
-                            _request.payload.memo =
-                                _blockchainRequest.createMemoObject;
-                        }
-                    }
-
-                    let finalResult;
-                    let notifyTXT = "";
-
-                    let txType =
-                        _request.payload.params[0] ?? "signAndBroadcast";
-                    if (txType == "broadcast") {
-                        try {
-                            finalResult =
-                                await window.electron.blockchainRequest({
-                                    methods: ["broadcastTransaction"],
-                                    account: null,
-                                    chain: chain,
-                                    operation: _request.payload.params,
-                                });
-                        } catch (error) {
-                            console.log(error);
-                            window.electron.injectedCallError({
-                                id: _request.id,
+                            window.electron.signMessageError({
+                                id: request.id,
                                 result: {
                                     isError: true,
-                                    method: "injectedCall.blockchain.broadcast",
+                                    method: "signMessage.getSigningKey",
                                     error: error,
                                 },
                             });
                             return;
                         }
 
-                        if (!finalResult || !finalResult.broadcastTransaction) {
-                            window.electron.injectedCallError({
+                        let processedKey;
+                        try {
+                            processedKey = await decryptKey(retrievedKey);
+                        } catch (error) {
+                            window.electron.signMessageError({
+                                id: request.id,
+                                result: {
+                                    isError: true,
+                                    method: "signMessage.getKey",
+                                    error: error,
+                                },
+                            });
+                            return;
+                        }
+
+                        let accountName;
+                        try {
+                            accountName = account.accountName;
+                        } catch (error) {
+                            window.electron.signMessageError({
+                                id: request.id,
+                                result: {
+                                    isError: true,
+                                    method: "signMessage.accountName",
+                                    error: error,
+                                },
+                            });
+                            return;
+                        }
+
+                        let signedMessage;
+                        try {
+                            signedMessage =
+                                await window.electron.executeSignMessage({
+                                    key: processedKey,
+                                    name: accountName,
+                                    params: request.payload.params,
+                                });
+                        } catch (error) {
+                            window.electron.signMessageError({
+                                id: request.id,
+                                result: {
+                                    isError: true,
+                                    method: "signMessage.executeSignMessage",
+                                    error: error,
+                                },
+                            });
+                            return;
+                        }
+
+                        window.electron.signMessageResponse({
+                            result: signedMessage,
+                        });
+                    });
+
+                    window.electron.popupRejected(request.id, (result) => {
+                        window.electron.signMessageError({
+                            id: request.id,
+                            result: {
+                                isError: true,
+                                method: "signMessage.popupRejected",
+                                error: result,
+                            },
+                        });
+                    });
+                });
+
+                window.electron.onSignNFT((request) => {
+                    let shownBeetApp =
+                        store.getters["OriginStore/getBeetApp"](request);
+                    if (!shownBeetApp) {
+                        window.electron.signNFTError({
+                            id: request.id,
+                            result: {
+                                isError: true,
+                                method: "signNFT.getBeetApp",
+                                error: "No beetApp",
+                            },
+                        });
+                        return;
+                    }
+
+                    let account = store.getters["AccountStore/getSafeAccount"](
+                        JSON.parse(JSON.stringify(shownBeetApp))
+                    );
+
+                    store.dispatch("WalletStore/notifyUser", {
+                        notify: "request",
+                        message: t("common.apiUtils.signNFT"),
+                    });
+
+                    window.electron.createPopup({
+                        request: request,
+                        accounts: [account],
+                    });
+
+                    window.electron.popupApproved(request.id, async (result) => {
+                        // `popupApproved_${request.id}`
+                        let retrievedKey;
+                        try {
+                            retrievedKey =
+                                store.getters["AccountStore/getSigningKey"](
+                                    request
+                                );
+                        } catch (error) {
+                            console.log(error);
+                            window.electron.signNFTError({
+                                id: request.id,
+                                result: {
+                                    isError: true,
+                                    method: "signNFT.getSigningKey",
+                                    error: error,
+                                },
+                            });
+                            return;
+                        }
+
+                        if (!retrievedKey) {
+                            window.electron.signNFTError({
+                                id: request.id,
+                                result: {
+                                    isError: true,
+                                    method: "signNFT.getSigningKey",
+                                    error: "No retrievedKey",
+                                },
+                            });
+                            return;
+                        }
+
+                        let processedKey;
+                        try {
+                            processedKey = await decryptKey(retrievedKey);
+                        } catch (error) {
+                            console.log(error);
+                            window.electron.signNFTError({
+                                id: request.id,
+                                result: {
+                                    isError: true,
+                                    method: "signNFT.getKey",
+                                    error: error,
+                                },
+                            });
+                            return;
+                        }
+
+                        if (!processedKey) {
+                            window.electron.signNFTError({
+                                id: request.id,
+                                result: {
+                                    isError: true,
+                                    method: "signNFT.getKey",
+                                    error: "No processedKey",
+                                },
+                            });
+                            return;
+                        }
+
+                        let _request;
+                        try {
+                            _request = await window.electron.blockchainRequest({
+                                methods: ["signNFT"],
+                                account: null,
+                                chain: store.getters["AccountStore/getChain"],
+                                key: processedKey,
+                                target: request.payload.params,
+                            });
+                        } catch (error) {
+                            console.log(error);
+                            window.electron.signNFTError({
+                                id: request.id,
+                                result: {
+                                    isError: true,
+                                    method: "signNFT.executeSignNFT",
+                                    error: error,
+                                },
+                            });
+                            return;
+                        }
+
+                        if (!_request || !_request.signNFT) {
+                            window.electron.signNFTError({
+                                id: request.id,
+                                result: {
+                                    isError: true,
+                                    method: "signNFT.executeSignNFT",
+                                    error: "No signedNFT",
+                                },
+                            });
+                            return;
+                        }
+
+                        window.electron.signNFTResponse({
+                            result: _request.signNFT,
+                        });
+                    });
+
+                    window.electron.popupRejected(request.id, (result) => {
+                        // `popupRejected_${request.id}`
+                        window.electron.signNFTError({
+                            id: request.id,
+                            result: {
+                                isError: true,
+                                method: "signNFT.popupRejected",
+                                error: result,
+                            },
+                        });
+                    });
+                });
+
+                window.electron.onInjectedCall(async (args) => {
+                    const {
+                        request,
+                        chain,
+                        account,
+                        visualizedAccount,
+                        visualizedParams,
+                        isBlocked,
+                        blockedAccounts,
+                        foundIDs,
+                    } = args;
+
+                    if (
+                        ["BTS", "BTS_TEST"].includes(chain) &&
+                        ((!visualizedAccount && account && !account.accountName) ||
+                            !visualizedParams)
+                    ) {
+                        console.log("Missing required fields for injected call");
+                        window.electron.injectedCallError({
+                            id: request.id,
+                            result: {
+                                isError: true,
+                                method: "injectedCall.missingFields",
+                                error: "Missing required fields for injected BTS call",
+                            },
+                        });
+                        return;
+                    }
+
+                    if (
+                        ["EOS", "BEOS", "TLOS"].includes(chain) &&
+                        !visualizedParams
+                    ) {
+                        console.log(
+                            `Missing required fields for injected ${chain} based call`
+                        );
+                        window.electron.injectedCallError({
+                            id: request.id,
+                            result: {
+                                isError: true,
+                                method: "injectedCall.missingFields",
+                                error: `Missing required fields for injected ${chain} based call`,
+                            },
+                        });
+                        return;
+                    }
+
+                    const popupContents = ["EOS", "BEOS", "TLOS"].includes(chain)
+                        ? {
+                            request: request,
+                            visualizedAccount: visualizedAccount,
+                            visualizedParams: JSON.stringify(visualizedParams),
+                        }
+                        : {
+                            request: request,
+                            visualizedAccount:
+                                visualizedAccount || account.accountName,
+                            visualizedParams: JSON.stringify(visualizedParams),
+                        };
+
+                    if (chain === "BTS" && foundIDs.length) {
+                        popupContents["isBlockedAccount"] = isBlocked;
+                    }
+
+                    if (
+                        chain === "BTS" &&
+                        (!blockedAccounts || !blockedAccounts.length)
+                    ) {
+                        popupContents["serverError"] = true;
+                    }
+
+                    try {
+                        window.electron.createPopup(popupContents);
+                    } catch (error) {
+                        window.electron.injectedCallError({
+                            id: request.id,
+                            result: {
+                                isError: true,
+                                method: "injectedCall.createPopup",
+                                error: error,
+                            },
+                        });
+                        return;
+                    }
+
+                    store.dispatch("WalletStore/notifyUser", {
+                        notify: "request",
+                        message: t("common.apiUtils.inject"),
+                    });
+
+                    window.electron.popupApproved(request.id, async (args) => {
+                        let _request = request;
+                        if (
+                            ["BTS", "TEST", "BTS_TEST"].includes(chain) &&
+                            request.payload.memo
+                        ) {
+                            const readableParameters = JSON.parse(request.payload.params[1]);
+                            let operations = readableParameters.operations;
+                            const fromID = operations && operations.length ? operations[0][1].from : null;
+                            if (!fromID) {
+                                console.log("No id found");
+                                return;
+                            }
+
+                            let _requiredMemoKey = store.getters["AccountStore/getPrivateMemoKey"](fromID, chain);
+                            
+                            let processedKey;
+                            try {
+                                processedKey = await decryptKey(_requiredMemoKey);
+                            } catch (error) {
+                                console.log(error);
+                                return;
+                            }
+
+                            let processedOperations = [];
+                            for (let operation of operations) {
+                                if (operation[0] !== 0 || !operation[1].hasOwnProperty("memo")) {
+                                    continue;
+                                }
+                                let memo = operation[1].memo;
+                                let from = memo.from;
+                                let to = memo.to;
+                                let nonce = memo.nonce;
+                                let message = hexToString(memo.message);
+
+                                let _blockchainRequest;
+                                try {
+                                    _blockchainRequest =
+                                        await window.electron.blockchainRequest({
+                                            methods: ["createMemoObject"],
+                                            account: null,
+                                            chain,
+                                            from,
+                                            to,
+                                            optionalNonce: nonce ?? undefined,
+                                            message,
+                                            memoKey: processedKey
+                                        });
+                                } catch (error) {
+                                    console.log(error);
+                                }
+
+                                if (
+                                    _blockchainRequest &&
+                                    _blockchainRequest.createMemoObject
+                                ) {
+                                    const _updatedOperation = operation;
+                                    _updatedOperation[1].memo = _blockchainRequest.createMemoObject;
+
+                                    let memoFromBuffer;
+                                    try {
+                                        memoFromBuffer = await window.electron.memoFromBuffer({
+                                            msg: _updatedOperation[1].memo.message,
+                                        });
+                                    } catch (error) {
+                                        console.log(error);
+                                    }
+                                    
+                                    _updatedOperation[1].memo.message = memoFromBuffer;
+                                    processedOperations.push(_updatedOperation);
+                                }
+                            }
+
+                            if (processedOperations.length) {
+                                let _updatedRequest = { ...request };
+
+                                let _updatedOperations = [];
+                                // Recalculate fees for each operation
+                                for (let operation of processedOperations) {
+                                    try {
+                                        let feeRequest = await window.electron.blockchainRequest({
+                                            methods: ["calculateFee"],
+                                            account: null,
+                                            chain,
+                                            operation: operation
+                                        });
+
+                                        if (feeRequest && feeRequest.calculateFee) {
+                                            let updatedOperation = feeRequest.calculateFee.operations[0];
+                                            _updatedOperations.push(updatedOperation);
+                                        }
+                                    } catch (error) {
+                                        console.log(error);
+                                    }
+                                }
+
+                                _updatedRequest.payload.params[1] = JSON.stringify({
+                                    ...readableParameters,
+                                    operations: _updatedOperations
+                                });
+
+                                _request = _updatedRequest;
+                            }
+                        }
+
+                        let finalResult;
+                        let notifyTXT = "";
+
+                        let txType =
+                            _request.payload.params[0] ?? "signAndBroadcast";
+                        if (txType == "broadcast") {
+                            try {
+                                finalResult =
+                                    await window.electron.blockchainRequest({
+                                        methods: ["broadcastTransaction"],
+                                        account: null,
+                                        chain: chain,
+                                        operation: _request.payload.params,
+                                    });
+                            } catch (error) {
+                                console.log(error);
+                                window.electron.injectedCallError({
+                                    id: _request.id,
+                                    result: {
+                                        isError: true,
+                                        method: "injectedCall.blockchain.broadcast",
+                                        error: error,
+                                    },
+                                });
+                                return;
+                            }
+
+                            if (!finalResult || !finalResult.broadcastTransaction) {
+                                window.electron.injectedCallError({
+                                    id: _request.id,
+                                    result: {
+                                        isError: true,
+                                        method: "injectedCall.finalResult",
+                                        error: "No final result",
+                                    },
+                                });
+                                return;
+                            }
+
+                            store.dispatch("WalletStore/notifyUser", {
+                                notify: "request",
+                                message: t("common.apiUtils.broadcast"),
+                            });
+                            window.electron.injectedCallResponse({
                                 id: _request.id,
+                                result: {
+                                    result: finalResult.broadcastTransaction,
+                                },
+                            });
+                            return;
+                        }
+
+                        let activeKey;
+                        if (["BTS", "BTS_TEST"].includes(chain)) {
+                            try {
+                                activeKey = request.payload.account_id
+                                    ? store.getters["AccountStore/getActiveKey"](
+                                        request
+                                    )
+                                    : store.getters[
+                                        "AccountStore/getCurrentActiveKey"
+                                    ]();
+                            } catch (error) {
+                                console.log(error);
+                                window.electron.injectedCallError({
+                                    id: request.id,
+                                    result: {
+                                        isError: true,
+                                        method: "injectedCall.getActiveKey",
+                                        error: error,
+                                    },
+                                });
+                                return;
+                            }
+                        } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
+                            activeKey = store.getters["AccountStore/getEOSKey"]();
+                        }
+
+                        let signingKey;
+                        try {
+                            signingKey = await decryptKey(activeKey);
+                        } catch (error) {
+                            console.log(error);
+                            window.electron.injectedCallError({
+                                id: request.id,
+                                result: {
+                                    isError: true,
+                                    method: "injectedCall.getKey",
+                                    error: error,
+                                },
+                            });
+                            return;
+                        }
+
+                        if (txType == "signAndBroadcast") {
+                            try {
+                                if (["BTS", "BTS_TEST"].includes(chain)) {
+                                    finalResult =
+                                        await window.electron.blockchainRequest({
+                                            methods: ["signAndBroadcast"],
+                                            account: null,
+                                            chain: chain,
+                                            operation: request.payload.params,
+                                            signingKey: signingKey,
+                                        });
+                                } else if (
+                                    ["EOS", "BEOS", "TLOS"].includes(chain)
+                                ) {
+                                    finalResult =
+                                        await window.electron.blockchainRequest({
+                                            methods: ["signAndBroadcast"],
+                                            account: null,
+                                            chain: chain,
+                                            operation: JSON.parse(
+                                                request.payload.params[1]
+                                            ),
+                                            signingKey: signingKey,
+                                        });
+                                }
+                            } catch (error) {
+                                console.log(error);
+                                window.electron.injectedCallError({
+                                    id: request.id,
+                                    result: {
+                                        isError: true,
+                                        method: "injectedCall.blockchain.broadcast",
+                                        error: error,
+                                    },
+                                });
+                                return;
+                            }
+                            notifyTXT = t("common.apiUtils.signAndBroadcast");
+                        }
+
+                        if (!finalResult || !finalResult.signAndBroadcast) {
+                            window.electron.injectedCallError({
+                                id: request.id,
                                 result: {
                                     isError: true,
                                     method: "injectedCall.finalResult",
@@ -626,402 +796,298 @@ watch(
 
                         store.dispatch("WalletStore/notifyUser", {
                             notify: "request",
-                            message: t("common.apiUtils.broadcast"),
+                            message: notifyTXT,
                         });
-                        window.electron.injectedCallResponse({
-                            id: _request.id,
-                            result: {
-                                result: finalResult.broadcastTransaction,
-                            },
-                        });
-                        return;
-                    }
 
-                    let activeKey;
-                    if (["BTS", "BTS_TEST"].includes(chain)) {
-                        try {
-                            activeKey = request.payload.account_id
-                                ? store.getters["AccountStore/getActiveKey"](
-                                      request
-                                  )
-                                : store.getters[
-                                      "AccountStore/getCurrentActiveKey"
-                                  ]();
-                        } catch (error) {
-                            console.log(error);
-                            window.electron.injectedCallError({
-                                id: request.id,
-                                result: {
-                                    isError: true,
-                                    method: "injectedCall.getActiveKey",
-                                    error: error,
-                                },
-                            });
-                            return;
-                        }
-                    } else if (["EOS", "BEOS", "TLOS"].includes(chain)) {
-                        activeKey = store.getters["AccountStore/getEOSKey"]();
-                    }
-
-                    let signingKey;
-                    try {
-                        signingKey = await decryptKey(activeKey);
-                    } catch (error) {
-                        console.log(error);
-                        window.electron.injectedCallError({
-                            id: request.id,
-                            result: {
-                                isError: true,
-                                method: "injectedCall.getKey",
-                                error: error,
-                            },
-                        });
-                        return;
-                    }
-
-                    if (txType == "signAndBroadcast") {
-                        try {
-                            if (["BTS", "BTS_TEST"].includes(chain)) {
-                                finalResult =
-                                    await window.electron.blockchainRequest({
-                                        methods: ["signAndBroadcast"],
-                                        account: null,
-                                        chain: chain,
-                                        operation: request.payload.params,
-                                        signingKey: signingKey,
-                                    });
-                            } else if (
-                                ["EOS", "BEOS", "TLOS"].includes(chain)
-                            ) {
-                                finalResult =
-                                    await window.electron.blockchainRequest({
-                                        methods: ["signAndBroadcast"],
-                                        account: null,
-                                        chain: chain,
-                                        operation: JSON.parse(
-                                            request.payload.params[1]
-                                        ),
-                                        signingKey: signingKey,
-                                    });
+                        if (args?.result?.receipt) {
+                            try {
+                                window.electron.createReceipt({
+                                    request: request,
+                                    result: finalResult.signAndBroadcast,
+                                    notifyTXT: notifyTXT,
+                                    receipt: {
+                                        visualizedAccount:
+                                            popupContents.visualizedAccount,
+                                        visualizedParams:
+                                            popupContents.visualizedParams,
+                                    },
+                                });
+                            } catch (error) {
+                                console.log(error);
                             }
-                        } catch (error) {
-                            console.log(error);
-                            window.electron.injectedCallError({
-                                id: request.id,
-                                result: {
-                                    isError: true,
-                                    method: "injectedCall.blockchain.broadcast",
-                                    error: error,
-                                },
-                            });
-                            return;
                         }
-                        notifyTXT = t("common.apiUtils.signAndBroadcast");
-                    }
 
-                    if (!finalResult || !finalResult.signAndBroadcast) {
+                        window.electron.injectedCallResponse({
+                            id: request.id,
+                            result: { result: finalResult },
+                        });
+                    });
+
+                    window.electron.popupRejected(request.id, (result) => {
                         window.electron.injectedCallError({
                             id: request.id,
                             result: {
                                 isError: true,
-                                method: "injectedCall.finalResult",
-                                error: "No final result",
+                                method: "injectedCall.popupRejected",
+                                error: result,
                             },
                         });
-                        return;
-                    }
-
-                    store.dispatch("WalletStore/notifyUser", {
-                        notify: "request",
-                        message: notifyTXT,
                     });
+                });
 
-                    if (args?.result?.receipt) {
-                        try {
-                            window.electron.createReceipt({
-                                request: request,
-                                result: finalResult.signAndBroadcast,
-                                notifyTXT: notifyTXT,
-                                receipt: {
-                                    visualizedAccount:
-                                        popupContents.visualizedAccount,
-                                    visualizedParams:
-                                        popupContents.visualizedParams,
+                window.electron.onRequestSignature(
+                    (request, chain, visualizedParams, visualizedAccount) => {
+                        if (!request || !request.payload) {
+                            window.electron.requestSignatureError({
+                                id: request.id,
+                                result: {
+                                    isError: true,
+                                    method: "requestSignature.inputs",
+                                    error: "input error",
                                 },
                             });
-                        } catch (error) {
-                            console.log(error);
+                            return;
                         }
-                    }
 
-                    window.electron.injectedCallResponse({
-                        id: request.id,
-                        result: { result: finalResult },
-                    });
-                });
-
-                window.electron.popupRejected(request.id, (result) => {
-                    window.electron.injectedCallError({
-                        id: request.id,
-                        result: {
-                            isError: true,
-                            method: "injectedCall.popupRejected",
-                            error: result,
-                        },
-                    });
-                });
-            });
-
-            window.electron.onRequestSignature(
-                (request, chain, visualizedParams, visualizedAccount) => {
-                    if (!request || !request.payload) {
-                        window.electron.requestSignatureError({
-                            id: request.id,
-                            result: {
-                                isError: true,
-                                method: "requestSignature.inputs",
-                                error: "input error",
-                            },
+                        store.dispatch("WalletStore/notifyUser", {
+                            notify: "request",
+                            message: `Signature request type: ${request.params[0]}`,
                         });
-                        return;
-                    }
 
-                    store.dispatch("WalletStore/notifyUser", {
-                        notify: "request",
-                        message: `Signature request type: ${request.params[0]}`,
-                    });
+                        window.electron.createPopup({
+                            request: request,
+                            visualizedParams: visualizedParams,
+                            visualizedAccount: visualizedAccount,
+                        });
 
-                    window.electron.createPopup({
-                        request: request,
-                        visualizedParams: visualizedParams,
-                        visualizedAccount: visualizedAccount,
-                    });
+                        window.electron.popupApproved(
+                            request.id,
+                            async (result) => {
+                                let activeKey;
+                                if (["BTS", "BTS_TEST"].includes(chain)) {
+                                    try {
+                                        activeKey = request.payload.account_id
+                                            ? store.getters[
+                                                "AccountStore/getActiveKey"
+                                            ](request)
+                                            : store.getters[
+                                                "AccountStore/getCurrentActiveKey"
+                                            ]();
+                                    } catch (error) {
+                                        console.log(error);
+                                        window.electron.requestSignatureError({
+                                            id: request.id,
+                                            result: {
+                                                isError: true,
+                                                method: "requestSignature.getActiveKey",
+                                                error: error,
+                                            },
+                                        });
+                                        return;
+                                    }
+                                } else if (
+                                    ["EOS", "BEOS", "TLOS"].includes(chain)
+                                ) {
+                                    activeKey =
+                                        store.getters["AccountStore/getEOSKey"]();
+                                }
 
-                    window.electron.popupApproved(
-                        request.id,
-                        async (result) => {
-                            let activeKey;
-                            if (["BTS", "BTS_TEST"].includes(chain)) {
+                                let signingKey;
                                 try {
-                                    activeKey = request.payload.account_id
-                                        ? store.getters[
-                                              "AccountStore/getActiveKey"
-                                          ](request)
-                                        : store.getters[
-                                              "AccountStore/getCurrentActiveKey"
-                                          ]();
+                                    signingKey = await decryptKey(activeKey);
                                 } catch (error) {
                                     console.log(error);
                                     window.electron.requestSignatureError({
                                         id: request.id,
                                         result: {
                                             isError: true,
-                                            method: "requestSignature.getActiveKey",
+                                            method: "requestSignature.getKey",
                                             error: error,
                                         },
                                     });
                                     return;
                                 }
-                            } else if (
-                                ["EOS", "BEOS", "TLOS"].includes(chain)
-                            ) {
-                                activeKey =
-                                    store.getters["AccountStore/getEOSKey"]();
-                            }
 
-                            let signingKey;
-                            try {
-                                signingKey = await decryptKey(activeKey);
-                            } catch (error) {
-                                console.log(error);
-                                window.electron.requestSignatureError({
-                                    id: request.id,
-                                    result: {
-                                        isError: true,
-                                        method: "requestSignature.getKey",
-                                        error: error,
-                                    },
-                                });
-                                return;
-                            }
-
-                            let transaction;
-                            try {
-                                if (["BTS", "BTS_TEST"].includes(chain)) {
-                                    transaction =
-                                        await window.electron.requestSignature(
-                                            request.payload.params,
-                                            signingKey
-                                        );
-                                } else if (
-                                    ["EOS", "BEOS", "TLOS"].includes(chain)
-                                ) {
-                                    transaction =
-                                        await window.electron.requestSignature(
-                                            JSON.parse(
-                                                request.payload.params[1]
-                                            ),
-                                            signingKey
-                                        );
+                                let transaction;
+                                try {
+                                    if (["BTS", "BTS_TEST"].includes(chain)) {
+                                        transaction =
+                                            await window.electron.requestSignature(
+                                                request.payload.params,
+                                                signingKey
+                                            );
+                                    } else if (
+                                        ["EOS", "BEOS", "TLOS"].includes(chain)
+                                    ) {
+                                        transaction =
+                                            await window.electron.requestSignature(
+                                                JSON.parse(
+                                                    request.payload.params[1]
+                                                ),
+                                                signingKey
+                                            );
+                                    }
+                                } catch (error) {
+                                    console.log(error);
+                                    window.electron.injectedCallError({
+                                        id: request.id,
+                                        result: {
+                                            isError: true,
+                                            method: "injectedCall.blockchain.sign",
+                                            error: error,
+                                        },
+                                    });
+                                    return;
                                 }
-                            } catch (error) {
-                                console.log(error);
-                                window.electron.injectedCallError({
-                                    id: request.id,
-                                    result: {
-                                        isError: true,
-                                        method: "injectedCall.blockchain.sign",
-                                        error: error,
-                                    },
-                                });
-                                return;
-                            }
 
-                            if (!transaction || !transaction.toObject()) {
-                                window.electron.requestSignatureError({
-                                    id: request.id,
-                                    result: {
-                                        isError: true,
-                                        method: "requestSignature.finalResult",
-                                        error: "No final result",
-                                    },
-                                });
-                                return;
-                            }
+                                if (!transaction || !transaction.toObject()) {
+                                    window.electron.requestSignatureError({
+                                        id: request.id,
+                                        result: {
+                                            isError: true,
+                                            method: "requestSignature.finalResult",
+                                            error: "No final result",
+                                        },
+                                    });
+                                    return;
+                                }
 
-                            store.dispatch("WalletStore/notifyUser", {
-                                notify: "request",
-                                message: t("common.apiUtils.sign"),
-                            });
-                            window.electron.requestSignatureResponse({
+                                store.dispatch("WalletStore/notifyUser", {
+                                    notify: "request",
+                                    message: t("common.apiUtils.sign"),
+                                });
+                                window.electron.requestSignatureResponse({
+                                    id: request.id,
+                                    result: { result: transaction.toObject() },
+                                });
+                            }
+                        );
+
+                        window.electron.popupRejected(request.id, (result) => {
+                            window.electron.requestSignatureError({
                                 id: request.id,
-                                result: { result: transaction.toObject() },
+                                result: {
+                                    isError: true,
+                                    method: "requestSignature.popupRejected",
+                                    error: result,
+                                },
                             });
-                        }
-                    );
+                        });
+                    }
+                );
 
-                    window.electron.popupRejected(request.id, (result) => {
-                        window.electron.requestSignatureError({
+                window.electron.onGetAccount((request) => {
+                    let shownBeetApp =
+                        store.getters["OriginStore/getBeetApp"](request);
+                    if (!shownBeetApp) {
+                        window.electron.getAccountError({
                             id: request.id,
                             result: {
                                 isError: true,
-                                method: "requestSignature.popupRejected",
+                                method: "getAccount.getBeetApp",
+                                error: "No beetApp",
+                            },
+                        });
+                    }
+
+                    let account = store.getters["AccountStore/getSafeAccount"](
+                        JSON.parse(JSON.stringify(shownBeetApp))
+                    );
+
+                    window.electron.createPopup({
+                        request: request,
+                        accounts: [account],
+                    });
+
+                    window.electron.popupApproved(request.id, async (result) => {
+                        window.electron.getAccountResponse(result);
+                    });
+
+                    window.electron.popupRejected(request.id, (result) => {
+                        window.electron.getAccountError({
+                            id: request.id,
+                            result: {
+                                isError: true,
+                                method: "getAccount.popupRejected",
                                 error: result,
                             },
                         });
                     });
-                }
-            );
-
-            window.electron.onGetAccount((request) => {
-                let shownBeetApp =
-                    store.getters["OriginStore/getBeetApp"](request);
-                if (!shownBeetApp) {
-                    window.electron.getAccountError({
-                        id: request.id,
-                        result: {
-                            isError: true,
-                            method: "getAccount.getBeetApp",
-                            error: "No beetApp",
-                        },
-                    });
-                }
-
-                let account = store.getters["AccountStore/getSafeAccount"](
-                    JSON.parse(JSON.stringify(shownBeetApp))
-                );
-
-                window.electron.createPopup({
-                    request: request,
-                    accounts: [account],
                 });
 
-                window.electron.popupApproved(request.id, async (result) => {
-                    window.electron.getAccountResponse(result);
-                });
+                window.electron.onVerifyMessage((request) => {
+                    if (!store.state.WalletStore.isUnlocked) {
+                        window.electron.verifyMessageError({
+                            id: request.id,
+                            result: {
+                                isError: true,
+                                method: "verifyMessage.verify",
+                                error: "Wallet is locked",
+                            },
+                        });
+                        store.dispatch("WalletStore/notifyUser", {
+                            notify: "request",
+                            message: window.t("common.apiUtils.msgVerify"),
+                        });
+                        return;
+                    }
 
-                window.electron.popupRejected(request.id, (result) => {
-                    window.electron.getAccountError({
-                        id: request.id,
-                        result: {
-                            isError: true,
-                            method: "getAccount.popupRejected",
-                            error: result,
-                        },
-                    });
-                });
-            });
-
-            window.electron.onVerifyMessage((request) => {
-                if (!store.state.WalletStore.isUnlocked) {
-                    window.electron.verifyMessageError({
-                        id: request.id,
-                        result: {
-                            isError: true,
-                            method: "verifyMessage.verify",
-                            error: "Wallet is locked",
-                        },
-                    });
                     store.dispatch("WalletStore/notifyUser", {
                         notify: "request",
                         message: window.t("common.apiUtils.msgVerify"),
                     });
-                    return;
-                }
-
-                store.dispatch("WalletStore/notifyUser", {
-                    notify: "request",
-                    message: window.t("common.apiUtils.msgVerify"),
+                    window.electron.verifyMessageResponse();
                 });
-                window.electron.verifyMessageResponse();
-            });
-        }
-        startLogoutTimer(newValue);
-    },
-    { immediate: true }
-);
-
-watch(
-    () => router.currentRoute.value,
-    (newRoute) => {
-        const matchingItem = items.value.find(
-            (item) => item.url === newRoute.path
-        );
-        if (matchingItem) {
-            if (lastIndex.value === 2) {
-                window.electron.closeServer();
             }
-            lastIndex.value = matchingItem.index;
-        }
-    }
-);
+            startLogoutTimer(newValue);
+        },
+        { immediate: true }
+    );
 
-watch(
-    () => store.state.WalletStore.isUnlocked,
-    (isUnlocked) => {
-        if (isUnlocked) {
-            window.electron.timer(() => startLogoutTimer(lastIndex.value));
-            window.electron.setNode((data) => {
-                const _currentChain = store.getters["AccountStore/getChain"];
-                store.dispatch("SettingsStore/setNode", {
-                    chain: _currentChain,
-                    node: data,
-                });
-            });
-            window.electron.onGetSafeAccount((arg) => {
-                let account =
-                    store.getters["AccountStore/getCurrentSafeAccount"]();
-                window.electron.getSafeAccountResponse(account);
-            });
+    watch(
+        () => router.currentRoute.value,
+        (newRoute) => {
+            const matchingItem = items.value.find(
+                (item) => item.url === newRoute.path
+            );
+            if (matchingItem) {
+                if (lastIndex.value === 2) {
+                    window.electron.closeServer();
+                }
+                lastIndex.value = matchingItem.index;
+            }
         }
-    },
-    { immediate: true }
-);
+    );
+
+    watch(
+        () => store.state.WalletStore.isUnlocked,
+        (isUnlocked) => {
+            if (isUnlocked) {
+                window.electron.timer(() => startLogoutTimer(lastIndex.value));
+                window.electron.setNode((data) => {
+                    const _currentChain = store.getters["AccountStore/getChain"];
+                    store.dispatch("SettingsStore/setNode", {
+                        chain: _currentChain,
+                        node: data,
+                    });
+                });
+                window.electron.onGetSafeAccount((arg) => {
+                    let account =
+                        store.getters["AccountStore/getCurrentSafeAccount"]();
+                    window.electron.getSafeAccountResponse(account);
+                });
+            }
+        },
+        { immediate: true }
+    );
 </script>
 
 <template>
     <div>
-        <ui-menu-anchor absolute position="BOTTOM_START">
+        <ui-menu-anchor
+            absolute
+            position="BOTTOM_START"
+        >
             <ui-fab
                 v-if="store.state.WalletStore.isUnlocked"
                 style="margin-bottom: 10px"
@@ -1037,8 +1103,15 @@ watch(
                 position="BOTTOM_START"
                 @selected="onChange"
             >
-                <ui-menuitem v-for="item in items" :key="item.icon" nested>
-                    <ui-menuitem v-if="lastIndex === item.index" selected>
+                <ui-menuitem
+                    v-for="item in items"
+                    :key="item.icon"
+                    nested
+                >
+                    <ui-menuitem
+                        v-if="lastIndex === item.index"
+                        selected
+                    >
                         <ui-menuitem-icon dark>
                             <ui-icon style="color: #707070">
                                 {{ item.icon }}
@@ -1048,7 +1121,10 @@ watch(
                     </ui-menuitem>
                     <ui-menuitem v-else>
                         <ui-menuitem-icon dark>
-                            <ui-icon dark style="visibility: visible">
+                            <ui-icon
+                                dark
+                                style="visibility: visible"
+                            >
                                 {{ item.icon }}
                             </ui-icon>
                         </ui-menuitem-icon>

@@ -107,14 +107,28 @@ watchEffect(() => {
     });
 });
 
+const hexToString = (hex) => {
+    const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+    return new TextDecoder().decode(bytes);
+};
+
 watch(
     [page, visualizedParams, result],
     ([newPage, newVisualizedParams, newResult]) => {
         const currentPageValue = newPage > 0 ? newPage - 1 : 0;
 
         if (newVisualizedParams && newVisualizedParams.length) {
+            let currentOp = newVisualizedParams[currentPageValue].op;
+            if (currentOp.memo && currentOp.memo.message) {
+                try {
+                    currentOp.memo.message = hexToString(currentOp.memo.message);
+                } catch (e) {
+                    console.error("Failed to decode memo message:", e);
+                }
+            }
+
             jsonData.value = JSON.stringify(
-                newVisualizedParams[currentPageValue].op,
+                currentOp,
                 undefined,
                 4
             );

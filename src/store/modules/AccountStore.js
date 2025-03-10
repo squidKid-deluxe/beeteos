@@ -235,6 +235,17 @@ const getters = {
         return keys.memo
                 ? keys.memo
                 : keys.active;
+    },
+    getPrivateMemoKey: (state) => (accountId, chain) => {
+        try {
+            const account = state.accountlist.find(account => account.accountID === accountId && account.chain === chain);
+            if (account && account.keys.memo) {
+                return account.keys.memo;
+            }
+        } catch (error) {
+            console.error("Failed to get private memo key:", error);
+        }
+        return null;
     }
 };
 

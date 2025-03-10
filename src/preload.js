@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('electron', {
             func(args);
         });
     },
+    memoFromBuffer: async (args) => await ipcRenderer.invoke('memoFromBuffer', args),
     // Stores
     seed: (args) => ipcRenderer.send('seed', args),
     decrypt: async (args) => await ipcRenderer.invoke('decrypt', args),

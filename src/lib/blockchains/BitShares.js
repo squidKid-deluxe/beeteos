@@ -76,6 +76,37 @@ export default class BitShares extends BlockchainAPI {
     }
 
     /**
+     * Recalculate fees after updating the memo
+     * @param {Object} operation 
+     * @returns transaction object
+     */
+    calculateFee(operation) {
+        return new Promise((resolve, reject) => {
+            this.ensureConnection()
+                .then(async () => {
+                    let _refOperation = operation[1];
+                    _refOperation.fee.amount = 0; // force a fee recalculation!
+
+                    let tr = new TransactionBuilder();
+                    tr.add_type_operation("transfer", _refOperation);
+
+                    if (!tr) {
+                        return null;
+                    }
+                    
+                    try {
+                        await tr.set_required_fees();
+                    } catch (error) {
+                        console.log({ error, location: "set_required_fees" });
+                    }
+
+                    return resolve(tr.toObject());                    
+                })
+
+        });
+    }
+
+    /**
      * Returning the list of injectable operations
      * @returns {Array}
      */
@@ -672,7 +703,6 @@ export default class BitShares extends BlockchainAPI {
             }
 
             const userConfiguredNodes = store.getters['SettingsStore/getNodes'](this._config.coreSymbol);
-
             if (!userConfiguredNodes || !userConfiguredNodes.length) {
                 return this._connectionFailed(
                     reject,
@@ -1544,26 +1574,36 @@ export default class BitShares extends BlockchainAPI {
     _createMemoObject(
         from,
         to,
-        memo,
         optionalNonce = null,
-        encryptMemo = true
+        message,
+        memoKey,
     ) {
+        let processedMessage;
         let nonce = optionalNonce ?? TransactionHelper.unique_nonce_uint64();
-
+        if (
+            (from === "BTS1111111111111111111111111111111114T1Anm" && to === "BTS1111111111111111111111111111111114T1Anm") ||
+            (from === "TEST1111111111111111111111111111111114T1Anm" && to === "TEST1111111111111111111111111111111114T1Anm")
+        ) {
+            // The memo has been intentionally left decrypted
+            if (Buffer.isBuffer(message)) {
+                processedMessage = message.toString("utf-8");
+            } else {
+                processedMessage = message;
+            }
+        } else {
+            processedMessage = Aes.encrypt_with_checksum(
+                PrivateKey.fromWif(memoKey),
+                to,
+                nonce,
+                message
+            );
+        }
+    
         return {
-            from: from.memo.public_key,
-            to: to.memo.public_key,
+            from,
+            to,
             nonce,
-            message: encryptMemo
-                ? Aes.encrypt_with_checksum(
-                      PrivateKey.fromWif(memo.key),
-                      to.memo.public_key,
-                      nonce,
-                      memo.memo
-                  )
-                : Buffer.isBuffer(memo)
-                ? memo.toString("utf-8")
-                : memo.memo,
+            message: processedMessage,
         };
     }
 

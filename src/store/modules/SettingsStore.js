@@ -4,6 +4,11 @@ import BeetDB from '../../lib/BeetDB.js';
 
 const LOAD_SETTINGS = 'LOAD_SETTINGS';
 
+function decodeMessage(bytes) {
+    const decoder = new TextDecoder('utf-8');
+    return decoder.decode(new Uint8Array(bytes));
+}
+
 const mutations = {
     [LOAD_SETTINGS] (state, settings) {
         state.settings = settings;
@@ -116,7 +121,7 @@ const actions = {
                     settings = initialState.settings;
                 }
     
-                if (!settings.hasOwnProperty('chainPermissions')) {
+                if (!Object.prototype.hasOwnProperty.call(settings, 'chainPermissions')) {
                     settings['chainPermissions'] = {
                         BTS: [],
                         BTS_TEST: [],
@@ -135,21 +140,26 @@ const actions = {
                 reject(error);
             });
         });
+    },
+    visualizeMemo({
+        commit
+    }, data) {
+        const decodedMessage = decodeMessage(data.request.memo.message);
+        console.log('Decoded Memo Message:', decodedMessage);
     }
 }
-
 
 const getters = {
     getNode: (state) => state.settings.selected_node,
     getLocale: (state) => state.settings.locale,
     getChainPermissions: (state) => (chain) => {
-        if (!state.settings.hasOwnProperty('chainPermissions')) {
+        if (!Object.prototype.hasOwnProperty.call(state.settings, 'chainPermissions')) {
             return [];
         }
         return state.settings.chainPermissions[chain];
     },
     getNodes: (state) => (chain) => {
-        if (!state.settings.hasOwnProperty('chainNodes')) {
+        if (!Object.prototype.hasOwnProperty.call(state.settings, 'chainNodes')) {
             return initialState.settings.chainNodes[chain];
         }
         return state.settings.chainNodes[chain];
@@ -162,14 +172,14 @@ const initialState = {
         selected_node: {},
         chainPermissions: {
             BTS: [],
-            BTS_TEST: [],
+            TEST: [],
             EOS: [],
             BEOS: [],
             TLOS: []
         },
         chainNodes: {
             BTS: blockchains.BTS.nodeList,
-            BTS_TEST: blockchains.BTS_TEST.nodeList,
+            TEST: blockchains.BTS_TEST.nodeList,
             EOS: blockchains.EOS.nodeList,
             BEOS: blockchains.BEOS.nodeList,
             TLOS: blockchains.TLOS.nodeList

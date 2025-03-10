@@ -613,6 +613,11 @@ const createWindow = async () => {
         return { key, cert };
     });
 
+    ipcMain.handle("memoFromBuffer", async (event, arg) => {
+        const { msg } = arg;
+        return Buffer.from(msg).toString('hex');
+    });
+
     /*
      * Handling front end blockchain requests
      */
@@ -638,6 +643,20 @@ const createWindow = async () => {
         let responses = {
             chain,
         };
+
+        if (methods.includes("calculateFee")) {
+            const { operation } = arg;
+            let fee;
+            try {
+                fee = await blockchain.calculateFee(operation);
+            } catch (error) {
+                console.log({ error, location: "calculateFee" });
+            }
+
+            if (fee) {
+                responses["calculateFee"] = fee;
+            }
+        }
 
         if (methods.includes("supportsLocal")) {
             responses["supportsLocal"] = blockchain.supportsLocal();
@@ -725,15 +744,18 @@ const createWindow = async () => {
         }
 
         if (methods.includes("createMemoObject")) {
-            const { from, to, memo, optionalNonce, encryptMemo } = arg;
+            const { from, to, optionalNonce, message, memoKey } = arg;
+
+            console.log({ from, to, message, optionalNonce })
+
             let memoObj;
             try {
-                memoObj = await blockchain.createMemoObject(
+                memoObj = await blockchain._createMemoObject(
                     from,
                     to,
-                    memo,
                     optionalNonce,
-                    encryptMemo
+                    message,
+                    memoKey
                 );
             } catch (error) {
                 console.log({ error, location: "createMemoObject" });

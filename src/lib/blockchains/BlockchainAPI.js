@@ -392,6 +392,14 @@ export default class BlockchainAPI {
         return false;
     }
 
+    /*
+     * Placeholder for blockchain fee calculation
+     * @returns {null|object}
+     */
+    calculateFee(operation) {
+        return null;
+    }
+
     /**
      * Returning the list of injectable operations
      * @returns {Array}

@@ -79,9 +79,22 @@
             : t('operations.rawsig.sign_and_broadcast_btn')
     })
 
+    const hexToString = (hex) => {
+        const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+        return new TextDecoder().decode(bytes);
+    };
+
     let jsonData = ref("");
     watchEffect(() => {
-        jsonData.value = JSON.stringify(parsedParameters.value[page.value - 1].op, undefined, 4)
+        let currentOp = parsedParameters.value[page.value - 1].op;
+        if (currentOp.memo && currentOp.memo.message) {
+            try {
+                currentOp.memo.message = hexToString(currentOp.memo.message);
+            } catch (e) {
+                console.error("Failed to decode memo message:", e);
+            }
+        }
+        jsonData.value = JSON.stringify(currentOp, undefined, 4);
     });
 </script>
 <template>
