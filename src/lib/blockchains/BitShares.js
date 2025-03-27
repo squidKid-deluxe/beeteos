@@ -1703,6 +1703,7 @@ export default class BitShares extends BlockchainAPI {
                 "fee_paying_account",
                 "authorized_account",
                 "withdraw_from_account",
+                "withdraw_to_account",
                 "committee_member_account",
                 "creator",
                 "owner",
