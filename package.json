@@ -34,18 +34,15 @@
       "target": "nsis"
     },
     "linux": {
-      "category": "Utility",
-      "target": [
-        "deb",
-        "AppImage"
-      ],
-      "mimeTypes": [
-        "x-scheme-handler/rawbeeteos",
-        "x-scheme-handler/beeteos"
-      ],
-      "desktop": {
-        "exec": "beeteos %U"
-      }
+        "category": "Utility",
+        "target": ["deb", "AppImage"],
+        "mimeTypes": [
+            "x-scheme-handler/rawbeeteos",
+            "x-scheme-handler/beeteos"
+        ],
+        "desktop": {
+          "exec": "beeteos %U"
+        }
     }
   },
   "scripts": {
@@ -60,57 +57,58 @@
     "lintFix": "npm run-script eslint --ext .js,.vue src --fix"
   },
   "dependencies": {
-    "@babel/runtime": "^7.27.1",
+    "@babel/runtime": "^7.24.5",
     "@noble/ed25519": "^1.6.1",
     "@noble/secp256k1": "^1.6.3",
-    "balm-ui": "^10.31.1",
+    "balm-ui": "^10.28.2",
     "bitsharesjs": "https://github.com/bitshares/bitsharesjs#develop",
     "crypto-js": "^4.2.0",
     "dexie": "^3.2.6",
+    "electron-devtools-installer": "^3.2.0",
     "eosjs": "^22.1.0",
     "eosjs-ecc": "^4.0.7",
     "http-terminator": "^3.2.0",
     "lzma": "^2.3.2",
     "mitt": "^3.0.1",
     "otpauth": "^9.2.4",
-    "query-string": "^9.2.0",
+    "query-string": "^9.0.0",
     "simple-websocket": "^9.1.0",
-    "socket.io": "^4.8.1",
+    "socket.io": "^4.7.5",
     "typeface-rajdhani": "1.1.13",
     "typeface-roboto": "1.1.13",
     "uuid": "^9.0.1",
-    "vue": "^3.5.14",
+    "vue": "^3.4.27",
     "vue-i18n": "9",
-    "vue-qrcode-reader": "^5.7.2",
-    "vue-router": "^4.5.1",
+    "vue-qrcode-reader": "^5.5.4",
+    "vue-router": "^4.3.2",
     "vuex": "^4.1.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.27.1",
+    "@babel/core": "^7.24.5",
     "@babel/plugin-proposal-object-rest-spread": "^7.20.7",
-    "@babel/plugin-transform-runtime": "^7.27.1",
-    "@babel/preset-env": "^7.27.2",
+    "@babel/plugin-transform-runtime": "^7.24.3",
+    "@babel/preset-env": "^7.24.5",
     "@soda/friendly-errors-webpack-plugin": "^1.8.1",
     "babel-loader": "^9.1.3",
     "css-loader": "^6.10.0",
-    "electron": "^36.3.1",
-    "electron-builder": "^26.0.12",
+    "electron": "^30.0.3",
+    "electron-builder": "^24.13.3",
     "eslint": "^8.57.0",
     "eslint-plugin-vue": "^9.26.0",
     "file-loader": "^6.2.0",
-    "sass": "^1.89.0",
+    "sass": "^1.77.0",
     "sass-loader": "^14.2.1",
     "source-map-support": "^0.5.21",
     "style-loader": "^3.3.4",
     "vue-loader": "^17.4.2",
     "vue-template-compiler": "^2.7.16",
-    "webpack": "^5.99.9",
+    "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4",
     "webpack-merge": "^5.10.0",
     "webpack-node-externals": "^3.0.0"
   },
   "optionalDependencies": {
-    "bufferutil": "^4.0.9",
+    "bufferutil": "^4.0.8",
     "utf-8-validate": "^6.0.4"
   }
 }
