@@ -1,9 +1,9 @@
 import BlockchainAPI from "./BlockchainAPI.js";
 
-import { Api, JsonRpc, RpcError } from "eosjs";
-import { JsSignatureProvider } from "eosjs/dist/eosjs-jssig";
+import { APIClient, FetchProvider, PrivateKey } from '@wharfkit/antelope'
+import { Transaction, Action, SignedTransaction } from '@wharfkit/antelope'
+import { Signature, PublicKey, Bytes } from '@wharfkit/antelope'
 
-import * as ecc from "eosjs-ecc";
 import { TextEncoder, TextDecoder } from "util";
 
 import beautify from "./EOS/beautify.js";
@@ -83,20 +83,22 @@ export default class EOS extends BlockchainAPI {
                 ? nodeToConnect
                 : this.getNodes()[0].url;
 
-        let rpc;
+        let client;
         try {
-            rpc = new JsonRpc(chosenURL, { fetch });
+            client = new APIClient({
+                provider: new FetchProvider(chosenURL, { fetch })
+            });
         } catch (error) {
             console.log({ error });
             this._connectionFailed(reject, chosenURL, error.message);
         }
 
-        this.rpc = rpc;
+        this.client = client;
         this._connectionEstablished(resolve, chosenURL);
 
         /*
         try {
-            this.rpc.get_block(1).then(() => {
+            this.client.v1.chain.get_block(1).then(() => {
                 this._connectionEstablished(resolve, chosenURL);
             })
         } catch (error) {
@@ -150,7 +152,7 @@ export default class EOS extends BlockchainAPI {
             }
 
             const userConfiguredNodes = store.getters['SettingsStore/getNodes'](this._config.coreSymbol);
-            
+
             if (!userConfiguredNodes || !userConfiguredNodes.length) {
                 return this._connectionFailed(
                     reject,
@@ -280,7 +282,7 @@ export default class EOS extends BlockchainAPI {
      * Verify the private key for an EOS blockchain L1 account
      * @param {string} accountName
      * @param {string} privateKey
-     * @param {string} chain // EOS, TLOS, BEOS
+     * @param {string} chain // EOS, TLOS, BEOS (note: chain parameter is not needed by wharfkit, left here for compatibility)
      */
     async verifyAccount(accountName, privateKey, chain = "EOS") {
         let fetchedAccount;
@@ -300,7 +302,8 @@ export default class EOS extends BlockchainAPI {
         let publicKey;
         try {
             // Derive the public key from the private key provided
-            publicKey = ecc.privateToPublic(privateKey, chain);
+            const privKey = PrivateKey.from(privateKey);
+            publicKey = privKey.toPublic().toString();
         } catch (err) {
             // key is likely invalid, an exception was thrown
             console.log(err);
@@ -336,31 +339,31 @@ export default class EOS extends BlockchainAPI {
         return new Promise((resolve, reject) => {
             this._establishConnection()
                 .then((result) => {
-                    this.rpc
+                    this.client.v1.chain
                         .get_account(accountname)
                         .then((account) => {
                             account.active = {};
                             account.owner = {};
                             account.active.public_keys = account.permissions
                                 .find((res) => {
-                                    return res.perm_name == "active";
+                                    return res.perm_name.equals("active");
                                 })
                                 .required_auth.keys.map((item) => [
-                                    item.key,
-                                    item.weight,
+                                    item.key.toString(),
+                                    item.weight.toNumber(),
                                 ]);
                             account.owner.public_keys = account.permissions
                                 .find((res) => {
-                                    return res.perm_name == "owner";
+                                    return res.perm_name.equals("owner");
                                 })
                                 .required_auth.keys.map((item) => [
-                                    item.key,
-                                    item.weight,
+                                    item.key.toString(),
+                                    item.weight.toNumber(),
                                 ]);
                             account.memo = {
                                 public_key: account.active.public_keys[0][0],
                             };
-                            account.id = account.account_name;
+                            account.id = account.account_name.toString();
                             resolve(account);
                         })
                         .catch((error) => {
@@ -377,7 +380,7 @@ export default class EOS extends BlockchainAPI {
 
     getPublicKey(privateKey) {
         // convertLegacyPublicKey
-        return ecc.PrivateKey.fromString(privateKey).toPublic().toString();
+        return PrivateKey.from(privateKey).toPublic().toString();
     }
 
     getTableRows(
@@ -387,7 +390,7 @@ export default class EOS extends BlockchainAPI {
         limit = 100
     ) {
         return new Promise((resolve, reject) => {
-            this.rpc
+            this.client.v1.chain
                 .get_table_rows({
                     json: true,
                     code: contract,
@@ -413,28 +416,28 @@ export default class EOS extends BlockchainAPI {
                     balances.push({
                         asset_type: "Core",
                         asset_name: this._getCoreSymbol(),
-                        balance: parseFloat(account.core_liquid_balance),
+                        balance: parseFloat(account.core_liquid_balance.toString()),
                         owner: "-",
                         prefix: "",
                     });
                     balances.push({
                         asset_type: "UIA",
                         asset_name: "CPU Stake",
-                        balance: parseFloat(account.cpu_weight),
+                        balance: parseFloat(account.cpu_weight.toString()),
                         owner: "-",
                         prefix: "",
                     });
                     balances.push({
                         asset_type: "UIA",
                         asset_name: "Bandwith Stake",
-                        balance: parseFloat(account.net_weight),
+                        balance: parseFloat(account.net_weight.toString()),
                         owner: "-",
                         prefix: "",
                     });
                     balances.push({
                         asset_type: "UIA",
-                        asset_name: `RAM Stake (-${account.ram_usage} bytes)`,
-                        balance: parseFloat(account.ram_quota),
+                        asset_name: `RAM Stake (-${account.ram_usage.toString()} bytes)`,
+                        balance: parseFloat(account.ram_quota.toString()),
                         owner: "-",
                         prefix: "",
                     });
@@ -513,33 +516,40 @@ export default class EOS extends BlockchainAPI {
 
     sign(transaction, key) {
         return new Promise((resolve, reject) => {
-            transaction.signatureProvider = new JsSignatureProvider([key]);
+            // Store the private key for later use in broadcast
+            transaction.privateKey = PrivateKey.from(key);
             resolve(transaction);
         });
     }
 
     broadcast(transaction) {
         return new Promise((resolve, reject) => {
-            if (!this.rpc) {
-                this.rpc = new JsonRpc(this.getNodes()[0].url, { fetch });
+            if (!this.client) {
+                this.client = new APIClient({
+                    provider: new FetchProvider(this.getNodes()[0].url, { fetch })
+                });
             }
 
-            const api = new Api({
-                rpc: this.rpc,
-                signatureProvider: transaction.signatureProvider,
-                textDecoder: new TextDecoder(),
-                textEncoder: new TextEncoder(),
-            });
+            this.client.v1.chain.get_info()
+                .then((info) => {
+                    const header = info.getTransactionHeader(30); // 30 second expiration
 
-            api.transact(
-                {
-                    actions: transaction.actions,
-                },
-                {
-                    blocksBehind: 3,
-                    expireSeconds: 30,
-                }
-            )
+                    const tx = Transaction.from({
+                        ...header,
+                        actions: transaction.actions
+                    });
+
+                    const signature = transaction.privateKey.signDigest(
+                        tx.signingDigest(info.chain_id)
+                    );
+
+                    const signedTransaction = SignedTransaction.from({
+                        ...tx,
+                        signatures: [signature]
+                    });
+
+                    return this.client.v1.chain.push_transaction(signedTransaction);
+                })
                 .then((result) => {
                     resolve(result);
                 })
@@ -551,6 +561,10 @@ export default class EOS extends BlockchainAPI {
     }
 
     getOperation(data, account) {
+        // FIXME this file no longer uses eosjs, and a query to WharfKit's DeepWiki produces
+        // "The block producer voting API is accessed through the get_producer_schedule() method in the Chain API"
+        // So implementing this does now seem possible, perhaps?
+
         // https://eosio.stackexchange.com/questions/212/where-is-the-api-for-block-producer-voting-in-eosjs
         return new Promise((resolve, reject) => {
             reject("Not supported");
@@ -564,14 +578,17 @@ export default class EOS extends BlockchainAPI {
     }
 
     _signString(key, string) {
-        return ecc.Signature.sign(Buffer.from(string), key).toHex();
+        const privateKey = PrivateKey.from(key);
+        const message = Bytes.from(string, 'utf8');
+        const signature = privateKey.signMessage(message);
+        return signature.toString();
     }
 
     _verifyString(signature, publicKey, string) {
-        return ecc.Signature.fromHex(signature).verify(
-            string,
-            ecc.PublicKey.fromString(publicKey)
-        );
+        const sig = Signature.from(signature);
+        const pubKey = PublicKey.from(publicKey);
+        const message = Bytes.from(string, 'utf8');
+        return sig.verifyMessage(message, pubKey);
     }
 
     getExplorer(object, chain) {
