@@ -522,42 +522,44 @@ export default class EOS extends BlockchainAPI {
         });
     }
 
-    broadcast(transaction) {
-        return new Promise((resolve, reject) => {
-            if (!this.client) {
-                this.client = new APIClient({
-                    provider: new FetchProvider(this.getNodes()[0].url, { fetch })
-                });
-            }
+    async broadcast(transaction) {
+        if (!this.client) {
+            this.client = new APIClient({
+                provider: new FetchProvider(this.getNodes()[0].url, { fetch })
+            });
+        }
 
-            this.client.v1.chain.get_info()
-                .then((info) => {
-                    const header = info.getTransactionHeader(30); // 30 second expiration
+        const info = await this.client.v1.chain.get_info();
+        const header = info.getTransactionHeader(30);
 
-                    const tx = Transaction.from({
-                        ...header,
-                        actions: transaction.actions
-                    });
+        // Fetch ABIs for all contracts used in actions
+        const contractNames = [...new Set(transaction.actions.map(action => action.account))];
+        const abiPromises = contractNames.map(contract =>
+            this.client.v1.chain.get_abi(contract)
+        );
+        const abiResponses = await Promise.all(abiPromises);
 
-                    const signature = transaction.privateKey.signDigest(
-                        tx.signingDigest(info.chain_id)
-                    );
+        // Create ABI array for Transaction.from()
+        const abis = contractNames.map((contract, index) => ({
+            contract,
+            abi: abiResponses[index]?.abi
+        })).filter(item => item.abi);
 
-                    const signedTransaction = SignedTransaction.from({
-                        ...tx,
-                        signatures: [signature]
-                    });
+        const tx = Transaction.from({
+            ...header,
+            actions: transaction.actions
+        }, abis);
 
-                    return this.client.v1.chain.push_transaction(signedTransaction);
-                })
-                .then((result) => {
-                    resolve(result);
-                })
-                .catch((error) => {
-                    console.log({ error });
-                    reject();
-                });
+        const signature = transaction.privateKey.signDigest(
+            tx.signingDigest(info.chain_id)
+        );
+
+        const signedTransaction = SignedTransaction.from({
+            ...tx,
+            signatures: [signature]
         });
+
+        return await this.client.v1.chain.push_transaction(signedTransaction);
     }
 
     getOperation(data, account) {
